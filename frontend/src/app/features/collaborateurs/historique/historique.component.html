@@ -1,0 +1,240 @@
+﻿<app-collaborateur-shell activeSection="historique">
+
+  <!-- TOPBAR -->
+  <header shell-topbar class="hist-topbar">
+    <div class="hist-topbar__left">
+      <nav class="hist-topbar__bc">
+        <span>SmartAssign</span>
+        <span class="hist-topbar__sep">&#x203A;</span>
+        <span>Collaborateur</span>
+        <span class="hist-topbar__sep">&#x203A;</span>
+        <span class="hist-topbar__cur">Historique</span>
+      </nav>
+      <h1 class="hist-topbar__title">Mon historique</h1>
+    </div>
+    <div class="hist-topbar__right">
+      <div class="hist-status-pill">
+        <span class="hist-status-dot"></span>
+        {{ headerStatusLabel }}
+      </div>
+      <button type="button" class="hist-btn hist-btn--primary">
+        <i class="ti ti-file-export"></i> Export PDF
+      </button>
+      <div class="hist-av">{{ userInitials }}</div>
+    </div>
+  </header>
+
+  <!-- LOADER -->
+  <div class="hist-loader" *ngIf="isLoading">
+    <div class="hist-spinner"></div>
+    Chargement de l&rsquo;historique&hellip;
+  </div>
+
+  <!-- ERROR -->
+  <div class="hist-error" *ngIf="errorMessage">{{ errorMessage }}</div>
+
+  <ng-container *ngIf="!isLoading && !errorMessage">
+
+    <!-- KPI GRID -->
+    <div class="hist-kpi-grid">
+
+      <!-- Card 1: Total missions -->
+      <div class="hist-kcard">
+        <div class="hist-kcard__bar hist-kcard__bar--blue"></div>
+        <div class="hist-kcard__hd"><span class="hist-kbadge hist-kbadge--gray">Historique</span></div>
+        <div class="hist-kcard__lbl">Total missions</div>
+        <div class="hist-kcard__val" style="color:#3b82f6">{{ metrics[0]?.value }}</div>
+        <div class="hist-kcard__sub">Missions dans l&rsquo;historique</div>
+      </div>
+
+      <!-- Card 2: Missions terminees -->
+      <div class="hist-kcard">
+        <div class="hist-kcard__bar hist-kcard__bar--green"></div>
+        <div class="hist-kcard__hd"><span class="hist-kbadge hist-kbadge--green">Cl&ocirc;tur&eacute;es</span></div>
+        <div class="hist-kcard__lbl">Missions termin&eacute;es</div>
+        <div class="hist-kcard__val" style="color:#10b981">{{ metrics[1]?.value }}</div>
+        <div class="hist-kcard__sub">Cl&ocirc;tur&eacute;es avec succ&egrave;s</div>
+      </div>
+
+      <!-- Card 3: Compatibilite moy. -->
+      <div class="hist-kcard">
+        <div class="hist-kcard__bar hist-kcard__bar--cyan"></div>
+        <div class="hist-kcard__hd"><span class="hist-kbadge hist-kbadge--cyan">Alignement</span></div>
+        <div class="hist-kcard__lbl">Compatibilit&eacute; moy.</div>
+        <div class="hist-kcard__val" style="color:#0891B2">{{ metrics[2]?.value }}</div>
+        <div class="hist-kcard__sub">Ad&eacute;quation globale</div>
+      </div>
+
+      <!-- Card 4: Jours travailles -->
+      <div class="hist-kcard">
+        <div class="hist-kcard__bar hist-kcard__bar--purple"></div>
+        <div class="hist-kcard__hd"><span class="hist-kbadge hist-kbadge--gray">Volume</span></div>
+        <div class="hist-kcard__lbl">Jours travaill&eacute;s</div>
+        <div class="hist-kcard__val" style="color:#8b5cf6">{{ metrics[3]?.value }}</div>
+        <div class="hist-kcard__sub">Cumul des p&eacute;riodes</div>
+      </div>
+
+    </div><!-- /kpi -->
+
+    <!-- FILTER BAR -->
+    <div class="hist-filter-card">
+      <div class="hist-filter-card__lbl">FILTRES &mdash; RECHERCHE DANS L&rsquo;HISTORIQUE</div>
+      <div class="hist-filters">
+        <!-- Search -->
+        <div class="hist-search-wrap">
+          <i class="ti ti-search hist-search-ico"></i>
+          <input type="text" [(ngModel)]="searchTerm" class="hist-search"
+                 placeholder="Nom de projet, client ou r&ocirc;le&hellip;" />
+        </div>
+        <!-- Status select -->
+        <div class="hist-sel-wrap">
+          <select [(ngModel)]="statusFilter" class="hist-sel">
+            <option value="all">Tous</option>
+            <option value="termine">Termin&eacute;</option>
+            <option value="suspendu">Suspendu</option>
+            <option value="annule">Annul&eacute;</option>
+          </select>
+          <i class="ti ti-chevron-down hist-sel-ico"></i>
+        </div>
+        <!-- Skills select -->
+        <div class="hist-sel-wrap">
+          <select class="hist-sel hist-sel--wide">
+            <option value="all">Toutes</option>
+            <option *ngFor="let skill of topSkillNames" [value]="skill">{{ skill }}</option>
+          </select>
+          <i class="ti ti-chevron-down hist-sel-ico"></i>
+        </div>
+        <!-- Export PDF ghost -->
+        <button type="button" class="hist-btn hist-btn--ghost hist-btn--h38">
+          <i class="ti ti-download"></i> Export PDF
+        </button>
+      </div>
+    </div>
+
+    <!-- MAIN 2-COL GRID -->
+    <div class="hist-main-grid">
+
+      <!-- LEFT: mission cards -->
+      <div>
+        <div class="hist-section-lbl">PARCOURS &mdash; MISSIONS ET CHRONOLOGIE</div>
+
+        <div class="hist-missions" *ngIf="filteredMissions.length; else emptyMissions">
+          <div *ngFor="let m of filteredMissions; trackBy: trackByMission"
+               class="hist-mcard"
+               [style.border-top-color]="missionBorderColor(m.statusTone)">
+
+            <!-- Row 1: client + status badge -->
+            <div class="hist-mcard__hd">
+              <span class="hist-mcard__client">{{ m.client | uppercase }}</span>
+              <span class="hist-mcard__badge"
+                    [class.hist-mcard__badge--hold]="m.statusTone === 'hold'"
+                    [class.hist-mcard__badge--done]="m.statusTone === 'done'"
+                    [class.hist-mcard__badge--cancel]="m.statusTone === 'cancel'">
+                {{ m.statusLabel }}
+              </span>
+            </div>
+
+            <!-- Row 2: name + desc -->
+            <div class="hist-mcard__name">{{ m.projectName }}</div>
+            <div class="hist-mcard__desc">{{ m.description }}</div>
+
+            <!-- Row 3: meta -->
+            <div class="hist-mcard__meta">
+              <span>{{ m.periodLabel }}</span>
+              <span class="hist-sep">&middot;</span>
+              <span>{{ m.role }}</span>
+              <span class="hist-sep">&middot;</span>
+              <span>{{ m.workedDays }} jours</span>
+            </div>
+
+            <!-- Row 4: compat bar -->
+            <div class="hist-mcard__compat">
+              <div class="hist-mcard__compat-hd">
+                <span>Compatibilit&eacute; mission</span>
+                <strong [style.color]="compatColor(m.compatibility)">{{ m.compatibility }}%</strong>
+              </div>
+              <div class="hist-bar">
+                <div class="hist-bar__fill"
+                     [style.width.%]="m.compatibility"
+                     [style.background]="compatColor(m.compatibility)"></div>
+              </div>
+            </div>
+
+            <!-- Row 5: skill tags -->
+            <div class="hist-mcard__skills">
+              <span *ngFor="let skill of m.skills" class="hist-skill-tag">{{ skill }}</span>
+            </div>
+
+            <!-- Row 6: actions -->
+            <div class="hist-mcard__actions">
+              <button type="button" class="hist-btn hist-btn--ghost hist-btn--sm"
+                      (click)="openMissionProfile(m)">Voir mon profil</button>
+              <button type="button" class="hist-btn hist-btn--ghost hist-btn--sm"
+                      (click)="openMissionProject(m)">Voir le projet</button>
+              <button *ngIf="m.statusTone !== 'done'"
+                      type="button" class="hist-btn hist-btn--primary hist-btn--sm"
+                      (click)="openMissionPlanning(m)">
+                <i class="ti ti-calendar"></i> Planning
+              </button>
+            </div>
+
+          </div>
+        </div>
+
+        <ng-template #emptyMissions>
+          <div class="hist-empty">
+            <i class="ti ti-history"></i>
+            Aucune mission correspondant aux filtres
+          </div>
+        </ng-template>
+      </div><!-- /left -->
+
+      <!-- RIGHT -->
+      <div class="hist-right-col">
+
+        <!-- Timeline card -->
+        <div class="hist-card">
+          <div class="hist-section-lbl">CHRONOLOGIE &mdash; &Eacute;V&Eacute;NEMENTS MARQUANTS</div>
+          <div class="hist-timeline" *ngIf="timeline.length; else emptyTimeline">
+            <div *ngFor="let item of timeline; trackBy: trackByTimeline" class="hist-tline__item">
+              <span class="hist-tline__dot" [style.background]="timelineDotColor(item.tone)"></span>
+              <div class="hist-tline__body">
+                <div class="hist-tline__title">{{ item.title }}</div>
+                <div class="hist-tline__sub">{{ item.subtitle }}</div>
+              </div>
+              <span class="hist-tline__date">{{ item.date | date:'d MMM':'':'fr-FR' }}</span>
+            </div>
+          </div>
+          <ng-template #emptyTimeline>
+            <div class="hist-empty">
+              <i class="ti ti-clock"></i> Aucun &eacute;v&eacute;nement
+            </div>
+          </ng-template>
+        </div>
+
+        <!-- Skills card -->
+        <div class="hist-card">
+          <div class="hist-section-lbl">COMP&Eacute;TENCES &mdash; LES PLUS MOBILIS&Eacute;ES</div>
+          <div class="hist-skills" *ngIf="topSkills.length; else emptySkills">
+            <div *ngFor="let skill of topSkills" class="hist-skill">
+              <div class="hist-skill__row">
+                <span class="hist-skill__name">{{ skill.name }}</span>
+                <span class="hist-skill__count">{{ skill.count }} mission(s)</span>
+              </div>
+              <div class="hist-bar">
+                <div class="hist-bar__fill" [style.background]="skill.color"
+                     [style.width.%]="skill.percent"></div>
+              </div>
+            </div>
+          </div>
+          <ng-template #emptySkills>
+            <div class="hist-empty"><i class="ti ti-tool"></i> Aucune comp&eacute;tence</div>
+          </ng-template>
+        </div>
+
+      </div><!-- /right -->
+
+    </div><!-- /main grid -->
+
+  </ng-container>
+</app-collaborateur-shell>

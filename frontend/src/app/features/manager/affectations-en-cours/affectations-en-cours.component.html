@@ -1,0 +1,46 @@
+<app-manager-shell activeSection="affectation">
+  <section class="manager-page">
+    <div class="page-shell">
+    <header class="page-hero">
+      <div class="page-header-copy">
+        <h1>Affectations en cours</h1>
+        <p>Suivez les affectations actives, modifiez les décisions si nécessaire et retrouvez rapidement les projets et collaborateurs mobilisés.</p>
+      </div>
+      <div class="hero-actions">
+        <a routerLink="/manager/affectation" class="btn btn--primary">Analyser une affectation</a>
+      </div>
+    </header>
+
+    <section class="toolbar">
+      <input [(ngModel)]="searchTerm" type="search" placeholder="Rechercher une affectation par projet ou collaborateur" />
+      <div class="toolbar-stats">
+        <span>{{ activeAffectations.length }} affectation(s) active(s)</span>
+        <span>Score moyen {{ averageScore }}%</span>
+      </div>
+    </section>
+
+    <section class="state-card" *ngIf="isLoading">Chargement des affectations...</section>
+    <section class="state-card state-card--error" *ngIf="!isLoading && errorMessage">{{ errorMessage }}</section>
+
+    <div class="list" *ngIf="!isLoading">
+      <article class="row" *ngFor="let affectation of activeAffectations; trackBy: trackByAffectation">
+        <div class="avatar">{{ initials(affectation) }}</div>
+        <div>
+          <strong>{{ affectation.collaborateur.prenom }} {{ affectation.collaborateur.nom }}</strong>
+          <span>{{ affectation.projet.nom }}</span>
+        </div>
+        <div class="meta">
+          <span>{{ affectation.score }}%</span>
+          <span>{{ affectation.dateAffectation | date:'dd MMM yyyy' }}</span>
+        </div>
+        <div class="row-btns">
+          <a [routerLink]="['/manager/detail-projet', affectation.projet.id]" class="btn btn--ghost">Détail projet</a>
+          <button type="button" class="btn btn--danger" (click)="supprimerAffectation(affectation.id)" [disabled]="deletingIds.has(affectation.id)">Annuler</button>
+        </div>
+      </article>
+
+      <section class="state-card" *ngIf="!activeAffectations.length">Aucune affectation en cours pour le moment.</section>
+    </div>
+    </div>
+  </section>
+</app-manager-shell>

@@ -1,0 +1,135 @@
+<app-manager-shell activeSection="affectation">
+<section class="maf-page">
+
+  <!-- TOPBAR -->
+  <div class="maf-topbar">
+    <a [routerLink]="listRoute" class="maf-back">
+      <svg viewBox="0 0 16 16" fill="none"><path d="M10 12L6 8l4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Retour aux affectations
+    </a>
+    <h1 class="maf-title">Modifier l'affectation</h1>
+    <p class="maf-sub">Réassigner le collaborateur pour ce projet</p>
+  </div>
+
+  <!-- LOADER -->
+  <div *ngIf="isLoading" class="maf-loader">
+    <div class="maf-spinner"></div>
+    <span>Chargement de l'affectation…</span>
+  </div>
+
+  <!-- ERROR -->
+  <div *ngIf="errorMessage && !isLoading" class="maf-alert maf-alert--error">
+    <svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.4"/><path d="M8 5v3.5M8 11h.01" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+    {{ errorMessage }}
+  </div>
+
+  <!-- CONTENT -->
+  <div class="maf-grid" *ngIf="!isLoading && affectation">
+
+    <!-- LEFT: form -->
+    <div class="maf-card">
+
+      <!-- Projet (readonly) -->
+      <div class="maf-section">
+        <h2 class="maf-section__title">
+          <svg viewBox="0 0 16 16" fill="none"><path d="M2 4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V4Z" stroke="currentColor" stroke-width="1.4"/><path d="M5 8h6M5 5h3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+          Projet
+        </h2>
+        <div class="maf-field maf-field--readonly">
+          <label class="maf-label">Projet affecté</label>
+          <div class="maf-readonly-val">{{ affectation.projet?.nom ?? '—' }}</div>
+        </div>
+        <div class="maf-row">
+          <div class="maf-field maf-field--readonly">
+            <label class="maf-label">Statut</label>
+            <div class="maf-readonly-val">{{ affectation.projet?.statut ?? '—' }}</div>
+          </div>
+          <div class="maf-field maf-field--readonly">
+            <label class="maf-label">Date d'affectation</label>
+            <div class="maf-readonly-val">{{ affectation.dateAffectation | date:'dd/MM/yyyy' }}</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="maf-divider"></div>
+
+      <!-- Collaborateur (editable) -->
+      <div class="maf-section">
+        <h2 class="maf-section__title">
+          <svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="5" r="2.5" stroke="currentColor" stroke-width="1.4"/><path d="M3 13c0-2.761 2.239-5 5-5s5 2.239 5 5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+          Collaborateur
+        </h2>
+
+        <div class="maf-field">
+          <label class="maf-label" for="collab-select">Sélectionner un collaborateur <span class="maf-required">*</span></label>
+          <select
+            id="collab-select"
+            class="maf-select"
+            [(ngModel)]="selectedCollaborateurId">
+            <option [ngValue]="null" disabled>— Choisir un collaborateur —</option>
+            <option *ngFor="let c of collaborateurs" [ngValue]="c.id">
+              {{ c.prenom }} {{ c.nom }} · {{ c.experienceAnnees }} ans · {{ c.disponible ? 'Disponible' : 'Indisponible' }}
+            </option>
+          </select>
+        </div>
+
+        <div class="maf-field maf-field--readonly">
+          <label class="maf-label">Score de compatibilité actuel</label>
+          <div class="maf-score-row">
+            <div class="maf-score-bar">
+              <div class="maf-score-fill" [style.width.%]="affectation.score"></div>
+            </div>
+            <span class="maf-score-val">{{ affectation.score }}%</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="maf-actions">
+        <a [routerLink]="listRoute" class="maf-btn maf-btn--ghost">Annuler</a>
+        <button
+          type="button"
+          class="maf-btn maf-btn--primary"
+          [disabled]="formInvalid || isSaving"
+          (click)="sauvegarder()">
+          <svg viewBox="0 0 16 16" fill="none"><path d="M13 9v4a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M8 3v7M5.5 5.5L8 3l2.5 2.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          {{ isSaving ? 'Enregistrement…' : 'Enregistrer' }}
+        </button>
+      </div>
+    </div>
+
+    <!-- RIGHT: summary -->
+    <aside class="maf-summary">
+      <div class="maf-summary__hdr">
+        <span class="maf-summary__label">Résumé de l'affectation</span>
+      </div>
+
+      <div class="maf-summary__block">
+        <span class="maf-summary__key">Projet</span>
+        <span class="maf-summary__val">{{ affectation.projet?.nom ?? '—' }}</span>
+      </div>
+
+      <div class="maf-summary__block">
+        <span class="maf-summary__key">Collaborateur actuel</span>
+        <span class="maf-summary__val">{{ affectation.collaborateur?.prenom }} {{ affectation.collaborateur?.nom }}</span>
+      </div>
+
+      <div class="maf-summary__block" *ngIf="selectedCollaborateur && selectedCollaborateur.id !== affectation.collaborateur?.id">
+        <span class="maf-summary__key maf-summary__key--new">Nouveau collaborateur</span>
+        <span class="maf-summary__val maf-summary__val--new">{{ selectedCollaborateur.prenom }} {{ selectedCollaborateur.nom }}</span>
+      </div>
+
+      <div class="maf-summary__block">
+        <span class="maf-summary__key">Score</span>
+        <span class="maf-summary__val">{{ affectation.score }}%</span>
+      </div>
+
+      <div class="maf-summary__block">
+        <span class="maf-summary__key">Date</span>
+        <span class="maf-summary__val">{{ affectation.dateAffectation | date:'dd/MM/yyyy' }}</span>
+      </div>
+    </aside>
+  </div>
+
+</section>
+</app-manager-shell>

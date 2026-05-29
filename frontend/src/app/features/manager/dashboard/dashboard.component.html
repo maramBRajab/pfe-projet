@@ -1,0 +1,333 @@
+﻿<section class="db-root">
+
+  <!-- ══ SIDEBAR ═════════════════════════════════════════════ -->
+  <aside class="db-sidebar">
+    <div class="db-sidebar__brand">
+      <div class="db-logo">SA</div>
+      <div>
+        <div class="db-brand-name">SmartAssign</div>
+        <div class="db-brand-tag">ESPACE MANAGER</div>
+      </div>
+    </div>
+
+    <nav class="db-nav">
+      <p class="db-nav__section">Principal</p>
+      <a class="db-nav__item db-nav__item--active" routerLink="/manager/dashboard">
+        <i class="ti ti-layout-dashboard db-nav__ico"></i>
+        Dashboard
+      </a>
+
+      <p class="db-nav__section db-nav__section--spaced">Gestion</p>
+      <a class="db-nav__item" routerLink="/manager/projets">
+        <i class="ti ti-folder db-nav__ico"></i>
+        Projets
+        <span class="db-nav__badge db-nav__badge--blue">{{ projets.length }}</span>
+      </a>
+      <a class="db-nav__item" routerLink="/manager/collaborateurs">
+        <i class="ti ti-users db-nav__ico"></i>
+        Collaborateurs
+        <span class="db-nav__badge db-nav__badge--blue">{{ collaborateurs.length }}</span>
+      </a>
+      <a class="db-nav__item" routerLink="/manager/charge-travail">
+        <i class="ti ti-chart-bar db-nav__ico"></i>
+        Charge de travail
+      </a>
+
+      <p class="db-nav__section db-nav__section--spaced">Affectations</p>
+      <a class="db-nav__item" routerLink="/manager/affectation">
+        <i class="ti ti-arrow-right db-nav__ico"></i>
+        Affectations IA
+        <span class="db-nav__badge db-nav__badge--red">0</span>
+      </a>
+      <a class="db-nav__item" routerLink="/manager/historique-affectations">
+        <i class="ti ti-history db-nav__ico"></i>
+        Historique
+      </a>
+
+      <a class="db-nav__item" routerLink="/manager/notifications" routerLinkActive="db-nav__item--active">
+        <i class="ti ti-bell db-nav__ico"></i>
+        Notifications
+        <span class="db-nav__badge db-nav__badge--blue">3</span>
+      </a>
+    </nav>
+
+    <div class="db-sidebar__footer">
+      <div class="db-user-block">
+        <div class="db-av db-av--green db-av--md">MS</div>
+        <div class="db-user-info">
+          <div class="db-user-name">Manager SmartAssign</div>
+          <div class="db-user-role">Manager</div>
+        </div>
+      </div>
+      <button type="button" class="db-logout" (click)="logout()">
+        <i class="ti ti-logout"></i>
+        Déconnexion
+      </button>
+    </div>
+  </aside>
+
+  <!-- ══ MAIN ═════════════════════════════════════════════════ -->
+  <div class="db-main">
+
+    <!-- TOPBAR -->
+    <div class="db-topbar">
+      <div class="db-topbar__left">
+        <nav class="db-breadcrumb">
+          <span>SmartAssign</span>
+          <span class="db-breadcrumb__sep">›</span>
+          <span>Manager</span>
+          <span class="db-breadcrumb__sep">›</span>
+          <span class="db-breadcrumb__cur">Dashboard</span>
+        </nav>
+        <h1 class="db-title">Supervision globale</h1>
+      </div>
+      <div class="db-topbar__right">
+        <div class="db-status-pill">
+          <span class="db-dot db-dot--green"></span>
+          Flux maîtrisé
+        </div>
+        <button type="button" class="db-btn db-btn--primary db-btn--pill" (click)="openNewProject()">
+          <i class="ti ti-plus"></i>
+          Nouveau projet
+        </button>
+        <div class="db-av db-av--green db-av--topbar">MS</div>
+      </div>
+    </div>
+
+    <!-- CONTENT -->
+    <div class="db-content">
+
+      <p class="db-date-label">Pilotage — {{ currentDate | date:'EEEE d MMMM yyyy' : '' : 'fr' }}</p>
+
+      <!-- KPI GRID -->
+      <div class="db-kpi-grid">
+
+        <div class="db-kpi">
+          <div class="db-kpi__bar" style="background:#3b82f6"></div>
+          <div class="db-kpi__head"><span class="db-badge db-badge--neutral">Pilotage</span></div>
+          <div class="db-kpi__label">PROJETS ACTIFS</div>
+          <div class="db-kpi__val" style="color:#3b82f6">{{ kpiCards[0].value }}</div>
+          <div class="db-kpi__sub">{{ kpiCards[0].sub }}</div>
+        </div>
+
+        <div class="db-kpi">
+          <div class="db-kpi__bar" style="background:#10b981"></div>
+          <div class="db-kpi__head"><span class="db-badge db-badge--neutral">Stable</span></div>
+          <div class="db-kpi__label">RESSOURCES DISPONIBLES</div>
+          <div class="db-kpi__val" style="color:#10b981">{{ kpiCards[1].value }}</div>
+          <div class="db-kpi__sub">{{ kpiCards[1].sub }}</div>
+        </div>
+
+        <div class="db-kpi">
+          <div class="db-kpi__bar" style="background:#8b5cf6"></div>
+          <div class="db-kpi__head"><span class="db-badge db-badge--neutral">Pilotage</span></div>
+          <div class="db-kpi__label">AFFECTATIONS EN COURS</div>
+          <div class="db-kpi__val" style="color:#8b5cf6">{{ kpiCards[2].value }}</div>
+          <div class="db-kpi__sub">{{ kpiCards[2].sub }}</div>
+        </div>
+
+        <div class="db-kpi">
+          <div class="db-kpi__bar" style="background:#f59e0b"></div>
+          <div class="db-kpi__head"><span class="db-badge db-badge--vigilance">Vigilance</span></div>
+          <div class="db-kpi__label">TAUX D'AFFECTATION</div>
+          <div class="db-kpi__val" style="color:#f59e0b">{{ tauxAffectation }}</div>
+          <div class="db-kpi__sub">Cible recommandée : 72%</div>
+        </div>
+
+        <div class="db-kpi">
+          <div class="db-kpi__bar" style="background:#ef4444"></div>
+          <div class="db-kpi__head"><span class="db-badge db-badge--neutral">Pilotage</span></div>
+          <div class="db-kpi__label">ALERTES PRIORITAIRES</div>
+          <div class="db-kpi__val" style="color:#ef4444">{{ kpiCards[4].value }}</div>
+          <div class="db-kpi__sub">{{ kpiCards[4].sub }}</div>
+        </div>
+
+        <div class="db-kpi">
+          <div class="db-kpi__bar" style="background:#8b5cf6"></div>
+          <div class="db-kpi__head"><span class="db-badge db-badge--ia">IA</span></div>
+          <div class="db-kpi__label">COMPATIBILITÉ IA MOYENNE</div>
+          <div class="db-kpi__val" style="color:#8b5cf6">{{ kpiCards[5].value }}</div>
+          <div class="db-kpi__sub">score moyen recommandations</div>
+        </div>
+
+      </div>
+
+      <!-- MAIN GRID (2 col) -->
+      <div class="db-main-grid">
+
+        <!-- LEFT COLUMN -->
+        <div class="db-left-col">
+
+          <!-- Projets card -->
+          <div class="db-card">
+            <div class="db-card__hd">
+              <div>
+                <p class="db-section-lbl">PILOTAGE</p>
+                <h2 class="db-card__title">Projets sous supervision</h2>
+              </div>
+              <a class="db-btn db-btn--ghost db-btn--pill" routerLink="/manager/projets">Voir tout →</a>
+            </div>
+            <div class="db-proj-list">
+              <div class="db-proj"
+                   *ngFor="let p of projets"
+                   [style.border-left-color]="projBorderColor(p)">
+                <div class="db-proj__row1">
+                  <strong class="db-proj__name">{{ p.name }}</strong>
+                  <span class="db-proj__status"
+                        [ngClass]="p.statusClass === 'active' ? 'db-proj__status--active' : 'db-proj__status--pending'">
+                    {{ p.status }}
+                  </span>
+                </div>
+                <div class="db-proj__row2">
+                  <div class="db-proj__client">
+                    <div class="db-av db-av--sm" [style.background]="projClientColor(p.client)">{{ clientInitials(p.client) }}</div>
+                    <span>{{ p.client }}</span>
+                  </div>
+                  <span class="db-deadline-pill">Échéance {{ p.deadline | date:'dd/MM/yyyy' }}</span>
+                </div>
+                <div class="db-proj__resources">
+                  {{ p.resourceCount }} ressource(s){{ p.resourceCount > 0 ? ' affectée(s)' : '' }}
+                </div>
+                <div class="db-pbar">
+                  <div class="db-pbar__fill" [style.width.%]="p.progress" [style.background]="projProgressColor(p.progressColor)"></div>
+                </div>
+                <div class="db-proj__pct">{{ p.progress }}%</div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- RIGHT COLUMN -->
+        <div class="db-right-col">
+
+          <!-- Décision IA -->
+          <div class="db-card">
+            <div class="db-card__hd db-card__hd--row">
+              <div class="db-ia-title">
+                <i class="ti ti-sparkles db-ia-icon"></i>
+                <span>Décision assistée IA</span>
+              </div>
+              <span class="db-badge db-badge--ia">Assistant IA</span>
+            </div>
+            <div class="db-ia-empty">
+              <i class="ti ti-robot db-ia-empty__robot"></i>
+              <p class="db-ia-empty__text">Posez une question à l'assistant IA ou lancez une analyse de recommandation.</p>
+              <a class="db-btn db-btn--primary db-btn--block" routerLink="/manager/affectation">
+                <i class="ti ti-arrow-right"></i>
+                Lancer l'analyse
+              </a>
+            </div>
+          </div>
+
+          <!-- Points de vigilance -->
+          <div class="db-card">
+            <h2 class="db-vigilance-title">Points de vigilance</h2>
+            <div class="db-vigilance-item"
+                 *ngFor="let a of alertes"
+                 [class.db-vigilance-item--info]="a.type === 'info' || a.type === 'success'"
+                 [class.db-vigilance-item--warn]="a.type === 'warning'"
+                 [class.db-vigilance-item--danger]="a.type === 'danger'">
+              <i class="ti db-vigilance-item__ico"
+                 [class.ti-info-circle]="a.type === 'info' || a.type === 'success'"
+                 [class.ti-alert-triangle]="a.type === 'warning'"
+                 [class.ti-alert-octagon]="a.type === 'danger'"
+                 [class.db-vigilance-item__ico--warn]="a.type === 'warning'"
+                 [class.db-vigilance-item__ico--danger]="a.type === 'danger'"></i>
+              <div class="db-vigilance-item__body">
+                <div class="db-vigilance-item__title">{{ a.message }}</div>
+                <div class="db-vigilance-item__sub">{{ a.sub }}</div>
+              </div>
+              <span class="db-badge"
+                    [class.db-badge--info]="a.type === 'info' || a.type === 'success'"
+                    [class.db-badge--warn]="a.type === 'warning'"
+                    [class.db-badge--urgent]="a.type === 'danger'">
+                {{ a.type === 'danger' ? 'URGENT' : (a.type | uppercase) }}
+              </span>
+            </div>
+            <p class="db-no-alert" *ngIf="alertes.length === 0">Aucune alerte active.</p>
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- Collaborateurs card (full width) -->
+      <div class="db-card db-card--mt">
+        <div class="db-card__hd">
+          <div>
+            <p class="db-section-lbl">RESSOURCES HUMAINES</p>
+            <h2 class="db-card__title">Charge et disponibilité des collaborateurs</h2>
+          </div>
+          <a class="db-btn db-btn--ghost" routerLink="/manager/charge-travail">Voir l'analyse complète →</a>
+        </div>
+        <div class="db-collab-grid db-collab-grid--full">
+          <div class="db-collab-card"
+               *ngFor="let c of collaborateurs">
+            <div class="db-av db-av--lg" [style.background]="c.color">{{ c.initials }}</div>
+            <div class="db-collab-info">
+              <div class="db-collab-info__top">
+                <div>
+                  <div class="db-collab-name">{{ c.name }}</div>
+                  <div class="db-collab-role">{{ c.role }}</div>
+                </div>
+                <span class="db-collab-badge"
+                      [ngClass]="c.statusClass === 'available' ? 'db-collab-badge--available' : 'db-collab-badge--occupied'">
+                  {{ c.status }}
+                </span>
+              </div>
+              <div class="db-pbar db-pbar--mt">
+                <div class="db-pbar__fill" [style.width.%]="c.loadPercent" [style.background]="collabProgressColor(c.statusClass)"></div>
+              </div>
+              <div class="db-collab-sub">{{ c.loadPercent }}% de charge · {{ c.projectCount }} projet(s)</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Historique card (full width) -->
+      <div class="db-card db-card--mt">
+        <div class="db-card__hd">
+          <div>
+            <p class="db-section-lbl">TRAÇABILITÉ</p>
+            <h2 class="db-card__title">Historique des affectations</h2>
+          </div>
+          <div class="db-hd-right">
+            <a class="db-btn db-btn--ghost db-btn--pill" routerLink="/manager/affectation">Voir tout →</a>
+          </div>
+        </div>
+        <table class="db-table">
+          <thead>
+            <tr>
+              <th>COLLABORATEUR</th>
+              <th>PROJET · RÔLE</th>
+              <th>SCORE IA</th>
+              <th>DATE</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let h of filteredHistory.slice(0, 3)">
+              <td>
+                <div class="db-person">
+                  <div class="db-av db-av--sm" [style.background]="h.collaborateurColor">{{ h.collaborateurInit }}</div>
+                  <span>{{ h.collaborateurNom }}</span>
+                </div>
+              </td>
+              <td class="db-table__sub">{{ h.projet }} · {{ h.profil }}</td>
+              <td><strong [style.color]="scoreColor(h.score)">{{ h.score }}%</strong></td>
+              <td><span class="db-date-pill">{{ h.date | date:'dd/MM/yyyy' }}</span></td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="db-table-footer">
+          <span class="db-table-footer__count">
+            <span class="db-dot db-dot--green"></span>
+            {{ affectations.length }} affectation(s) au total
+          </span>
+          <a class="db-link" routerLink="/manager/affectation">Voir l'historique complet →</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</section>

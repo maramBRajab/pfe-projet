@@ -1,0 +1,148 @@
+<app-collaborateur-shell activeSection="notifications">
+
+  <!-- ── TOPBAR ── -->
+  <div shell-topbar class="ntf-topbar">
+    <div class="ntf-topbar__left">
+      <div class="ntf-breadcrumb">SmartAssign &rsaquo; Collaborateur &rsaquo; Notifications</div>
+      <div class="ntf-title">Mes notifications</div>
+    </div>
+    <div class="ntf-topbar__right">
+      <!-- Status pill -->
+      <div class="ntf-status-pill" [class.ntf-status-pill--green]="headerStatusIsGreen" [class.ntf-status-pill--amber]="!headerStatusIsGreen">
+        <span class="ntf-status-dot"></span>
+        <span class="ntf-status-lbl">{{ headerStatusLabel }}</span>
+      </div>
+      <!-- Refresh -->
+      <button type="button" class="ntf-btn ntf-btn--ghost ntf-btn--sm" (click)="refresh()">
+        <i class="ti ti-refresh"></i> Actualiser
+      </button>
+      <!-- Avatar -->
+      <div class="ntf-av">CD</div>
+    </div>
+  </div>
+
+  <!-- ── KPI GRID ── -->
+  <div class="ntf-kpi-grid">
+
+    <!-- Total -->
+    <div class="ntf-kcard">
+      <div class="ntf-kcard__bar ntf-kcard__bar--blue"></div>
+      <div class="ntf-kcard__hd">
+        <div class="ntf-kcard__lbl">TOTAL DES ALERTES</div>
+        <span class="ntf-kbadge ntf-kbadge--gray">Boîte</span>
+      </div>
+      <div class="ntf-kcard__val" style="color:#3b82f6">{{ totalCount }}</div>
+      <div class="ntf-kcard__sub">Flux collaborateur</div>
+    </div>
+
+    <!-- Infos -->
+    <div class="ntf-kcard">
+      <div class="ntf-kcard__bar ntf-kcard__bar--green"></div>
+      <div class="ntf-kcard__hd">
+        <div class="ntf-kcard__lbl">INFORMATIONS</div>
+        <span class="ntf-kbadge ntf-kbadge--gray">Flux</span>
+      </div>
+      <div class="ntf-kcard__val" style="color:#10b981">{{ infoCount }}</div>
+      <div class="ntf-kcard__sub">Messages utiles</div>
+    </div>
+
+    <!-- Vigilances -->
+    <div class="ntf-kcard">
+      <div class="ntf-kcard__bar ntf-kcard__bar--amber"></div>
+      <div class="ntf-kcard__hd">
+        <div class="ntf-kcard__lbl">VIGILANCES</div>
+        <span class="ntf-kbadge ntf-kbadge--amber">Suivi</span>
+      </div>
+      <div class="ntf-kcard__val" style="color:#f59e0b">{{ warningCount }}</div>
+      <div class="ntf-kcard__sub">Points à surveiller</div>
+    </div>
+
+    <!-- Critiques -->
+    <div class="ntf-kcard">
+      <div class="ntf-kcard__bar ntf-kcard__bar--red"></div>
+      <div class="ntf-kcard__hd">
+        <div class="ntf-kcard__lbl">CRITIQUES</div>
+        <span class="ntf-kbadge ntf-kbadge--red">Priorité</span>
+      </div>
+      <div class="ntf-kcard__val" style="color:#1e293b">{{ dangerCount }}</div>
+      <div class="ntf-kcard__sub">Réponse attendue</div>
+    </div>
+
+  </div><!-- /kpi-grid -->
+
+  <!-- ── NOTIFICATIONS CARD ── -->
+  <div class="ntf-card">
+
+    <!-- Header row -->
+    <div class="ntf-card__hd">
+      <div>
+        <div class="ntf-card__kicker">VUE D&rsquo;ENSEMBLE</div>
+        <div class="ntf-card__title">Flux des notifications collaborateur</div>
+      </div>
+      <div class="ntf-card__actions">
+        <!-- Filter tabs -->
+        <button type="button" class="ntf-tab" [class.ntf-tab--active]="activeFilter === 'all'"     (click)="activeFilter = 'all'">Toutes ({{ totalCount }})</button>
+        <button type="button" class="ntf-tab" [class.ntf-tab--active]="activeFilter === 'danger'"  (click)="activeFilter = 'danger'">Critiques ({{ dangerCount }})</button>
+        <button type="button" class="ntf-tab" [class.ntf-tab--active]="activeFilter === 'warning'" (click)="activeFilter = 'warning'">Vigilances ({{ warningCount }})</button>
+        <button type="button" class="ntf-tab" [class.ntf-tab--active]="activeFilter === 'info'"    (click)="activeFilter = 'info'">Infos ({{ infoCount }})</button>
+        <!-- Mark all read -->
+        <button type="button" class="ntf-btn ntf-btn--ghost ntf-btn--sm" (click)="markAllRead()">
+          <i class="ti ti-check"></i> Tout marquer lu
+        </button>
+      </div>
+    </div>
+
+    <!-- Notification items -->
+    <div *ngIf="filteredNotifications.length; else emptyState">
+      <div *ngFor="let n of filteredNotifications; trackBy: trackByNotification"
+           class="ntf-item"
+           [class.ntf-item--read]="isRead(n)"
+           [style.background]="bgColor(n)"
+           [style.border-color]="borderColor(n)"
+           [style.border-left-color]="accentColor(n)">
+
+        <!-- Icon -->
+        <div class="ntf-item__ico" [style.border-color]="borderColor(n)">
+          <i [class]="iconClass(n)" [style.color]="accentColor(n)"></i>
+        </div>
+
+        <!-- Body -->
+        <div class="ntf-item__body">
+          <div class="ntf-item__title-row">
+            <span class="ntf-item__title">{{ n.titre }}</span>
+            <span class="ntf-item__badge"
+                  [style.background]="badgeBg(n)"
+                  [style.color]="badgeColor(n)">{{ label(n) }}</span>
+          </div>
+          <div class="ntf-item__sub">{{ n.type }} — {{ parseDate(n) | date:'d MMMM yyyy':'':'fr-FR' }}</div>
+          <div class="ntf-item__msg" *ngIf="n.message">{{ n.message }}</div>
+          <div class="ntf-item__btns">
+            <button type="button" class="ntf-btn ntf-btn--ghost ntf-btn--xs">
+              <i class="ti ti-pencil"></i> Mettre à jour
+            </button>
+            <button type="button" class="ntf-btn ntf-btn--ghost ntf-btn--xs" (click)="markRead(n)" [disabled]="isRead(n)">
+              <i class="ti ti-check"></i> Marquer lu
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Empty state -->
+    <ng-template #emptyState>
+      <div class="ntf-empty">
+        <i class="ti ti-bell-off ntf-empty__ico"></i>
+        <p class="ntf-empty__txt">Aucune autre notification pour le moment.</p>
+      </div>
+    </ng-template>
+
+    <!-- Empty state below items when list has items -->
+    <div class="ntf-empty ntf-empty--below" *ngIf="filteredNotifications.length">
+      <i class="ti ti-bell-off ntf-empty__ico"></i>
+      <p class="ntf-empty__txt">Aucune autre notification pour le moment.</p>
+    </div>
+
+  </div><!-- /ntf-card -->
+
+</app-collaborateur-shell>

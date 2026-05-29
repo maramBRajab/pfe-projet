@@ -1,0 +1,145 @@
+package com.smartassign.pfe.controller;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.smartassign.pfe.dto.ManagerNotificationDto;
+import com.smartassign.pfe.entity.Affectation;
+import com.smartassign.pfe.entity.Collaborateur;
+import com.smartassign.pfe.entity.Projet;
+import com.smartassign.pfe.repository.AffectationRepository;
+import com.smartassign.pfe.repository.ProjetRepository;
+
+@RestController
+@RequestMapping("/api/manager/notifications")
+public class ManagerNotificationController {
+
+    private final ProjetRepository projetRepository;
+    private final AffectationRepository affectationRepository;
+
+    @Autowired
+    public ManagerNotificationController(ProjetRepository projetRepository,
+                                         AffectationRepository affectationRepository) {
+        this.projetRepository = projetRepository;
+        this.affectationRepository = affectationRepository;
+    }
+
+    @GetMapping
+    public List<ManagerNotificationDto> list() {
+        List<ManagerNotificationDto> notifs = new ArrayList<>();
+        long idSeq = 1L;
+
+        // 1) Affectations récentes (10 dernières) → type AFFECTATION
+        List<Affectation> affectations = affectationRepository.findAllOrderByDateDesc();
+        int limit = Math.min(affectations.size(), 10);
+        for (int i = 0; i < limit; i++) {
+            Affectation a = affectations.get(i);
+            Collaborateur c = a.getCollaborateur();
+            Projet p = a.getProjet();
+            if (c == null || p == null) continue;
+
+            String collabNom = safe(c.getPrenom()) + " " + safe(c.getNom());
+            int scorePct = (int) Math.round(a.getScore());
+            String categorie = categorieScore(scorePct);
+
+            notifs.add(new ManagerNotificationDto(
+                idSeq++,
+                "Affectation confirmée — " + collabNom.trim() + " → " + safe(p.getNom()),
+                "Score IA : " + scorePct + "% · Catégorie : " + categorie,
+                formatTemps(a.getDateAffectation()),
+                "AFFECTATION",
+                false,
+                "ti-check",
+                "icon-green",
+                "badge-affectation"
+            ));
+        }
+
+        // 2) Projets qui expirent dans <= 30 jours → type VIGILANCE
+        LocalDate today = LocalDate.now();
+        for (Projet p : projetRepository.findAll()) {
+            if (p.getDateFin() == null) continue;
+            long days = ChronoUnit.DAYS.between(today, p.getDateFin());
+            if (days < 0 || days > 30) continue;
+
+            long affCount = affectationRepository.findByProjetId(p.getId()).size();
+            String description = affCount == 0
+                ? "Aucune affectation définitive confirmée"
+                : affCount + " ressource(s) affectée(s)";
+
+            notifs.add(new ManagerNotificationDto(
+                idSeq++,
+                "Projet " + safe(p.getNom()) + " expire dans " + days + " jour" + (days > 1 ? "s" : ""),
+                description,
+                "Échéance : " + p.getDateFin(),
+                "VIGILANCE",
+                false,
+                "ti-alert-triangle",
+                "icon-amber",
+                "badge-vigilance"
+            ));
+        }
+
+        // 3) Analyses IA (synthèse par projet ayant au moins une affectation récente) → type IA
+        for (Projet p : projetRepository.findAll()) {
+            List<Affectation> aff = affectationRepository.findByProjetIdOrderByScoreDesc(p.getId());
+            if (aff.isEmpty()) continue;
+            double moyenne = aff.stream().mapToDouble(Affectation::getScore).average().orElse(0);
+            LocalDateTime derniere = aff.stream()
+                .map(Affectation::getDateAffectation)
+                .filter(d -> d != null)
+                .max(Comparator.naturalOrder())
+                .orElse(null);
+
+            notifs.add(new ManagerNotificationDto(
+                idSeq++,
+                "Analyse IA terminée — " + safe(p.getNom()),
+                aff.size() + " collaborateur(s) trouvé(s) · Score moyen " + (int) Math.round(moyenne) + "%",
+                formatTemps(derniere),
+                "IA",
+                false,
+                "ti-robot",
+                "icon-green",
+                "badge-ia"
+            ));
+        }
+
+        // Tri global : plus récent en premier (basé sur le champ temps lexical de secours)
+        notifs.sort(Comparator.comparing(ManagerNotificationDto::getTemps,
+            Comparator.nullsLast(Comparator.reverseOrder())));
+
+        return notifs;
+    }
+
+    private String formatTemps(LocalDateTime dt) {
+        if (dt == null) return "";
+        LocalDate today = LocalDate.now();
+        String hhmm = String.format("%02d:%02d", dt.getHour(), dt.getMinute());
+        if (dt.toLocalDate().isEqual(today)) {
+            return "Aujourd'hui " + hhmm;
+        }
+        if (dt.toLocalDate().isEqual(today.minusDays(1))) {
+            return "Hier " + hhmm;
+        }
+        return dt.toLocalDate() + " " + hhmm;
+    }
+
+    private String categorieScore(int score) {
+        if (score >= 80) return "Excellent";
+        if (score >= 65) return "Très bon";
+        if (score >= 50) return "Bon";
+        if (score >= 35) return "Moyen";
+        return "Faible";
+    }
+
+    private String safe(String s) { return s == null ? "" : s; }
+}

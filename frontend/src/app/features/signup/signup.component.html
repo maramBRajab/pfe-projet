@@ -1,0 +1,276 @@
+<section class="su-root">
+
+  <!-- ══ LEFT PANEL ═══════════════════════════════════════════════════ -->
+  <aside class="su-left">
+
+    <!-- Logo top-left -->
+    <div class="su-brand">
+      <img src="assets/logo sopra.png" alt="Sopra HR" class="app-logo su-brand__logo" />
+      <div class="su-brand__text">
+        <div class="su-brand__name">SmartAssign</div>
+        <div class="su-brand__tag">Sopra HR Software</div>
+      </div>
+    </div>
+
+    <!-- Back link -->
+    <a routerLink="/" class="su-back">
+      <i class="ti ti-arrow-left"></i>
+      <span>Retour à l'accueil</span>
+    </a>
+
+    <!-- Tag pill -->
+    <div class="su-pill">
+      <i class="ti ti-cpu"></i>
+      <span>REJOINDRE LA PLATEFORME</span>
+    </div>
+
+    <!-- Heading -->
+    <h1 class="su-title">
+      Créez votre<br>
+      compte <span class="su-title__hl">SmartAssign</span>
+    </h1>
+
+    <p class="su-desc">
+      Rejoignez un espace clair et cohérent pour gérer votre profil,
+      vos disponibilités et vos futures affectations.
+    </p>
+
+    <!-- Step cards (decorative) -->
+    <div class="su-steps">
+      <div class="su-step" [class.su-step--active]="currentStep === 1">
+        <div class="su-step__left">
+          <div class="su-step__ico su-step__ico--blue"><i class="ti ti-user"></i></div>
+          <div class="su-step__body">
+            <div class="su-step__title">Informations personnelles</div>
+            <div class="su-step__sub">Nom, prénom, email et mot de passe</div>
+          </div>
+        </div>
+        <div class="su-step__num">1</div>
+      </div>
+
+      <div class="su-step" [class.su-step--active]="currentStep === 2">
+        <div class="su-step__left">
+          <div class="su-step__ico su-step__ico--green"><i class="ti ti-shield-check"></i></div>
+          <div class="su-step__body">
+            <div class="su-step__title">Rôle &amp; profil</div>
+            <div class="su-step__sub">Collaborateur, Manager ou Admin</div>
+          </div>
+        </div>
+        <div class="su-step__num">2</div>
+      </div>
+
+      <div class="su-step" [class.su-step--active]="currentStep === 3">
+        <div class="su-step__left">
+          <div class="su-step__ico su-step__ico--purple"><i class="ti ti-star"></i></div>
+          <div class="su-step__body">
+            <div class="su-step__title">Compétences</div>
+            <div class="su-step__sub">Vos expertises et disponibilités</div>
+          </div>
+        </div>
+        <div class="su-step__num">3</div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ══ RIGHT PANEL ══════════════════════════════════════════════════ -->
+  <main class="su-right">
+    <div class="su-card">
+
+      <!-- Header -->
+      <header class="su-card__head">
+        <img src="assets/logo sopra.png" alt="Sopra HR" class="app-logo su-card__logo" />
+        <div>
+          <div class="su-card__title">Créer un compte</div>
+          <div class="su-card__sub">Renseignez vos informations pour rejoindre la plateforme</div>
+        </div>
+      </header>
+
+      <!-- Tabs -->
+      <nav class="su-tabs">
+        <button type="button" class="su-tab"
+          [class.su-tab--active]="currentStep === 1"
+          (click)="goToStep(1)">Infos</button>
+        <button type="button" class="su-tab"
+          [class.su-tab--active]="currentStep === 2"
+          (click)="goToStep(2)">Rôle</button>
+        <button type="button" class="su-tab"
+          [class.su-tab--active]="currentStep === 3"
+          (click)="goToStep(3)">Compétences</button>
+      </nav>
+
+      <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+
+        <!-- ── STEP 1 : INFOS ───────────────────────────────────── -->
+        <ng-container *ngIf="currentStep === 1">
+
+          <div class="su-row su-row--two">
+            <div class="su-field">
+              <label class="su-label">NOM</label>
+              <div class="su-input-wrap">
+                <i class="ti ti-user su-input-wrap__ico"></i>
+                <input type="text" class="su-input" formControlName="nom"
+                  placeholder="Votre nom" autocomplete="family-name">
+              </div>
+            </div>
+            <div class="su-field">
+              <label class="su-label">PRÉNOM</label>
+              <div class="su-input-wrap">
+                <i class="ti ti-user su-input-wrap__ico"></i>
+                <input type="text" class="su-input" formControlName="prenom"
+                  placeholder="Votre prénom" autocomplete="given-name">
+              </div>
+            </div>
+          </div>
+
+          <div class="su-field">
+            <label class="su-label">ADRESSE EMAIL</label>
+            <div class="su-input-wrap">
+              <i class="ti ti-mail su-input-wrap__ico"></i>
+              <input type="email" class="su-input" formControlName="email"
+                placeholder="vous@smartassign.tn" autocomplete="email">
+            </div>
+          </div>
+
+          <div class="su-field">
+            <label class="su-label">MOT DE PASSE</label>
+            <div class="su-input-wrap">
+              <i class="ti ti-lock su-input-wrap__ico"></i>
+              <input [type]="showPassword ? 'text' : 'password'"
+                class="su-input su-input--pwd" formControlName="motDePasse"
+                placeholder="Minimum 8 caractères" autocomplete="new-password">
+              <button type="button" class="su-pwd-toggle" (click)="togglePassword()">
+                {{ showPassword ? 'Masquer' : 'Afficher' }}
+              </button>
+            </div>
+          </div>
+
+          <div class="su-field">
+            <label class="su-label">CONFIRMER LE MOT DE PASSE</label>
+            <div class="su-input-wrap">
+              <i class="ti ti-lock su-input-wrap__ico"></i>
+              <input [type]="showPassword ? 'text' : 'password'"
+                class="su-input" formControlName="confirmationMotDePasse"
+                placeholder="Répétez votre mot de passe" autocomplete="new-password">
+            </div>
+          </div>
+
+          <div *ngIf="errorMessage" class="su-alert">{{ errorMessage }}</div>
+
+          <button type="button" class="su-btn su-btn--primary su-btn--full"
+            (click)="next()">
+            Suivant <i class="ti ti-arrow-right"></i>
+          </button>
+        </ng-container>
+
+        <!-- ── STEP 2 : RÔLE ────────────────────────────────────── -->
+        <ng-container *ngIf="currentStep === 2">
+          <div class="su-section-title">Choisissez votre rôle</div>
+
+          <div class="su-roles">
+            <button type="button" class="su-role"
+              [class.su-role--selected]="selectedRole === 'COLLAB'"
+              (click)="selectRole('COLLAB')">
+              <div class="su-role__ico su-role__ico--blue"><i class="ti ti-user"></i></div>
+              <div class="su-role__body">
+                <div class="su-role__title">Collaborateur</div>
+                <div class="su-role__sub">Consultation de vos missions et planning</div>
+              </div>
+              <div class="su-role__radio"></div>
+            </button>
+
+            <button type="button" class="su-role"
+              [class.su-role--selected]="selectedRole === 'MANAGER'"
+              (click)="selectRole('MANAGER')">
+              <div class="su-role__ico su-role__ico--green"><i class="ti ti-briefcase"></i></div>
+              <div class="su-role__body">
+                <div class="su-role__title">Manager</div>
+                <div class="su-role__sub">Gestion des projets et affectations</div>
+              </div>
+              <div class="su-role__radio"></div>
+            </button>
+
+            <button type="button" class="su-role"
+              [class.su-role--selected]="selectedRole === 'ADMIN'"
+              (click)="selectRole('ADMIN')">
+              <div class="su-role__ico su-role__ico--purple"><i class="ti ti-crown"></i></div>
+              <div class="su-role__body">
+                <div class="su-role__title">Administrateur</div>
+                <div class="su-role__sub">Supervision complète de la plateforme</div>
+              </div>
+              <div class="su-role__radio"></div>
+            </button>
+          </div>
+
+          <div *ngIf="errorMessage" class="su-alert">{{ errorMessage }}</div>
+
+          <div class="su-nav-row">
+            <button type="button" class="su-btn su-btn--ghost" (click)="back()">
+              <i class="ti ti-arrow-left"></i> Retour
+            </button>
+            <button type="button" class="su-btn su-btn--primary su-btn--grow"
+              (click)="next()">
+              Suivant <i class="ti ti-arrow-right"></i>
+            </button>
+          </div>
+        </ng-container>
+
+        <!-- ── STEP 3 : COMPÉTENCES ─────────────────────────────── -->
+        <ng-container *ngIf="currentStep === 3">
+          <div class="su-section-title">Vos compétences</div>
+          <div class="su-section-sub">Ajoutez vos expertises techniques (optionnel)</div>
+
+          <div class="su-skill-row">
+            <input type="text" class="su-input su-input--plain"
+              [(ngModel)]="skillInput" [ngModelOptions]="{ standalone: true }"
+              (keydown)="onSkillKeydown($event)"
+              placeholder="Ex: Angular, React, Python...">
+            <button type="button" class="su-btn su-btn--primary su-btn--add"
+              (click)="addSkill()">
+              <i class="ti ti-plus"></i> Ajouter
+            </button>
+          </div>
+
+          <div class="su-skill-area">
+            <span *ngIf="!skills.length" class="su-skill-empty">
+              Aucune compétence ajoutée
+            </span>
+            <span *ngFor="let skill of skills" class="su-chip">
+              {{ skill }}
+              <button type="button" class="su-chip__x" (click)="removeSkill(skill)" aria-label="Retirer">
+                <i class="ti ti-x"></i>
+              </button>
+            </span>
+          </div>
+
+          <div class="su-field">
+            <label class="su-label">DISPONIBILITÉ</label>
+            <select class="su-select"
+              [(ngModel)]="disponibilite" [ngModelOptions]="{ standalone: true }">
+              <option value="disponible">Disponible</option>
+              <option value="partielle">Partielle</option>
+              <option value="indisponible">Indisponible</option>
+            </select>
+          </div>
+
+          <div *ngIf="errorMessage" class="su-alert">{{ errorMessage }}</div>
+
+          <div class="su-nav-row">
+            <button type="button" class="su-btn su-btn--ghost" (click)="back()">
+              <i class="ti ti-arrow-left"></i> Retour
+            </button>
+            <button type="submit" class="su-btn su-btn--success su-btn--grow"
+              [disabled]="isSubmitting">
+              <i class="ti ti-check"></i>
+              {{ isSubmitting ? 'Création...' : 'Créer mon compte' }}
+            </button>
+          </div>
+        </ng-container>
+      </form>
+    </div>
+
+    <p class="su-already">
+      Déjà un compte ?
+      <a routerLink="/login" class="su-already__link">Se connecter</a>
+    </p>
+  </main>
+</section>

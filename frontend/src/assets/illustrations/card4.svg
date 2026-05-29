@@ -1,0 +1,68 @@
+﻿<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 200" fill="none">
+  <!-- bg blobs -->
+  <circle cx="240" cy="40"  r="60" fill="#dbeafe" opacity=".45"/>
+  <circle cx="40"  cy="160" r="50" fill="#eff6ff" opacity=".6"/>
+
+  <!-- large bell -->
+  <path d="M110 50 C82 50 68 68 68 88 L68 118 L152 118 L152 88 C152 68 138 50 110 50 Z"
+        fill="#dbeafe" stroke="#93c5fd" stroke-width="2"/>
+  <!-- bell top mount -->
+  <rect x="104" y="40" width="12" height="14" rx="6" fill="#2563eb"/>
+  <circle cx="110" cy="38" r="6" fill="#2563eb"/>
+  <!-- bell clapper bar -->
+  <rect x="96" y="116" width="28" height="10" rx="5" fill="#60a5fa"/>
+  <!-- bell clapper ball -->
+  <circle cx="110" cy="132" r="9" fill="#3b82f6"/>
+
+  <!-- notification dot on bell (red alert) -->
+  <circle cx="148" cy="54" r="14" fill="#ef4444"
+          style="filter:drop-shadow(0 4px 8px rgba(239,68,68,.35))"/>
+  <text x="148" y="59" text-anchor="middle" font-family="sans-serif" font-size="12" font-weight="700" fill="white">3</text>
+
+  <!-- floating notification cards -->
+  <!-- card A -->
+  <rect x="158" y="78" width="90" height="38" rx="10" fill="white"
+        style="filter:drop-shadow(0 4px 12px rgba(37,99,235,.15))"/>
+  <circle cx="175" cy="97" r="10" fill="#dbeafe"/>
+  <circle cx="175" cy="94" r="4"  fill="#93c5fd"/>
+  <path   d="M166 104 Q175 100 184 104" fill="#bfdbfe"/>
+  <rect x="188" y="89"  width="48" height="4" rx="2" fill="#e2e8f0"/>
+  <rect x="188" y="97"  width="34" height="4" rx="2" fill="#eff6ff"/>
+  <circle cx="240" cy="83" r="6" fill="#2563eb"/>
+
+  <!-- card B (smaller, behind) -->
+  <rect x="148" y="124" width="82" height="32" rx="9" fill="#f0fdf4"
+        style="filter:drop-shadow(0 4px 12px rgba(22,163,74,.12))"/>
+  <circle cx="163" cy="140" r="8" fill="#bbf7d0"/>
+  <rect x="174" y="133" width="44" height="4" rx="2" fill="#bbf7d0"/>
+  <rect x="174" y="141" width="32" height="4" rx="2" fill="#dcfce7"/>
+  <path d="M216 136 L218 140 L224 132" stroke="#16a34a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- person -->
+  <!-- legs -->
+  <path d="M52 172 Q50 185 46 195" stroke="#334155" stroke-width="12" stroke-linecap="round"/>
+  <path d="M72 172 Q74 185 78 195" stroke="#334155" stroke-width="12" stroke-linecap="round"/>
+  <!-- body -->
+  <rect x="42" y="128" width="40" height="48" rx="12" fill="#7c3aed"/>
+  <!-- left arm raised toward bell -->
+  <path d="M42 138 Q28 118 55 105" stroke="#fcd9b6" stroke-width="11" stroke-linecap="round"/>
+  <circle cx="56" cy="103" r="7" fill="#fcd9b6"/>
+  <!-- right arm -->
+  <path d="M82 138 Q92 148 92 162" stroke="#fcd9b6" stroke-width="11" stroke-linecap="round"/>
+  <!-- neck -->
+  <rect x="52" y="116" width="18" height="14" rx="6" fill="#fcd9b6"/>
+  <!-- head -->
+  <circle cx="61" cy="104" r="19" fill="#fcd9b6"/>
+  <!-- hair -->
+  <path d="M42 98 Q44 84 61 82 Q78 80 81 96 L79 102 Q71 88 61 89 Q48 90 42 100Z" fill="#92400e"/>
+  <!-- eyes -->
+  <ellipse cx="55" cy="103" rx="2.5" ry="3" fill="#1e293b"/>
+  <ellipse cx="67" cy="103" rx="2.5" ry="3" fill="#1e293b"/>
+  <!-- surprised/alert mouth -->
+  <circle cx="61" cy="113" r="3.5" fill="#f87171"/>
+
+  <!-- floating star sparkles -->
+  <circle cx="130" cy="168" r="4" fill="#fbbf24" opacity=".7"/>
+  <circle cx="144" cy="160" r="3" fill="#fbbf24" opacity=".5"/>
+  <circle cx="250" cy="130" r="5" fill="#2563eb" opacity=".35"/>
+</svg>

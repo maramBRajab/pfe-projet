@@ -1,0 +1,365 @@
+﻿<app-manager-shell activeSection="collaborateurs">
+
+  <!-- TOPBAR -->
+  <div class="mc-topbar">
+    <div class="mc-topbar__left">
+      <nav class="mc-breadcrumb">
+        <span>SmartAssign</span>
+        <span class="mc-breadcrumb__sep">&#x203A;</span>
+        <span>Manager</span>
+        <span class="mc-breadcrumb__sep">&#x203A;</span>
+        <span class="mc-breadcrumb__current">Collaborateurs</span>
+      </nav>
+      <h1 class="mc-topbar__title">Profils collaborateurs</h1>
+    </div>
+    <div class="mc-topbar__right">
+      <div class="mc-status-pill">
+        <span class="mc-status-dot"></span>
+        Annuaire synchronis&#233;
+      </div>
+      <button type="button" class="mc-btn mc-btn--primary mc-btn--pill" (click)="nouveauCollaborateur()">
+        <i class="ti ti-plus"></i> Nouveau collaborateur
+      </button>
+      <div class="mc-avatar-sm">MS</div>
+    </div>
+  </div>
+
+  <!-- CONTENT -->
+  <div class="mc-content">
+
+    <div class="mc-state-card" *ngIf="isLoading">
+      <i class="ti ti-loader-2"></i>
+      <strong>Chargement des collaborateurs...</strong>
+    </div>
+    <div class="mc-state-card mc-state-card--error" *ngIf="!isLoading && errorMessage">
+      <i class="ti ti-alert-circle"></i>
+      <strong>{{ errorMessage }}</strong>
+      <button class="mc-btn mc-btn--ghost" (click)="charger()">R&#233;essayer</button>
+    </div>
+
+    <ng-container *ngIf="!isLoading && !errorMessage">
+
+      <!-- KPI CARDS -->
+      <div class="mc-kpi-grid">
+        <div class="mc-kcard">
+          <div class="mc-kcard__bar" style="background:#3b82f6"></div>
+          <span class="mc-kcard__badge mc-kcard__badge--neutral">Ressources</span>
+          <div class="mc-kcard__label">TOTAL PROFIL</div>
+          <div class="mc-kcard__val" style="color:#3b82f6">{{ collaborateurs.length }}</div>
+          <div class="mc-kcard__sub">Profils consultables</div>
+        </div>
+        <div class="mc-kcard">
+          <div class="mc-kcard__bar" style="background:#10b981"></div>
+          <span class="mc-kcard__badge mc-kcard__badge--green">Disponibles</span>
+          <div class="mc-kcard__label">MOBILISABLE</div>
+          <div class="mc-kcard__val" style="color:#10b981">{{ disponiblesCount }}</div>
+          <div class="mc-kcard__sub">Pr&#234;ts pour affectation</div>
+        </div>
+        <div class="mc-kcard">
+          <div class="mc-kcard__bar" style="background:#f59e0b"></div>
+          <span class="mc-kcard__badge mc-kcard__badge--amber">Occup&#233;s</span>
+          <div class="mc-kcard__label">D&#201;J&#192; AFFECT&#201;S</div>
+          <div class="mc-kcard__val" style="color:#f59e0b">{{ occupesCount }}</div>
+          <div class="mc-kcard__sub">En mission active</div>
+        </div>
+        <div class="mc-kcard">
+          <div class="mc-kcard__bar" style="background:#8b5cf6"></div>
+          <span class="mc-kcard__badge mc-kcard__badge--neutral">Moyenne</span>
+          <div class="mc-kcard__label">EXP&#201;RIENCE</div>
+          <div class="mc-kcard__val" style="color:#8b5cf6">{{ moyenneExperience }}</div>
+          <div class="mc-kcard__sub">Ann&#233;es d'exp&#233;rience</div>
+        </div>
+        <div class="mc-kcard">
+          <div class="mc-kcard__bar" style="background:#10b981"></div>
+          <span class="mc-kcard__badge mc-kcard__badge--neutral">Skills</span>
+          <div class="mc-kcard__label">COMP&#201;TENCES</div>
+          <div class="mc-kcard__val" style="color:#10b981">{{ totalCompetences }}</div>
+          <div class="mc-kcard__sub">R&#233;f&#233;rences renseign&#233;es</div>
+        </div>
+      </div>
+
+      <!-- FILTER + RESULTS + TABLE — single card -->
+      <div class="mc-table-card">
+
+        <!-- FILTER BAR -->
+        <div class="mc-filter-row">
+          <div class="mc-search-wrap">
+            <i class="ti ti-search"></i>
+            <input type="text" placeholder="Nom, email ou comp&#233;tence&#x2026;"
+              [(ngModel)]="searchTerm" (ngModelChange)="currentPage = 1" />
+          </div>
+          <div class="mc-select-wrap">
+            <select [(ngModel)]="disponibiliteFilter" (ngModelChange)="currentPage = 1">
+              <option value="all">Toutes les disponibilit&#233;s</option>
+              <option value="disponible">Disponible</option>
+              <option value="occupe">Occup&#233;</option>
+            </select>
+            <i class="ti ti-chevron-down mc-select-arrow"></i>
+          </div>
+          <div class="mc-select-wrap">
+            <select [(ngModel)]="niveauFilter" (ngModelChange)="currentPage = 1">
+              <option value="all">Tous les niveaux</option>
+              <option value="junior">Junior (&lt; 3 ans)</option>
+              <option value="confirme">Confirm&#233; (3&#x2013;5 ans)</option>
+              <option value="senior">Senior (6+ ans)</option>
+            </select>
+            <i class="ti ti-chevron-down mc-select-arrow"></i>
+          </div>
+          <button class="mc-btn mc-btn--ghost" (click)="reinitialiser()">
+            <i class="ti ti-filter-x"></i> R&#233;initialiser
+          </button>
+          <button class="mc-btn mc-btn--ghost" (click)="exportCSV()">
+            <i class="ti ti-download"></i> Export CSV
+          </button>
+        </div>
+
+        <!-- RESULTS ROW -->
+        <div class="mc-results-row">
+          <span>{{ filtered.length }} r&#233;sultat(s)</span>
+          <span class="mc-results-row__skills">{{ totalCompetences }} comp&#233;tence(s) renseign&#233;e(s)</span>
+        </div>
+
+        <!-- TABLE HEADER -->
+        <div class="mc-table-header">
+          <span>COLLABORATEUR</span>
+          <span>EMAIL</span>
+          <span>EXP&#201;RIENCE</span>
+          <span>COMP&#201;TENCES</span>
+          <span>DISPONIBILIT&#201;</span>
+          <span>ACTIONS</span>
+        </div>
+
+        <ng-container *ngIf="paged.length; else emptyTpl">
+          <div class="mc-table-row" *ngFor="let c of paged">
+
+            <div class="mc-collab-cell">
+              <div class="mc-avatar" [style.background]="avatarColor(c)">{{ initiales(c) }}</div>
+              <div class="mc-collab-info">
+                <strong>{{ c.prenom }} {{ c.nom }}</strong>
+                <span class="mc-collab-id">#{{ c.id }}</span>
+              </div>
+            </div>
+
+            <div class="mc-cell-email">{{ c.email }}</div>
+
+            <div class="mc-cell-exp">{{ expLabel(c.experienceAnnees) }}</div>
+
+            <div class="mc-cell-skills">
+              <ng-container *ngIf="(c.competences ?? []).length; else noSkills">
+                <span class="mc-skill-tag" *ngFor="let k of (c.competences ?? []).slice(0, 2)">{{ k.nom }}</span>
+                <span class="mc-skill-more" *ngIf="(c.competences ?? []).length > 2">
+                  +{{ (c.competences ?? []).length - 2 }}
+                </span>
+              </ng-container>
+              <ng-template #noSkills>
+                <span class="mc-no-skills">Non renseign&#233;es</span>
+              </ng-template>
+            </div>
+
+            <div class="mc-cell-dispo">
+              <span class="mc-badge mc-badge--green" *ngIf="c.disponible">Disponible</span>
+              <span class="mc-badge mc-badge--amber" *ngIf="!c.disponible">Occup&#233;</span>
+            </div>
+
+            <div class="mc-cell-actions">
+              <button class="mc-action-btn" title="Voir" (click)="openViewModal(c)">
+                <i class="ti ti-eye"></i>
+              </button>
+              <button class="mc-action-btn" title="Modifier" (click)="editer(c)">
+                <i class="ti ti-pencil"></i>
+              </button>
+              <button class="mc-action-btn mc-action-btn--danger" title="Supprimer" (click)="openDeleteModal(c)">
+                <i class="ti ti-trash"></i>
+              </button>
+            </div>
+
+          </div>
+        </ng-container>
+
+        <ng-template #emptyTpl>
+          <div class="mc-empty">
+            <i class="ti ti-users-off"></i>
+            <p>Aucun collaborateur ne correspond aux crit&#232;res s&#233;lectionn&#233;s.</p>
+          </div>
+        </ng-template>
+
+        <div class="mc-pagination" *ngIf="totalPages > 1">
+          <button (click)="currentPage = currentPage - 1" [disabled]="currentPage === 1">
+            <i class="ti ti-chevron-left"></i>
+          </button>
+          <span>{{ currentPage }} / {{ totalPages }}</span>
+          <button (click)="currentPage = currentPage + 1" [disabled]="currentPage === totalPages">
+            <i class="ti ti-chevron-right"></i>
+          </button>
+        </div>
+
+      </div>
+
+    </ng-container>
+  </div>
+
+  <!-- ══ EDIT MODAL ════════════════════════════════════════ -->
+  <div class="mc-modal-overlay" *ngIf="editingCollab" (click)="closeEditModal()">
+    <div class="mc-modal" (click)="$event.stopPropagation()">
+
+      <div class="mc-em-hdr">
+        <h2 class="mc-em-title">Modifier l'utilisateur</h2>
+        <button type="button" class="mc-em-close" (click)="closeEditModal()" [disabled]="isSavingEdit" aria-label="Fermer">
+          <i class="ti ti-x"></i>
+        </button>
+      </div>
+
+      <div class="mc-em-alert" *ngIf="editError">
+        <i class="ti ti-alert-circle"></i> {{ editError }}
+      </div>
+
+      <div class="mc-em-body">
+
+        <div class="mc-em-row">
+          <div class="mc-em-fg">
+            <label class="mc-em-lbl">Prénom <span class="mc-em-req">*</span></label>
+            <input type="text" class="mc-em-input" [(ngModel)]="editForm.prenom" placeholder="Ex : Sara">
+          </div>
+          <div class="mc-em-fg">
+            <label class="mc-em-lbl">Nom <span class="mc-em-req">*</span></label>
+            <input type="text" class="mc-em-input" [(ngModel)]="editForm.nom" placeholder="Ex : Ben Ali">
+          </div>
+        </div>
+
+        <div class="mc-em-fg mc-em-fg--full">
+          <label class="mc-em-lbl">Email</label>
+          <input type="email" class="mc-em-input mc-em-input--readonly" [value]="editForm.email" readonly>
+        </div>
+
+        <div class="mc-em-row">
+          <div class="mc-em-fg">
+            <label class="mc-em-lbl">Expérience (années)</label>
+            <input type="number" min="0" class="mc-em-input" [(ngModel)]="editForm.experienceAnnees">
+          </div>
+          <div class="mc-em-fg">
+            <label class="mc-em-lbl">Disponibilité</label>
+            <div class="mc-em-dispo">
+              <button type="button" class="mc-em-dispo-btn"
+                [class.mc-em-dispo-btn--on]="editForm.disponible"
+                (click)="editForm.disponible = true">
+                <i class="ti ti-check"></i> Disponible
+              </button>
+              <button type="button" class="mc-em-dispo-btn"
+                [class.mc-em-dispo-btn--off]="!editForm.disponible"
+                (click)="editForm.disponible = false">
+                <i class="ti ti-clock"></i> Occupé
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="mc-em-fg mc-em-fg--full">
+          <label class="mc-em-lbl">Compétences <span class="mc-em-counter">({{ (editForm.competenceIds ?? []).length }})</span></label>
+          <div class="mc-em-search">
+            <i class="ti ti-search"></i>
+            <input type="text" [(ngModel)]="competenceSearch" placeholder="Rechercher une compétence…">
+          </div>
+          <div class="mc-em-comps" *ngIf="filteredEditCompetences.length; else noCompTpl">
+            <button type="button" class="mc-em-chip"
+              *ngFor="let k of filteredEditCompetences"
+              [class.mc-em-chip--active]="isCompetenceSelected(k.id!)"
+              (click)="toggleEditCompetence(k.id!)">
+              {{ k.nom }}
+            </button>
+          </div>
+          <ng-template #noCompTpl>
+            <p class="mc-em-empty">Aucune compétence ne correspond à la recherche.</p>
+          </ng-template>
+        </div>
+
+      </div>
+
+      <div class="mc-em-ftr">
+        <button type="button" class="mc-em-btn mc-em-btn--ghost" (click)="closeEditModal()" [disabled]="isSavingEdit">Annuler</button>
+        <button type="button" class="mc-em-btn mc-em-btn--primary" (click)="saveEdit()" [disabled]="editFormInvalid || isSavingEdit">
+          <i class="ti ti-check" *ngIf="!isSavingEdit"></i>
+          <span class="mc-em-spin" *ngIf="isSavingEdit"></span>
+          {{ isSavingEdit ? 'Enregistrement…' : 'Sauvegarder' }}
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Toast de confirmation -->
+  <div class="mc-toast" *ngIf="editToast">
+    <i class="ti ti-circle-check"></i> {{ editToast }}
+  </div>
+
+  <!-- ══ CREATE MODAL (embedded admin form) ═══════════════════════════ -->
+  <div class="mc-modal-overlay" *ngIf="isCreateOpen" (click)="closeCreateModal()">
+    <div class="mc-modal mc-modal--wide" (click)="$event.stopPropagation()">
+      <app-formulaire-collaborateur
+        [embedded]="true"
+        (created)="onCollaborateurCreated()"
+        (cancel)="closeCreateModal()">
+      </app-formulaire-collaborateur>
+    </div>
+  </div>
+
+  <!-- ══ VIEW MODAL ═══════════════════════════════════════ -->
+  <div class="mc-vw-overlay" *ngIf="viewedCollab" (click)="closeViewModal()" role="dialog" aria-modal="true">
+    <div class="mc-vw-modal" (click)="$event.stopPropagation()">
+      <div class="mc-vw-hd">
+        <div class="mc-vw-avatar" [style.background]="avatarColor(viewedCollab)">{{ initiales(viewedCollab) }}</div>
+        <div class="mc-vw-hd__main">
+          <h2 class="mc-vw-name">{{ viewedCollab.prenom }} {{ viewedCollab.nom }}</h2>
+          <p class="mc-vw-email">{{ viewedCollab.email }}</p>
+          <div class="mc-vw-badges">
+            <span class="mc-badge" [class.mc-badge--green]="viewedCollab.disponible" [class.mc-badge--amber]="!viewedCollab.disponible">
+              {{ viewedCollab.disponible ? 'Disponible' : 'Occupé' }}
+            </span>
+            <span class="mc-vw-id">#{{ viewedCollab.id }}</span>
+          </div>
+        </div>
+        <button class="mc-vw-close" (click)="closeViewModal()" aria-label="Fermer">×</button>
+      </div>
+
+      <div class="mc-vw-body">
+        <div class="mc-vw-row">
+          <span class="mc-vw-row__lbl">Expérience</span>
+          <span class="mc-vw-row__val">{{ expLabel(viewedCollab.experienceAnnees) }}</span>
+        </div>
+
+        <div class="mc-vw-comps">
+          <p class="mc-vw-comps__title">COMPÉTENCES</p>
+          <div class="mc-vw-chiplist" *ngIf="(viewedCollab.competences ?? []).length; else noCompVw">
+            <span class="mc-vw-chip" *ngFor="let k of (viewedCollab.competences ?? [])">{{ k.nom }}</span>
+          </div>
+          <ng-template #noCompVw>
+            <span class="mc-no-skills">Non renseignées</span>
+          </ng-template>
+        </div>
+      </div>
+
+      <div class="mc-vw-ft">
+        <button class="mc-em-btn mc-em-btn--ghost" (click)="closeViewModal()">Fermer</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ DELETE CONFIRM MODAL ════════════════════════════════════════ -->
+  <div class="mc-del-overlay" *ngIf="deleteTarget" (click)="closeDeleteModal()" role="dialog" aria-modal="true">
+    <div class="mc-del-modal" (click)="$event.stopPropagation()">
+      <h3 class="mc-del-title">Supprimer le collaborateur ?</h3>
+      <p class="mc-del-msg">
+        <strong>{{ deleteTargetName }}</strong> sera définitivement supprimé. Cette action est irréversible.
+      </p>
+      <div class="mc-del-ft">
+        <button class="mc-del-btn mc-del-btn--ghost" (click)="closeDeleteModal()" [disabled]="isDeleting">Annuler</button>
+        <button class="mc-del-btn mc-del-btn--danger" (click)="confirmerSuppression()" [disabled]="isDeleting">
+          {{ isDeleting ? 'Suppression…' : 'Supprimer' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast suppression -->
+  <div class="mc-toast" *ngIf="deleteToast">{{ deleteToast }}</div>
+
+</app-manager-shell>

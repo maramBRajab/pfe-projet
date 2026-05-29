@@ -1,0 +1,271 @@
+﻿<section class="sp-root">
+  <app-admin-sidebar></app-admin-sidebar>
+
+  <div class="sp-main">
+
+    <!-- ══ TOPBAR ════════════════════════════════════════════ -->
+    <header class="sp-topbar">
+      <div class="sp-topbar__left">
+        <nav class="sp-topbar__breadcrumb">
+          <span>SmartAssign</span>
+          <span class="sp-topbar__sep">›</span>
+          <span>Admin</span>
+          <span class="sp-topbar__sep">›</span>
+          <span class="sp-topbar__current">Rapports</span>
+        </nav>
+        <h1 class="sp-topbar__title">Rapports système</h1>
+      </div>
+      <div class="sp-topbar__right">
+        <div class="sp-status-pill">
+          <span class="sp-status-dot"></span>
+          Plateforme saine
+        </div>
+        <button type="button" class="sp-btn sp-btn--ghost sp-btn--pill" (click)="exporterCSV()">
+          <svg viewBox="0 0 16 16" fill="none">
+            <path d="M8 2v9" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+            <path d="M4.5 8.5L8 12l3.5-3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M2 13h12" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+          </svg>
+          Exporter
+        </button>
+        <button type="button" class="sp-btn sp-btn--primary sp-btn--pill" (click)="exporterPDF()">
+          <svg viewBox="0 0 16 16" fill="none">
+            <path d="M3 2h7l3 3v9a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1Z" stroke="currentColor" stroke-width="1.4"/>
+            <path d="M10 2v4h4M6 9h4M6 12h2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+          </svg>
+          Export PDF
+        </button>
+        <div class="sp-av-sm" routerLink="/admin/profil" style="cursor:pointer" title="Mon profil">AP</div>
+      </div>
+    </header>
+
+    <!-- ══ BODY ══════════════════════════════════════════════ -->
+    <div class="sp-body">
+
+      <!-- KPI CARDS -->
+      <div class="sp-kpi-grid">
+
+        <div class="sp-kcard">
+          <div class="sp-kcard__bar" style="background:#3b82f6"></div>
+          <span class="sp-kcard__badge sp-kcard__badge--neutral">Ce mois</span>
+          <div class="sp-kcard__label">COMPTES CRÉÉS</div>
+          <div class="sp-kcard__val" style="color:#3b82f6">3</div>
+          <div class="sp-kcard__sub">vs 2 le mois dernier</div>
+        </div>
+
+        <div class="sp-kcard">
+          <div class="sp-kcard__bar" style="background:#10b981"></div>
+          <span class="sp-kcard__badge sp-kcard__badge--green">+49%</span>
+          <div class="sp-kcard__label">CONNEXIONS ACTIVES</div>
+          <div class="sp-kcard__val" style="color:#10b981">47</div>
+          <div class="sp-kcard__sub">Sessions ce mois</div>
+        </div>
+
+        <div class="sp-kcard">
+          <div class="sp-kcard__bar" style="background:#f59e0b"></div>
+          <span class="sp-kcard__badge sp-kcard__badge--warn">Vigilance</span>
+          <div class="sp-kcard__label">TAUX D'AFFECTATION GLOBAL</div>
+          <div class="sp-kcard__val" style="color:#f59e0b">{{ affectations.length > 0 ? (affectations.length * 100 / 11 | number:'1.0-0') : 27 }}%</div>
+          <div class="sp-kcard__sub">Cible : 72%</div>
+        </div>
+
+        <div class="sp-kcard">
+          <div class="sp-kcard__bar" style="background:#8b5cf6"></div>
+          <span class="sp-kcard__badge sp-kcard__badge--neutral">Catalogue</span>
+          <div class="sp-kcard__label">PROJETS DANS LE SYSTÈME</div>
+          <div class="sp-kcard__val" style="color:#8b5cf6">{{ projets.length || 4 }}</div>
+          <div class="sp-kcard__sub">1 en cours · 2 en attente</div>
+        </div>
+
+      </div>
+
+      <!-- MAIN 2-COL GRID -->
+      <div class="sp-main-grid">
+
+        <!-- LEFT: Bar chart card -->
+        <div class="sp-chart-card">
+          <div class="sp-chart-card__hd">
+            <h3>Évolution des comptes utilisateurs</h3>
+            <button type="button" class="sp-btn sp-btn--ghost sp-btn--sm" (click)="exporterChartSVG()">
+              <svg viewBox="0 0 16 16" fill="none">
+                <path d="M8 2v9" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+                <path d="M4.5 8.5L8 12l3.5-3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M2 13h12" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+              </svg>
+              Export
+            </button>
+          </div>
+
+          <div class="sp-bar-chart">
+            <svg viewBox="0 0 360 180" width="100%" height="140">
+              <!-- Grid lines (faint) -->
+              <line x1="0" y1="40" x2="360" y2="40" stroke="#f1f5f9" stroke-width="1"/>
+              <line x1="0" y1="80" x2="360" y2="80" stroke="#f1f5f9" stroke-width="1"/>
+              <line x1="0" y1="120" x2="360" y2="120" stroke="#f1f5f9" stroke-width="1"/>
+              <line x1="0" y1="160" x2="360" y2="160" stroke="#f1f5f9" stroke-width="1"/>
+              <!-- Bars (rounded top via rect + rect trick) -->
+              <!-- Déc -->
+              <rect x="20" y="130" width="40" height="30" rx="4" ry="4" fill="#3b82f6"/>
+              <!-- Jan -->
+              <rect x="80" y="155" width="40" height="5" rx="4" ry="4" fill="#3b82f6"/>
+              <!-- Fév -->
+              <rect x="140" y="157" width="40" height="3" rx="4" ry="4" fill="#3b82f6"/>
+              <!-- Mar -->
+              <rect x="200" y="155" width="40" height="5" rx="4" ry="4" fill="#3b82f6"/>
+              <!-- Avr -->
+              <rect x="260" y="153" width="40" height="7" rx="4" ry="4" fill="#3b82f6"/>
+              <!-- Mai -->
+              <rect x="320" y="128" width="40" height="32" rx="4" ry="4" fill="#3b82f6"/>
+              <!-- X-axis labels -->
+              <text x="40" y="175" text-anchor="middle" font-size="11" fill="#94a3b8" font-family="DM Sans, sans-serif">Déc</text>
+              <text x="100" y="175" text-anchor="middle" font-size="11" fill="#94a3b8" font-family="DM Sans, sans-serif">Jan</text>
+              <text x="160" y="175" text-anchor="middle" font-size="11" fill="#94a3b8" font-family="DM Sans, sans-serif">Fév</text>
+              <text x="220" y="175" text-anchor="middle" font-size="11" fill="#94a3b8" font-family="DM Sans, sans-serif">Mar</text>
+              <text x="280" y="175" text-anchor="middle" font-size="11" fill="#94a3b8" font-family="DM Sans, sans-serif">Avr</text>
+              <text x="340" y="175" text-anchor="middle" font-size="11" fill="#94a3b8" font-family="DM Sans, sans-serif">Mai</text>
+            </svg>
+          </div>
+
+          <div class="sp-chart-stats">
+            <div class="sp-chart-stat">
+              <span class="sp-chart-stat__lbl">TOTAL</span>
+              <span class="sp-chart-stat__val">11</span>
+            </div>
+            <div class="sp-chart-stat">
+              <span class="sp-chart-stat__lbl">AJOUTÉS CE MOIS</span>
+              <span class="sp-chart-stat__val sp-chart-stat__val--green">+3</span>
+            </div>
+            <div class="sp-chart-stat">
+              <span class="sp-chart-stat__lbl">SUSPENDUS</span>
+              <span class="sp-chart-stat__val sp-chart-stat__val--red">0</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- RIGHT: Santé système -->
+        <div class="sp-health-card">
+          <h3 class="sp-health-card__title">Santé du système</h3>
+
+          <div class="sp-health-rows">
+
+            <div class="sp-health-row">
+              <div class="sp-health-row__labels">
+                <span>Uptime plateforme</span>
+                <span class="sp-health-row__val" style="color:#10b981">99.8%</span>
+              </div>
+              <div class="sp-progress">
+                <div class="sp-progress__fill" style="background:#10b981;width:99.8%"></div>
+              </div>
+            </div>
+
+            <div class="sp-health-row">
+              <div class="sp-health-row__labels">
+                <span>Taux d'affectation global</span>
+                <span class="sp-health-row__val" style="color:#f59e0b">27%</span>
+              </div>
+              <div class="sp-progress">
+                <div class="sp-progress__fill" style="background:#f59e0b;width:27%"></div>
+              </div>
+            </div>
+
+            <div class="sp-health-row">
+              <div class="sp-health-row__labels">
+                <span>Utilisation sessions</span>
+                <span class="sp-health-row__val" style="color:#3b82f6">64%</span>
+              </div>
+              <div class="sp-progress">
+                <div class="sp-progress__fill" style="background:#3b82f6;width:64%"></div>
+              </div>
+            </div>
+
+            <div class="sp-health-row">
+              <div class="sp-health-row__labels">
+                <span>Comptes avec compétences renseignées</span>
+                <span class="sp-health-row__val" style="color:#8b5cf6">54%</span>
+              </div>
+              <div class="sp-progress">
+                <div class="sp-progress__fill" style="background:#8b5cf6;width:54%"></div>
+              </div>
+            </div>
+
+          </div>
+
+          <div class="sp-health-note">
+            <svg viewBox="0 0 16 16" fill="none" class="sp-health-note__ico">
+              <circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.5"/>
+              <path d="M8 7v5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+              <circle cx="8" cy="5" r=".6" fill="currentColor"/>
+            </svg>
+            <span>Pour les rapports détaillés sur les affectations, consultez l'espace Manager.</span>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- RÉPARTITION PAR DÉPARTEMENT -->
+      <div class="sp-dept-card">
+        <h3 class="sp-dept-card__title">Répartition par département</h3>
+        <div class="sp-dept-list">
+
+          <div class="sp-dept-row">
+            <span class="sp-dept-row__name">IT</span>
+            <div class="sp-dept-row__bar-wrap">
+              <div class="sp-dept-row__bar" style="width:100%;background:#3b82f6"></div>
+            </div>
+            <span class="sp-dept-row__count" style="color:#3b82f6">6</span>
+          </div>
+
+          <div class="sp-dept-row">
+            <span class="sp-dept-row__name">Design</span>
+            <div class="sp-dept-row__bar-wrap">
+              <div class="sp-dept-row__bar" style="width:33%;background:#8b5cf6"></div>
+            </div>
+            <span class="sp-dept-row__count" style="color:#8b5cf6">2</span>
+          </div>
+
+          <div class="sp-dept-row">
+            <span class="sp-dept-row__name">Direction</span>
+            <div class="sp-dept-row__bar-wrap">
+              <div class="sp-dept-row__bar" style="width:17%;background:#f59e0b"></div>
+            </div>
+            <span class="sp-dept-row__count" style="color:#f59e0b">1</span>
+          </div>
+
+          <div class="sp-dept-row">
+            <span class="sp-dept-row__name">Marketing</span>
+            <div class="sp-dept-row__bar-wrap">
+              <div class="sp-dept-row__bar" style="width:17%;background:#10b981"></div>
+            </div>
+            <span class="sp-dept-row__count" style="color:#10b981">1</span>
+          </div>
+
+          <div class="sp-dept-row">
+            <span class="sp-dept-row__name">RH</span>
+            <div class="sp-dept-row__bar-wrap">
+              <div class="sp-dept-row__bar" style="width:17%;background:#ec4899"></div>
+            </div>
+            <span class="sp-dept-row__count" style="color:#ec4899">1</span>
+          </div>
+
+          <div class="sp-dept-row">
+            <span class="sp-dept-row__name">Finance</span>
+            <div class="sp-dept-row__bar-wrap">
+              <div class="sp-dept-row__bar" style="width:17%;background:#06b6d4"></div>
+            </div>
+            <span class="sp-dept-row__count" style="color:#06b6d4">1</span>
+          </div>
+
+          <div class="sp-dept-row">
+            <span class="sp-dept-row__name">Direction des op&#233;rations</span>
+            <div class="sp-dept-row__bar-wrap">
+              <div class="sp-dept-row__bar" style="width:17%;background:#64748b"></div>
+            </div>
+            <span class="sp-dept-row__count" style="color:#64748b">1</span>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>

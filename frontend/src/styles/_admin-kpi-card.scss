@@ -1,0 +1,132 @@
+// ═══════════════════════════════════════════════════════════════
+// SMARTASSIGN — Shared Admin KPI Card
+// Used across: admin/projets/formulaire, admin/collaborateurs/formulaire, etc.
+// ═══════════════════════════════════════════════════════════════
+
+.admin-kpi-card {
+  background: #ffffff;
+  border: 1px solid #e4e9f2;
+  border-top: 3px solid transparent;
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: none;
+  cursor: pointer;
+  transition: box-shadow 0.22s ease, transform 0.22s ease, border-top-color 0.22s ease;
+
+  &:hover {
+    box-shadow: 0 10px 32px rgba(15, 23, 42, 0.11), 0 2px 8px rgba(15, 23, 42, 0.05);
+    transform: translateY(-4px);
+  }
+
+  // ── Accent top-border colors ────────────────────────────────
+  &--blue   { border-top-color: #2563eb; }
+  &--amber  { border-top-color: #f59e0b; }
+  &--violet { border-top-color: #8b5cf6; }
+  &--green  { border-top-color: #22c55e; }
+  &--red    { border-top-color: #ef4444; }
+  &--slate  { border-top-color: #64748b; }
+
+  // ── Top row ─────────────────────────────────────────────────
+  .kpi-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+
+  // ── Icon ────────────────────────────────────────────────────
+  .kpi-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 7px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f3f4f6;
+    color: #64748b;
+    flex-shrink: 0;
+
+    svg {
+      width: 14px;
+      height: 14px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.6;
+    }
+
+    &--blue   { background: #eff6ff; color: #2563eb; }
+    &--amber  { background: #fef3c7; color: #d97706; }
+    &--violet { background: #ede9fe; color: #7c3aed; }
+    &--green  { background: #dcfce7; color: #16a34a; }
+    &--red    { background: #fee2e2; color: #dc2626; }
+  }
+
+  // ── Tag / badge ─────────────────────────────────────────────
+  .kpi-tag {
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 10px;
+    background: #f3f4f6;
+    color: #64748b;
+
+    &--blue   { background: #eff6ff; color: #2563eb; }
+    &--amber  { background: #fef3c7; color: #d97706; }
+    &--violet { background: #ede9fe; color: #7c3aed; }
+    &--green  { background: #dcfce7; color: #16a34a; }
+    &--red    { background: #fee2e2; color: #dc2626; }
+  }
+
+  // ── Label ───────────────────────────────────────────────────
+  .kpi-label {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: #94a3b8;
+    margin-bottom: 6px;
+  }
+
+  // ── Value ───────────────────────────────────────────────────
+  .kpi-val {
+    font-size: 32px;
+    font-weight: 800;
+    color: #0f172a;
+    line-height: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+
+    &--amber { color: #d97706; }
+    &--green { color: #16a34a; }
+    &--red   { color: #dc2626; }
+  }
+
+  // ── Note ────────────────────────────────────────────────────
+  .kpi-note {
+    font-size: 11px;
+    color: #94a3b8;
+    margin-top: 8px;
+  }
+}
+
+// ── KPI grid helpers ─────────────────────────────────────────────
+.akpi-grid {
+  display: grid;
+  gap: 12px;
+
+  // 5-column flat grid — all cards share the same column width
+  &--5 { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+}
+
+@media (max-width: 1280px) {
+  .akpi-grid--5 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+@media (max-width: 960px) {
+  .akpi-grid--5 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 600px) {
+  .akpi-grid--5 { grid-template-columns: 1fr; }
+}

@@ -1,0 +1,124 @@
+<div class="notifications-panel" [class.notifications-panel--open]="open" [attr.aria-hidden]="!open">
+  <button type="button" class="notifications-panel__overlay" [attr.tabindex]="open ? 0 : -1" [attr.aria-hidden]="!open" aria-label="Fermer le panneau des notifications administrateur" (click)="requestClose()"></button>
+
+  <aside class="notifications-panel__drawer" role="dialog" aria-modal="true" aria-labelledby="admin-notifications-title">
+    <header class="notifications-panel__header">
+      <div>
+        <span class="sp-kicker">Centre admin</span>
+        <h2 id="admin-notifications-title">Notifications</h2>
+        <p>Pilotage quotidien - {{ currentDate | date:'EEEE d MMMM yyyy':'':'fr-FR' }}</p>
+      </div>
+
+      <div class="notifications-panel__actions">
+        <div class="sp-status-pill" [class.sp-status-pill--watch]="statusTone === 'watch'" [class.sp-status-pill--risk]="statusTone === 'risk'">
+          <span class="sp-status-dot"></span>
+          {{ statusLabel }}
+        </div>
+        <button type="button" class="sp-btn sp-btn--ghost" (click)="refreshNotifications()">Actualiser</button>
+        <button type="button" class="notifications-panel__close" aria-label="Fermer" (click)="requestClose()">
+          <svg viewBox="0 0 16 16" fill="none"><path d="M4 4l8 8M12 4 4 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <div class="notifications-panel__content">
+      <div class="sp-kpi-row">
+        <article class="sp-kcard sp-kcard--slate">
+          <div class="sp-kcard__head">
+            <span class="sp-kcard__ico sp-kcard__ico--slate"><svg viewBox="0 0 16 16" fill="none"><path d="M8 2a4 4 0 0 1 4 4c0 4.5 2 5.5 2 5.5H2s2-1 2-5.5a4 4 0 0 1 4-4Z" stroke="currentColor" stroke-width="1.4"/><path d="M6.5 13.5a1.5 1.5 0 0 0 3 0" stroke="currentColor" stroke-width="1.4"/></svg></span>
+            <span class="sp-kcard__chip sp-kcard__chip--neutral">Flux global</span>
+          </div>
+          <div class="sp-kcard__label">Notifications</div>
+          <div class="sp-kcard__val">{{ notifications.length }}</div>
+          <div class="sp-kcard__note">Centre unifie des alertes administrateur</div>
+        </article>
+
+        <article class="sp-kcard sp-kcard--blue">
+          <div class="sp-kcard__head">
+            <span class="sp-kcard__ico sp-kcard__ico--blue"><svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.4"/><path d="M8 5.2v3.6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><circle cx="8" cy="11.5" r="0.75" fill="currentColor" stroke="none"/></svg></span>
+            <span class="sp-kcard__chip sp-kcard__chip--neutral">Stable</span>
+          </div>
+          <div class="sp-kcard__label">Informations</div>
+          <div class="sp-kcard__val">{{ infoCount }}</div>
+          <div class="sp-kcard__note">Messages generaux et suivis operationnels</div>
+        </article>
+
+        <article class="sp-kcard sp-kcard--amber">
+          <div class="sp-kcard__head">
+            <span class="sp-kcard__ico sp-kcard__ico--amber"><svg viewBox="0 0 16 16" fill="none"><path d="M8 3v5l3 2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><circle cx="8" cy="8" r="5.5" stroke="currentColor" stroke-width="1.4"/></svg></span>
+            <span class="sp-kcard__chip sp-kcard__chip--warn">Vigilance</span>
+          </div>
+          <div class="sp-kcard__label">Vigilances</div>
+          <div class="sp-kcard__val">{{ warningCount }}</div>
+          <div class="sp-kcard__note">Elements a surveiller sans delai</div>
+        </article>
+
+        <article class="sp-kcard sp-kcard--red">
+          <div class="sp-kcard__head">
+            <span class="sp-kcard__ico sp-kcard__ico--red"><svg viewBox="0 0 16 16" fill="none"><path d="M8 2.5 13.5 12H2.5L8 2.5Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M8 6v2.8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><circle cx="8" cy="11.1" r="0.75" fill="currentColor" stroke="none"/></svg></span>
+            <span class="sp-kcard__chip sp-kcard__chip--risk">Priorite</span>
+          </div>
+          <div class="sp-kcard__label">Critiques</div>
+          <div class="sp-kcard__val">{{ dangerCount }}</div>
+          <div class="sp-kcard__note">Alertes necessitant une action immediate</div>
+        </article>
+
+        <article class="sp-kcard sp-kcard--green">
+          <div class="sp-kcard__head">
+            <span class="sp-kcard__ico sp-kcard__ico--green"><svg viewBox="0 0 16 16" fill="none"><path d="M3 8h10" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M8 3v10" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></span>
+            <span class="sp-kcard__chip sp-kcard__chip--up">{{ criticalRate }}%</span>
+          </div>
+          <div class="sp-kcard__label">Recues aujourd'hui</div>
+          <div class="sp-kcard__val">{{ todayCount }}</div>
+          <div class="sp-kcard__note">Part critique du flux : {{ criticalRate }}%</div>
+        </article>
+      </div>
+
+      <div class="sp-pilot-row">
+        <div class="sp-pilot-card"><span class="sp-pilot-card__label">Derniere mise a jour</span><strong class="sp-pilot-card__val">{{ lastUpdated | date:'HH:mm' }}</strong></div>
+        <div class="sp-pilot-card"><span class="sp-pilot-card__label">Derniere alerte</span><strong class="sp-pilot-card__val">{{ latestNotificationLabel }}</strong></div>
+        <div class="sp-pilot-card"><span class="sp-pilot-card__label">Types couverts</span><strong class="sp-pilot-card__val">{{ activeTypesCount }} type(s)</strong></div>
+        <div class="sp-pilot-card"><span class="sp-pilot-card__label">Synchronisation</span><strong class="sp-pilot-card__val">Flux temps reel</strong></div>
+      </div>
+
+      <section class="sp-section">
+        <div class="sp-section__hd">
+          <div>
+            <span class="sp-kicker">Vue d'ensemble</span>
+            <h3>Flux des notifications</h3>
+          </div>
+          <p>Suivi centralise des informations, vigilances et alertes critiques.</p>
+        </div>
+
+        <div class="sp-panel">
+          <ng-container *ngIf="notifications.length; else emptyState">
+            <div class="ntf-list">
+              <article class="ntf-card" *ngFor="let notification of notifications; trackBy: trackByNotification" [ngClass]="'ntf-card--' + notificationTone(notification)">
+                <div class="ntf-card__head">
+                  <div class="ntf-card__title-wrap">
+                    <span class="ntf-icon" [ngClass]="'ntf-icon--' + notificationTone(notification)">
+                      <svg *ngIf="notificationTone(notification) === 'danger'" viewBox="0 0 16 16" fill="none"><path d="M8 2.5 13.5 12H2.5L8 2.5Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M8 6v2.8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><circle cx="8" cy="11.1" r="0.75" fill="currentColor" stroke="none"/></svg>
+                      <svg *ngIf="notificationTone(notification) === 'warning'" viewBox="0 0 16 16" fill="none"><path d="M8 3v5l3 2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><circle cx="8" cy="8" r="5.5" stroke="currentColor" stroke-width="1.4"/></svg>
+                      <svg *ngIf="notificationTone(notification) === 'info'" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.4"/><path d="M8 5.2v3.6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><circle cx="8" cy="11.5" r="0.75" fill="currentColor" stroke="none"/></svg>
+                    </span>
+                    <div>
+                      <span class="ntf-card__kicker">{{ notification.type }}</span>
+                      <h4>{{ notification.titre }}</h4>
+                    </div>
+                  </div>
+                  <span class="ntf-chip" [ngClass]="'ntf-chip--' + notificationTone(notification)">{{ notificationLabel(notification) }}</span>
+                </div>
+                <p class="ntf-card__message">{{ notification.message }}</p>
+                <div class="ntf-card__meta"><span>{{ notification.dateCreation | date:'dd/MM/yyyy HH:mm' }}</span><span>{{ notification.type }}</span></div>
+              </article>
+            </div>
+          </ng-container>
+
+          <ng-template #emptyState>
+            <div class="sp-empty"><strong>Aucune notification disponible</strong><span>Le flux administrateur est vide pour le moment.</span></div>
+          </ng-template>
+        </div>
+      </section>
+    </div>
+  </aside>
+</div>

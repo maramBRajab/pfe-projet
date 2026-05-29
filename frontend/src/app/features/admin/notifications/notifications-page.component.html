@@ -1,0 +1,169 @@
+﻿<section class="sp-root">
+  <app-admin-sidebar></app-admin-sidebar>
+
+  <div class="sp-main">
+
+    <!-- ══ TOPBAR ════════════════════════════════════════════ -->
+    <header class="sp-topbar">
+      <div class="sp-topbar__left">
+        <nav class="sp-topbar__breadcrumb">
+          <span>SmartAssign</span>
+          <span class="sp-topbar__sep">›</span>
+          <span>Admin</span>
+          <span class="sp-topbar__sep">›</span>
+          <span class="sp-topbar__current">Notifications</span>
+        </nav>
+        <h1 class="sp-topbar__title">Centre de notifications</h1>
+      </div>
+      <div class="sp-topbar__right">
+        <div class="sp-status-pill">
+          <span class="sp-status-dot"></span>
+          Plateforme saine
+        </div>
+        <button type="button" class="sp-btn sp-btn--ghost sp-btn--pill" (click)="exporterCSV()">
+          <svg viewBox="0 0 16 16" fill="none">
+            <path d="M8 2v9" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+            <path d="M4.5 8.5L8 12l3.5-3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M2 13h12" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+          </svg>
+          Exporter
+        </button>
+        <button type="button" class="sp-btn sp-btn--primary sp-btn--pill" (click)="exporterPDF()">
+          <svg viewBox="0 0 16 16" fill="none">
+            <path d="M3 2h7l3 3v9a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1Z" stroke="currentColor" stroke-width="1.4"/>
+            <path d="M10 2v4h4M6 9h4M6 12h2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+          </svg>
+          Export PDF
+        </button>
+        <div class="sp-av-sm" routerLink="/admin/profil" style="cursor:pointer" title="Mon profil">AP</div>
+      </div>
+    </header>
+
+    <!-- ══ BODY ══════════════════════════════════════════════ -->
+    <div class="sp-body">
+
+      <!-- ACTION ROW -->
+      <div class="sp-action-row">
+        <button type="button" class="sp-btn sp-btn--ghost sp-btn--sm" (click)="markAllRead()">
+          <i class="ti ti-check"></i>
+          Tout marquer lu
+        </button>
+      </div>
+
+      <!-- KPI CARDS -->
+      <div class="sp-kpi-grid">
+
+        <div class="sp-kcard">
+          <div class="sp-kcard__bar" style="background:#3b82f6"></div>
+          <span class="sp-kcard__badge sp-kcard__badge--neutral">Flux global</span>
+          <div class="sp-kcard__label">NOTIFICATIONS</div>
+          <div class="sp-kcard__val" style="color:#3b82f6">{{ notifications.length }}</div>
+          <div class="sp-kcard__sub">Centre unifié</div>
+        </div>
+
+        <div class="sp-kcard">
+          <div class="sp-kcard__bar" style="background:#10b981"></div>
+          <span class="sp-kcard__badge sp-kcard__badge--neutral">stable</span>
+          <div class="sp-kcard__label">INFORMATIONS</div>
+          <div class="sp-kcard__val" style="color:#10b981">{{ infoCount }}</div>
+          <div class="sp-kcard__sub">Messages généraux</div>
+        </div>
+
+        <div class="sp-kcard">
+          <div class="sp-kcard__bar" style="background:#f59e0b"></div>
+          <span class="sp-kcard__badge sp-kcard__badge--warn">Vigilance</span>
+          <div class="sp-kcard__label">VIGILANCES</div>
+          <div class="sp-kcard__val" style="color:#f59e0b">{{ warningCount }}</div>
+          <div class="sp-kcard__sub">Éléments à surveiller</div>
+        </div>
+
+        <div class="sp-kcard">
+          <div class="sp-kcard__bar" style="background:#ef4444"></div>
+          <span class="sp-kcard__badge sp-kcard__badge--danger">Priorité</span>
+          <div class="sp-kcard__label">CRITIQUES</div>
+          <div class="sp-kcard__val">{{ dangerCount }}</div>
+          <div class="sp-kcard__sub">{{ dangerCount === 0 ? 'Aucune alerte critique' : dangerCount + ' alerte(s)' }}</div>
+        </div>
+
+      </div>
+
+      <!-- NOTIFICATION PANEL (tabs + cards) -->
+      <div class="sp-notifs">
+        <div class="sp-notifs__panel">
+
+          <!-- TABS HEADER -->
+          <div class="sp-notifs__tabs">
+            <button type="button" class="sp-tab" [class.sp-tab--active]="activeFilter === 'all'" (click)="setFilter('all')">
+              Tous ({{ notifications.length }})
+            </button>
+            <button type="button" class="sp-tab" [class.sp-tab--active]="activeFilter === 'danger'" (click)="setFilter('danger')">
+              Critiques ({{ dangerCount }})
+            </button>
+            <button type="button" class="sp-tab" [class.sp-tab--active]="activeFilter === 'warning'" (click)="setFilter('warning')">
+              Vigilances ({{ warningCount }})
+            </button>
+            <button type="button" class="sp-tab" [class.sp-tab--active]="activeFilter === 'info'" (click)="setFilter('info')">
+              Informations ({{ infoCount }})
+            </button>
+          </div>
+
+          <div class="sp-notifs__list">
+
+            <div *ngFor="let n of filteredNotifications; trackBy: trackByNotification"
+                 class="sp-ncard"
+                 [class.sp-ncard--danger]="notificationTone(n) === 'danger'"
+                 [class.sp-ncard--warning]="notificationTone(n) === 'warning'"
+                 [class.sp-ncard--info]="notificationTone(n) === 'info'"
+                 [class.sp-ncard--read]="isRead(n)">
+
+          <div class="sp-ncard__icon"
+               [class.sp-ncard__icon--danger]="notificationTone(n) === 'danger'"
+               [class.sp-ncard__icon--warn]="notificationTone(n) === 'warning'"
+               [class.sp-ncard__icon--info]="notificationTone(n) === 'info'">
+            <i class="ti"
+               [class.ti-alert-circle]="notificationTone(n) === 'danger'"
+               [class.ti-alert-triangle]="notificationTone(n) === 'warning'"
+               [class.ti-info-circle]="notificationTone(n) === 'info'"></i>
+          </div>
+
+          <div class="sp-ncard__body">
+            <div class="sp-ncard__hd">
+              <span class="sp-ncard__title">{{ n.titre }}</span>
+              <div class="sp-ncard__meta">
+                <span class="sp-ncard__date">{{ n.dateCreation | date:'dd/MM/yyyy' }}</span>
+                <span class="sp-ncard__badge"
+                      [class.sp-ncard__badge--danger]="notificationTone(n) === 'danger'"
+                      [class.sp-ncard__badge--warn]="notificationTone(n) === 'warning'"
+                      [class.sp-ncard__badge--info]="notificationTone(n) === 'info'">
+                  {{ notificationTone(n) === 'danger' ? 'CRITIQUE' : notificationTone(n) === 'warning' ? 'VIGILANCE' : 'INFO' }}
+                </span>
+              </div>
+            </div>
+            <p class="sp-ncard__msg">{{ n.message }}</p>
+            <div class="sp-ncard__actions">
+              <button type="button" class="sp-btn sp-btn--ghost sp-btn--sm" (click)="voirDetails(n)">
+                <i class="ti" [class.ti-eye]="notificationTone(n) === 'danger'" [class.ti-users]="notificationTone(n) !== 'danger'"></i>
+                {{ notificationTone(n) === 'danger' ? 'Voir détails' : 'Voir utilisateurs' }}
+              </button>
+              <button type="button" class="sp-btn sp-btn--ghost sp-btn--sm" (click)="markRead(n)">
+                <i class="ti ti-check"></i>
+                Marquer lu
+              </button>
+            </div>
+          </div>
+
+        </div>
+
+          <!-- Empty state -->
+          <div class="sp-empty" *ngIf="filteredNotifications.length === 0">
+            <i class="ti ti-bell-off"></i>
+            <span>Aucune notification dans cette catégorie</span>
+          </div>
+
+          </div><!-- /.sp-notifs__list -->
+        </div><!-- /.sp-notifs__panel -->
+      </div><!-- /.sp-notifs -->
+
+    </div>
+  </div>
+</section>

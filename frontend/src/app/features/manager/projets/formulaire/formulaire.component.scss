@@ -1,0 +1,344 @@
+﻿// Design tokens
+$border:  #e2e8f0;
+$text:    #0f172a;
+$sub:     #64748b;
+$dim:     #94a3b8;
+$blue:    #2563eb;
+$blue-dk: #1d4ed8;
+$blue-lt: #eff6ff;
+$red:     #ef4444;
+$surface: #fff;
+$radius:  8px;
+
+// Root wrapper
+.fmp {
+  font-family: 'Inter', 'Plus Jakarta Sans', system-ui, sans-serif;
+  color: $text;
+
+  // ── Standalone route: frosted-glass backdrop overlay ──────
+  &--standalone {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(15, 23, 42, 0.4);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    z-index: 40;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    box-sizing: border-box;
+  }
+
+  // ── Embedded (inside parent modal panel): plain container ─
+  &--embedded {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+  }
+}
+
+// White modal card (on top of overlay)
+.fmp__card {
+  position: relative;
+  z-index: 50;
+  background: $surface;
+  border-radius: 12px;
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
+  width: min(100%, 560px);
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+
+  // Embedded: fill the parent panel completely
+  .fmp--embedded & {
+    width: 100%;
+    max-height: 100%;
+    border-radius: 0;
+    box-shadow: none;
+  }
+}
+
+// Enter animation for standalone
+.fmp--standalone .fmp__card {
+  animation: fmp-enter 0.22s ease;
+}
+
+@keyframes fmp-enter {
+  from { opacity: 0; transform: translateY(10px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0)   scale(1);    }
+}
+
+// Header
+.fmp__hdr {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 20px 24px 18px;
+  background: $surface;
+  border-bottom: 1px solid $border;
+}
+
+.fmp__hdr-left {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.fmp__back {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: $sub;
+  text-decoration: none;
+  svg { width: 14px; height: 14px; stroke: currentColor; flex-shrink: 0; }
+  &:hover { color: $text; }
+}
+
+.fmp__title {
+  font-size: 17px;
+  font-weight: 700;
+  color: $text;
+  letter-spacing: -0.3px;
+  margin: 0;
+}
+
+.fmp__close {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  color: $sub;
+  flex-shrink: 0;
+  transition: background 0.15s, color 0.15s;
+  svg { width: 16px; height: 16px; stroke: currentColor; }
+  &:hover { background: #f1f5f9; color: $text; }
+}
+
+// Error banner
+.fmp__error {
+  padding: 12px 24px;
+  background: #fef2f2;
+  border-bottom: 1px solid #fecaca;
+  color: $red;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+// Loading full
+.fmp__loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 40px;
+  color: $sub;
+  font-size: 13px;
+  background: $surface;
+}
+
+.fmp__spinner {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid $border;
+  border-top-color: $blue;
+  animation: fmp-spin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes fmp-spin { to { transform: rotate(360deg); } }
+
+.fmp__loading-inline {
+  font-size: 12px;
+  color: $dim;
+  padding: 4px 0;
+}
+
+// Body
+.fmp__body {
+  background: $surface;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+// Section
+.fmp__section {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.fmp__section-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: $sub;
+  margin: 0;
+  padding-bottom: 6px;
+  border-bottom: 1px solid $border;
+}
+
+// Fields
+.fmp__row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.fmp__field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.fmp__label {
+  font-size: 12px;
+  font-weight: 600;
+  color: $text;
+}
+
+.fmp__req { color: $red; margin-left: 2px; }
+
+.fmp__input {
+  width: 100%;
+  background: $surface;
+  border: 1px solid $border;
+  border-radius: $radius;
+  padding: 10px 14px;
+  font-size: 13px;
+  font-family: inherit;
+  color: $text;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
+  box-sizing: border-box;
+
+  &::placeholder { color: $dim; }
+
+  &:focus {
+    border-color: $blue;
+    box-shadow: 0 0 0 3px rgba(37,99,235,0.12);
+  }
+}
+
+.fmp__textarea {
+  resize: vertical;
+  min-height: 80px;
+  line-height: 1.5;
+}
+
+.fmp__select {
+  cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' fill='none'%3E%3Cpath d='M2.5 4.5L6 8L9.5 4.5' stroke='%2394a3b8' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 32px;
+}
+
+// Competence chips
+.fmp__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.fmp__chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 12px;
+  border-radius: 20px;
+  border: 1px solid $border;
+  background: $surface;
+  color: $sub;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: inherit;
+
+  &:hover { border-color: $blue; color: $blue; background: $blue-lt; }
+
+  &--active {
+    background: $blue;
+    border-color: $blue;
+    color: #fff;
+    &:hover { background: $blue-dk; border-color: $blue-dk; }
+  }
+}
+
+.fmp__chips-count {
+  font-size: 12px;
+  color: $sub;
+  margin: 0;
+}
+
+.fmp__empty {
+  font-size: 13px;
+  color: $dim;
+  padding: 8px 0;
+}
+
+// Footer
+.fmp__footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 16px 24px;
+  background: $surface;
+  border-top: 1px solid $border;
+}
+
+// Buttons
+.fmp__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 20px;
+  border-radius: $radius;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid transparent;
+  font-family: inherit;
+  transition: all 0.15s;
+  svg { width: 14px; height: 14px; stroke: currentColor; flex-shrink: 0; }
+
+  &--cancel {
+    background: $surface;
+    border-color: $border;
+    color: $sub;
+    &:hover { background: #f8fafc; color: $text; }
+  }
+
+  &--save {
+    background: $blue;
+    border-color: $blue;
+    color: #fff;
+    svg { stroke: rgba(255,255,255,0.85); }
+    &:hover:not(:disabled) { background: $blue-dk; border-color: $blue-dk; }
+    &:disabled { opacity: 0.55; cursor: not-allowed; }
+  }
+}
+
+// Mobile
+@media (max-width: 500px) {
+  .fmp__row { grid-template-columns: 1fr; }
+  .fmp__footer { flex-direction: column-reverse; }
+  .fmp__btn { width: 100%; justify-content: center; }
+}

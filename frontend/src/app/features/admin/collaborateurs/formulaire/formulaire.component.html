@@ -1,0 +1,551 @@
+<section class="sp-root" [class.sp-root--embedded]="embedded">
+  <ng-container *ngIf="!embedded; else embeddedLayout">
+    <app-admin-sidebar></app-admin-sidebar>
+
+    <div class="sp-main">
+
+      <!-- ══ TOPBAR ════════════════════════════════════════════ -->
+      <header class="sp-topbar">
+        <div class="sp-topbar__left">
+          <nav class="sp-topbar__breadcrumb">
+            <span>SmartAssign</span>
+            <span class="sp-topbar__sep">›</span>
+            <span>Admin</span>
+            <span class="sp-topbar__sep">›</span>
+            <a routerLink="/admin/collaborateurs" class="sp-topbar__link">Collaborateurs</a>
+            <span class="sp-topbar__sep">›</span>
+            <span class="sp-topbar__current">{{ isEditMode ? 'Modifier' : 'Nouveau' }}</span>
+          </nav>
+          <h1 class="sp-topbar__title">{{ title }}</h1>
+        </div>
+        <div class="sp-topbar__right">
+          <div class="sp-status-pill">
+            <span class="sp-status-dot"
+              [style.background]="formInvalid ? 'var(--amber)' : 'var(--green)'"
+              [style.color]="formInvalid ? 'var(--amber)' : 'var(--green)'">
+            </span>
+            {{ formStateLabel }}
+          </div>
+          <a routerLink="/admin/collaborateurs" class="sp-btn sp-btn--ghost sp-btn--pill">
+            <svg viewBox="0 0 16 16" fill="none"><path d="M10.5 3.5L6 8l4.5 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M6.5 8h6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+            Retour
+          </a>
+          <button type="button" class="sp-btn sp-btn--primary sp-btn--pill" (click)="sauvegarder()" [disabled]="formInvalid || isSaving || isLoading || !!createdCredentials">
+            <svg viewBox="0 0 16 16" fill="none"><path d="M3.5 8.5 6.5 11.5 12.5 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            {{ isEditMode ? 'Enregistrer' : 'Créer le compte' }}
+          </button>
+          <div class="sp-av-sm" routerLink="/admin/profil" style="cursor:pointer" title="Mon profil">AP</div>
+        </div>
+      </header>
+
+      <!-- ══ BODY ══════════════════════════════════════════════ -->
+      <div class="sp-body">
+
+        <!-- KPI CARDS -->
+        <div class="sp-kpi-grid">
+
+          <div class="sp-kcard">
+            <div class="sp-kcard__bar" style="background:#3b82f6"></div>
+            <span class="sp-kcard__badge sp-kcard__badge--neutral">Profil</span>
+            <div class="sp-kcard__label">Utilisateur</div>
+            <div class="sp-kcard__val sp-kcard__val--sm">{{ fullNamePreview }}</div>
+            <div class="sp-kcard__sub">{{ generatedEmailPreview }}</div>
+          </div>
+
+          <div class="sp-kcard">
+            <div class="sp-kcard__bar" style="background:#22c55e"></div>
+            <span class="sp-kcard__badge sp-kcard__badge--green">{{ roleLabel }}</span>
+            <div class="sp-kcard__label">Rôle</div>
+            <div class="sp-kcard__val">{{ collaborateur.role }}</div>
+            <div class="sp-kcard__sub">Droits appliqués à la création</div>
+          </div>
+
+          <div class="sp-kcard">
+            <div class="sp-kcard__bar" style="background:#f59e0b"></div>
+            <span class="sp-kcard__badge sp-kcard__badge--warn">{{ experienceLabel }}</span>
+            <div class="sp-kcard__label">Expérience</div>
+            <div class="sp-kcard__val">{{ collaborateur.experienceAnnees || 0 }}</div>
+            <div class="sp-kcard__sub">Année(s)</div>
+          </div>
+
+          <div class="sp-kcard">
+            <div class="sp-kcard__bar" style="background:#8b5cf6"></div>
+            <span class="sp-kcard__badge sp-kcard__badge--neutral">{{ selectedCompetenceIds.length }}</span>
+            <div class="sp-kcard__label">Compétences</div>
+            <div class="sp-kcard__val">{{ selectedCompetenceIds.length }}</div>
+            <div class="sp-kcard__sub">sur {{ availableCompetences.length }} disponibles</div>
+          </div>
+
+          <div class="sp-kcard">
+            <div class="sp-kcard__bar" [style.background]="collaborateur.disponible ? '#22c55e' : '#f59e0b'"></div>
+            <span class="sp-kcard__badge"
+              [class.sp-kcard__badge--green]="collaborateur.disponible"
+              [class.sp-kcard__badge--warn]="!collaborateur.disponible">{{ disponibiliteLabel }}</span>
+            <div class="sp-kcard__label">Disponibilité</div>
+            <div class="sp-kcard__val"
+              [style.color]="collaborateur.disponible ? 'var(--green)' : 'var(--amber)'">
+              {{ collaborateur.disponible ? 'Oui' : 'Non' }}
+            </div>
+            <div class="sp-kcard__sub">Statut initial du compte</div>
+          </div>
+
+        </div>
+
+        <ng-container *ngTemplateOutlet="workspace"></ng-container>
+      </div>
+    </div>
+  </ng-container>
+
+  <ng-template #embeddedLayout>
+    <!-- ── Clean enterprise modal form ── -->
+
+    <!-- Error -->
+    <div class="em-alert" *ngIf="errorMessage">
+      <svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.4"/><path d="M8 5v3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="8" cy="11" r=".75" fill="currentColor"/></svg>
+      {{ errorMessage }}
+    </div>
+
+    <!-- Loading -->
+    <div class="em-loading" *ngIf="isLoading">
+      <div class="em-spinner"></div>
+      <span>Chargement...</span>
+    </div>
+
+    <!-- Credentials card after creation -->
+    <ng-container *ngIf="createdCredentials && !isLoading">
+      <div class="em-hdr">
+        <h2 class="em-title">Compte créé avec succès</h2>
+        <button type="button" class="em-close" (click)="handleCancel()" aria-label="Fermer">
+          <svg viewBox="0 0 16 16" fill="none"><path d="M3 3l10 10M13 3L3 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+      <div class="em-body">
+        <div class="em-creds">
+          <div class="em-creds__item">
+            <span class="em-creds__lbl">Utilisateur</span>
+            <strong class="em-creds__val">{{ createdCredentials.fullName }}</strong>
+          </div>
+          <div class="em-creds__item">
+            <span class="em-creds__lbl">Email</span>
+            <strong class="em-creds__val">{{ createdCredentials.email }}</strong>
+          </div>
+          <div class="em-creds__item em-creds__item--pass">
+            <span class="em-creds__lbl">Mot de passe initial</span>
+            <strong class="em-creds__val em-creds__val--pass">{{ createdCredentials.password }}</strong>
+          </div>
+        </div>
+        <p class="em-creds__note">Conservez ces identifiants. Le mot de passe ne sera plus affiché.</p>
+        <p class="em-creds__copy" *ngIf="copyMessage">{{ copyMessage }}</p>
+      </div>
+      <div class="em-ftr">
+        <button type="button" class="em-btn em-btn--ghost" (click)="copierMotDePasse()">Copier</button>
+        <button type="button" class="em-btn em-btn--ghost" (click)="creerUnAutreCompte()">Nouveau compte</button>
+        <button type="button" class="em-btn em-btn--primary" (click)="handleCancel()">Fermer</button>
+      </div>
+    </ng-container>
+
+    <!-- Form -->
+    <ng-container *ngIf="!createdCredentials && !isLoading">
+      <!-- Header -->
+      <div class="em-hdr">
+        <h2 class="em-title">{{ isEditMode ? 'Modifier l\'utilisateur' : 'Créer un utilisateur' }}</h2>
+        <button type="button" class="em-close" (click)="handleCancel()" [disabled]="isSaving" aria-label="Fermer">
+          <svg viewBox="0 0 16 16" fill="none"><path d="M3 3l10 10M13 3L3 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+
+      <!-- Body -->
+      <div class="em-body">
+
+        <div class="em-row">
+          <div class="em-fg">
+            <label class="em-lbl" for="em-prenom">Prénom <span class="em-req">*</span></label>
+            <input class="em-input" id="em-prenom" type="text" [(ngModel)]="collaborateur.prenom" placeholder="Ex : Sara" autocomplete="given-name">
+          </div>
+          <div class="em-fg">
+            <label class="em-lbl" for="em-nom">Nom <span class="em-req">*</span></label>
+            <input class="em-input" id="em-nom" type="text" [(ngModel)]="collaborateur.nom" placeholder="Ex : Ben Ali" autocomplete="family-name">
+          </div>
+        </div>
+
+        <div class="em-fg em-fg--full">
+          <label class="em-lbl" for="em-email">Email (généré automatiquement)</label>
+          <input class="em-input em-input--readonly" id="em-email" type="email" [value]="generatedEmailPreview" readonly>
+        </div>
+
+        <div class="em-fg em-fg--full">
+          <label class="em-lbl" for="em-role">Rôle <span class="em-req">*</span></label>
+          <select class="em-input em-select" id="em-role" [(ngModel)]="collaborateur.role">
+            <option value="ADMIN">Admin</option>
+            <option value="MANAGER">Manager</option>
+            <option value="COLLAB">Collaborateur</option>
+          </select>
+        </div>
+
+        <div class="em-fg em-fg--full">
+          <label class="em-lbl" for="em-tel">Téléphone</label>
+          <input class="em-input" id="em-tel" type="tel" [(ngModel)]="telephone" placeholder="Ex : +216 20 123 456" autocomplete="tel">
+        </div>
+
+        <div class="em-fg em-fg--full" *ngIf="collaborateur.role === 'COLLAB'">
+          <label class="em-lbl" for="em-exp">Expérience <span class="em-req">*</span></label>
+          <input class="em-input" id="em-exp" type="number" min="0" max="60" step="1"
+                 [(ngModel)]="collaborateur.experienceAnnees" placeholder="Ex : 3">
+          <p class="em-hint">Nombre d'années d'expérience professionnelle.</p>
+        </div>
+
+        <div class="em-fg em-fg--full" *ngIf="collaborateur.role === 'COLLAB'">
+          <label class="em-lbl" for="em-comp">Compétences</label>
+          <input class="em-input" id="em-comp" type="text" [(ngModel)]="competencesTexte" placeholder="Ex : Java, Angular, SQL">
+          <p class="em-hint">Valeurs séparées par des virgules.</p>
+        </div>
+
+      </div><!-- /em-body -->
+
+      <!-- Footer -->
+      <div class="em-ftr">
+        <button type="button" class="em-btn em-btn--ghost" (click)="handleCancel()" [disabled]="isSaving">Annuler</button>
+        <button type="button" class="em-btn em-btn--primary" (click)="sauvegarder()" [disabled]="formInvalid || isSaving">
+          <svg viewBox="0 0 16 16" fill="none" *ngIf="!isSaving"><polyline points="3,8.5 6.5,12 13,5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span class="em-spin" *ngIf="isSaving"></span>
+          {{ isSaving ? 'Enregistrement...' : (isEditMode ? 'Sauvegarder' : 'Créer le compte') }}
+        </button>
+      </div>
+    </ng-container>
+  </ng-template>
+
+  <ng-template #workspace>
+    <div class="alert-error" *ngIf="errorMessage">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"/>
+        <line x1="12" y1="8" x2="12" y2="12"/>
+        <line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
+      {{ errorMessage }}
+    </div>
+
+    <section class="credentials-card" *ngIf="createdCredentials">
+      <div class="credentials-card__header">
+        <div>
+          <span class="credentials-card__eyebrow">Compte créé</span>
+          <h2>Mot de passe généré avec succès</h2>
+          <p>Conservez ces identifiants avant de quitter cette page. Le mot de passe n'est affiché qu'après la création.</p>
+        </div>
+        <span class="credentials-card__badge">{{ createdCredentials.role }}</span>
+      </div>
+
+      <div class="credentials-grid">
+        <div class="credentials-item">
+          <span>Utilisateur</span>
+          <strong>{{ createdCredentials.fullName }}</strong>
+        </div>
+        <div class="credentials-item">
+          <span>Email</span>
+          <strong>{{ createdCredentials.email }}</strong>
+        </div>
+        <div class="credentials-item credentials-item--password">
+          <span>Mot de passe initial</span>
+          <strong>{{ createdCredentials.password }}</strong>
+        </div>
+      </div>
+
+      <div class="credentials-actions">
+        <button type="button" class="btn-save" (click)="copierMotDePasse()">Copier les identifiants</button>
+        <button type="button" class="btn-cancel" (click)="creerUnAutreCompte()">Créer un autre compte</button>
+        <button *ngIf="embedded" type="button" class="btn-cancel" (click)="handleCancel()">Fermer</button>
+        <a *ngIf="!embedded" routerLink="/admin/collaborateurs" class="btn-cancel">Retour à la liste</a>
+      </div>
+
+      <p class="credentials-copy-message" *ngIf="copyMessage">{{ copyMessage }}</p>
+    </section>
+
+    <div class="loading-state" *ngIf="isLoading">
+      <div class="spinner"></div>
+      <p>Chargement du collaborateur...</p>
+    </div>
+
+    <div class="main-card main-card--form" *ngIf="!isLoading && !createdCredentials">
+      <section class="form-hero">
+        <div class="hero-copy">
+          <div class="embedded-topbar" *ngIf="embedded">
+            <span class="embedded-chip">Création rapide</span>
+            <button type="button" class="close-btn" (click)="handleCancel()" aria-label="Fermer la fenêtre de création de compte utilisateur">
+              <svg viewBox="0 0 16 16" fill="none">
+                <path d="M4 4L12 12M12 4L4 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+              </svg>
+            </button>
+          </div>
+          <span class="hero-eyebrow">Administration collaborateurs</span>
+          <h2>{{ title }}</h2>
+          <p>{{ descriptionText }}</p>
+
+          <div class="hero-actions">
+            <span class="status-chip" [class.status-ready]="!formInvalid" [class.status-incomplete]="formInvalid">
+              <span class="status-dot"></span>
+              {{ formStateLabel }}
+            </span>
+          </div>
+        </div>
+
+        <div class="hero-summary" *ngIf="!embedded">
+          <div class="summary-stat">
+            <span>Nom</span>
+            <strong>{{ fullNamePreview }}</strong>
+          </div>
+          <div class="summary-stat">
+            <span>Expérience</span>
+            <strong>{{ collaborateur.experienceAnnees || 0 }} ans</strong>
+          </div>
+          <div class="summary-stat">
+            <span>Niveau</span>
+            <strong>{{ experienceLabel }}</strong>
+          </div>
+          <div class="summary-stat">
+            <span>Disponibilité</span>
+            <strong>{{ disponibiliteLabel }}</strong>
+          </div>
+          <div class="summary-stat">
+            <span>Rôle</span>
+            <strong>{{ roleLabel }}</strong>
+          </div>
+        </div>
+      </section>
+
+      <section class="preview-banner">
+        <div class="preview-identity">
+          <div class="preview-avatar">{{ initialsPreview }}</div>
+          <div class="preview-text">
+            <strong>{{ fullNamePreview }}</strong>
+            <span>{{ generatedEmailPreview }}</span>
+          </div>
+          <div class="preview-chips">
+            <span class="pchip" [class.pchip-junior]="collaborateur.experienceAnnees < 3" [class.pchip-confirmed]="collaborateur.experienceAnnees >= 3 && collaborateur.experienceAnnees < 7" [class.pchip-senior]="collaborateur.experienceAnnees >= 7">
+              {{ experienceLabel }}
+            </span>
+            <span class="pchip" [class.pchip-violet]="collaborateur.role === 'ADMIN'" [class.pchip-blue]="collaborateur.role === 'MANAGER'" [class.pchip-slate]="collaborateur.role === 'COLLAB'">
+              {{ roleLabel }}
+            </span>
+            <span class="pchip" [class.pchip-green]="collaborateur.disponible" [class.pchip-amber]="!collaborateur.disponible">
+              {{ collaborateur.disponible ? 'Disponible' : 'Occupé' }}
+            </span>
+          </div>
+        </div>
+        <div class="preview-stats">
+          <div class="prev-stat">
+            <span>Compétences</span>
+            <strong>{{ selectedCompetenceIds.length }}</strong>
+          </div>
+          <div class="prev-stat">
+            <span>Formulaire</span>
+            <strong>{{ formStateLabel }}</strong>
+          </div>
+        </div>
+      </section>
+
+      <div class="form-layout">
+        <div class="form-main">
+          <div class="form-card">
+            <div class="form-card-header">
+              <div class="section-icon">👤</div>
+              <div>
+                <span class="section-label">Identité</span>
+                <p class="section-desc">Informations principales utilisées dans les listes et affectations.</p>
+              </div>
+            </div>
+            <div class="form-card-body">
+              <div class="form-row">
+                <div class="form-group" [class.fg-filled]="collaborateur.prenom">
+                  <label for="prenom">Prénom <span class="required">*</span></label>
+                  <input id="prenom" type="text" [(ngModel)]="collaborateur.prenom" placeholder="Ex: Sara" autocomplete="given-name">
+                </div>
+                <div class="form-group" [class.fg-filled]="collaborateur.nom">
+                  <label for="nom">Nom <span class="required">*</span></label>
+                  <input id="nom" type="text" [(ngModel)]="collaborateur.nom" placeholder="Ex: Ben Ali" autocomplete="family-name">
+                </div>
+              </div>
+              <div class="form-group fg-filled">
+                <label for="email">Adresse email générée automatiquement</label>
+                <div class="input-icon-wrap">
+                  <svg class="input-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                    <polyline points="22,6 12,13 2,6"/>
+                  </svg>
+                  <input id="email" type="email" [value]="generatedEmailPreview" placeholder="prenom.nom@smartassign.tn" autocomplete="email" readonly>
+                </div>
+                <small>L'email final est généré automatiquement à partir du prénom et du nom, avec un suffixe ajouté si nécessaire.</small>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-card">
+            <div class="form-card-header">
+              <div class="section-icon">💼</div>
+              <div>
+                <span class="section-label">Profil professionnel</span>
+                <p class="section-desc">Séniorité et disponibilité immédiate du collaborateur.</p>
+              </div>
+            </div>
+            <div class="form-card-body">
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="experience">Années d'expérience <span class="required">*</span></label>
+                  <div class="input-icon-wrap">
+                    <svg class="input-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                      <line x1="16" y1="2" x2="16" y2="6"/>
+                      <line x1="8" y1="2" x2="8" y2="6"/>
+                      <line x1="3" y1="10" x2="21" y2="10"/>
+                    </svg>
+                    <input id="experience" type="number" [(ngModel)]="collaborateur.experienceAnnees" min="0" max="50">
+                  </div>
+                  <div class="exp-indicator">
+                    <div class="exp-bar">
+                      <div class="exp-fill" [style.width.%]="Math.min(collaborateur.experienceAnnees / 15 * 100, 100)" [class.fill-junior]="collaborateur.experienceAnnees < 3" [class.fill-confirmed]="collaborateur.experienceAnnees >= 3 && collaborateur.experienceAnnees < 7" [class.fill-senior]="collaborateur.experienceAnnees >= 7"></div>
+                    </div>
+                    <span class="exp-label" [class.exp-junior]="collaborateur.experienceAnnees < 3" [class.exp-confirmed]="collaborateur.experienceAnnees >= 3 && collaborateur.experienceAnnees < 7" [class.exp-senior]="collaborateur.experienceAnnees >= 7">
+                      {{ experienceLabel }}
+                    </span>
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label for="role">Rôle <span class="required">*</span></label>
+                  <select id="role" [(ngModel)]="collaborateur.role">
+                    <option value="ADMIN">Admin</option>
+                    <option value="MANAGER">Manager</option>
+                    <option value="COLLAB">Collaborateur</option>
+                  </select>
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="disponibilite">Disponibilité</label>
+                  <div class="dispo-toggle">
+                    <button type="button" class="dispo-btn" [class.active-green]="collaborateur.disponible" (click)="collaborateur.disponible = true">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <polyline points="20,6 9,17 4,12"/>
+                      </svg>
+                      Disponible
+                    </button>
+                    <button type="button" class="dispo-btn" [class.active-amber]="!collaborateur.disponible" (click)="collaborateur.disponible = false">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/>
+                        <line x1="10" y1="15" x2="10" y2="15.01"/>
+                        <line x1="14" y1="15" x2="14" y2="15.01"/>
+                        <line x1="9" y1="9" x2="9.01" y2="9"/>
+                        <line x1="15" y1="9" x2="15.01" y2="9"/>
+                      </svg>
+                      Occupé
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-card">
+            <div class="form-card-header">
+              <div class="section-icon">🧠</div>
+              <div>
+                <span class="section-label">Compétences</span>
+                <p class="section-desc">Sélectionnez les expertises réelles du collaborateur pour améliorer les affectations.</p>
+              </div>
+            </div>
+            <div class="form-card-body">
+              <div class="competence-head">
+                <strong>{{ competencesPreview }}</strong>
+                <span *ngIf="loadingCompetences">Chargement...</span>
+              </div>
+
+              <div class="competence-grid" *ngIf="!loadingCompetences && availableCompetences.length; else noCompetenceData">
+                <button type="button" class="competence-chip" *ngFor="let competence of availableCompetences" [class.competence-chip--active]="isCompetenceSelected(competence.id)" (click)="toggleCompetence(competence.id)">
+                  <span class="competence-marker"></span>
+                  {{ competence.nom }}
+                </button>
+              </div>
+
+              <ng-template #noCompetenceData>
+                <div class="empty-competence-state">
+                  Aucune compétence disponible pour le moment.
+                </div>
+              </ng-template>
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button type="button" class="btn-cancel" (click)="handleCancel()">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+              </svg>
+              Annuler
+            </button>
+            <button class="btn-save" type="button" (click)="sauvegarder()" [disabled]="formInvalid || isSaving">
+              <span *ngIf="!isSaving">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <polyline points="20,6 9,17 4,12"/>
+                </svg>
+                {{ isEditMode ? 'Enregistrer les modifications' : 'Créer le compte utilisateur' }}
+              </span>
+              <span *ngIf="isSaving" class="saving-state">
+                <span class="spinner-sm"></span>
+                Enregistrement...
+              </span>
+            </button>
+          </div>
+        </div>
+
+        <aside class="form-sidebar" *ngIf="!embedded">
+          <div class="side-card">
+            <div class="side-card-header">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="12" y1="8" x2="12" y2="12"/>
+                <line x1="12" y1="16" x2="12.01" y2="16"/>
+              </svg>
+              Aperçu du profil
+            </div>
+            <ul class="summary-list">
+              <li>
+                <span>Niveau estimé</span>
+                <strong class="exp-badge" [class.exp-junior]="collaborateur.experienceAnnees < 3" [class.exp-confirmed]="collaborateur.experienceAnnees >= 3 && collaborateur.experienceAnnees < 7" [class.exp-senior]="collaborateur.experienceAnnees >= 7">
+                  {{ experienceLabel }}
+                </strong>
+              </li>
+              <li>
+                <span>Rôle</span>
+                <strong class="text-muted">{{ roleLabel }}</strong>
+              </li>
+              <li>
+                <span>Disponibilité</span>
+                <strong [class.text-green]="collaborateur.disponible" [class.text-amber]="!collaborateur.disponible">
+                  {{ disponibiliteLabel }}
+                </strong>
+              </li>
+              <li>
+                <span>État du formulaire</span>
+                <strong [class.text-green]="!formInvalid" [class.text-muted]="formInvalid">
+                  {{ formStateLabel }}
+                </strong>
+              </li>
+              <li>
+                <span>Compétences</span>
+                <strong class="text-muted">{{ competencesPreview }}</strong>
+              </li>
+            </ul>
+          </div>
+
+          <div class="tips-card">
+            <div class="tips-header">
+              <span>💡</span>
+              Bonnes pratiques
+            </div>
+            <ul class="tips-list">
+              <li>L'email et le mot de passe sont générés automatiquement à la création</li>
+              <li>L'expérience doit être à jour pour affiner les recommandations</li>
+              <li>La disponibilité peut être modifiée après création</li>
+            </ul>
+          </div>
+        </aside>
+      </div>
+    </div>
+  </ng-template>
+</section>

@@ -1,0 +1,89 @@
+$font-sans: 'Segoe UI Variable', 'Segoe UI', 'Bahnschrift', 'Trebuchet MS', sans-serif;
+
+$color-ink: #0c2d45;
+$color-text: #1a3a52;
+$color-muted: #6a8fa8;
+$color-border: #d6e8f4;
+$color-surface: #ffffff;
+$color-surface-soft: #f0f6fb;
+$color-primary: #1a5f8b;
+$color-primary-strong: #0c3a5c;
+$color-primary-soft: #e6f1fb;
+$color-secondary: #daeaf6;
+$color-success: #2f7d57;
+$color-warning: #b8731a;
+$color-danger: #b8334a;
+
+$shadow-sm: 0 12px 28px rgba(26, 95, 139, 0.08);
+$shadow-md: 0 20px 48px rgba(26, 95, 139, 0.12);
+$radius-sm: 12px;
+$radius-md: 20px;
+$radius-lg: 28px;
+
+@mixin card-surface($padding: 24px) {
+  padding: $padding;
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(26, 95, 139, 0.1);
+  border-radius: $radius-md;
+  box-shadow: $shadow-sm;
+  backdrop-filter: blur(12px);
+}
+
+@mixin interactive-lift {
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease, background 0.18s ease, color 0.18s ease;
+
+  &:hover {
+    transform: translateY(-1px);
+  }
+}
+
+@mixin page-frame {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at top left, rgba(26, 95, 139, 0.07), transparent 24%),
+    radial-gradient(circle at top right, rgba(26, 95, 139, 0.04), transparent 18%),
+    linear-gradient(180deg, #f8fbfd 0%, #eef4f9 100%);
+}
+
+:root {
+  --font-sans: #{$font-sans};
+  --color-ink: #{$color-ink};
+  --color-text: #{$color-text};
+  --color-muted: #{$color-muted};
+  --color-border: #{$color-border};
+  --color-surface: #{$color-surface};
+  --color-surface-soft: #{$color-surface-soft};
+  --color-primary: #{$color-primary};
+  --color-primary-strong: #{$color-primary-strong};
+  --color-primary-soft: #{$color-primary-soft};
+  --color-secondary: #{$color-secondary};
+  --color-success: #{$color-success};
+  --color-warning: #{$color-warning};
+  --color-danger: #{$color-danger};
+  --shadow-sm: #{$shadow-sm};
+  --shadow-md: #{$shadow-md};
+  --radius-sm: #{$radius-sm};
+  --radius-md: #{$radius-md};
+  --radius-lg: #{$radius-lg};
+}
+
+.u-text-muted {
+  color: var(--color-muted);
+}
+
+.u-surface {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+}
+
+.u-stack-sm { display: grid; gap: 12px; }
+.u-stack-md { display: grid; gap: 20px; }
+.u-stack-lg { display: grid; gap: 28px; }
+
+.u-grid-auto {
+  display: grid;
+  gap: 20px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}

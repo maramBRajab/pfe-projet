@@ -1,0 +1,370 @@
+﻿<section class="sp-root">
+  <app-admin-sidebar></app-admin-sidebar>
+
+  <div class="sp-main">
+
+    <!-- ══ TOPBAR ══════════════════════════════════════════ -->
+    <header class="sp-topbar">
+      <div class="sp-topbar__left">
+        <nav class="sp-topbar__breadcrumb">
+          <span>SmartAssign</span>
+          <span class="sp-topbar__sep">›</span>
+          <span class="sp-topbar__current">Supervision</span>
+        </nav>
+        <h1 class="sp-topbar__title">Supervision globale</h1>
+      </div>
+
+      <div class="sp-topbar__right">
+        <div class="sp-status-pill"
+          [class.sp-status-pill--watch]="platformHealth.tone === 'watch'"
+          [class.sp-status-pill--risk]="platformHealth.tone === 'risk'">
+          <span class="sp-status-dot"></span>
+          {{ platformHealth.label }}
+        </div>
+
+        <button class="sp-btn sp-btn--ghost sp-btn--pill" (click)="exportExcel()">
+          <svg viewBox="0 0 16 16" fill="none">
+            <path d="M8 2v9" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+            <path d="M4.5 8.5L8 12l3.5-3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M2 13h12" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+          </svg>
+          Exporter
+        </button>
+
+        <button class="sp-btn sp-btn--primary sp-btn--pill" (click)="exportPdf()">
+          <svg viewBox="0 0 16 16" fill="none">
+            <path d="M3 2h7l3 3v9a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1Z" stroke="currentColor" stroke-width="1.4"/>
+            <path d="M10 2v4h4M6 9h4M6 12h2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+          </svg>
+          Export PDF
+        </button>
+
+        <div class="sp-av-sm" routerLink="/admin/profil" style="cursor:pointer" title="Mon profil">AP</div>
+      </div>
+    </header>
+
+    <!-- ══ BODY ════════════════════════════════════════════ -->
+    <div class="sp-body">
+
+      <!-- LOADER -->
+      <div class="sp-loader" *ngIf="loading">
+        <div class="sp-spinner"></div>
+        <strong>Chargement du tableau de bord…</strong>
+        <span>Synchronisation des indicateurs, alertes et activité récente.</span>
+      </div>
+
+      <ng-container *ngIf="!loading">
+
+        <!-- ── KPI CARDS ────────────────────────────────────── -->
+        <div class="sp-kpi-grid">
+
+          <div class="sp-kcard" routerLink="/admin/projets" style="cursor:pointer">
+            <div class="sp-kcard__bar sp-kcard__bar--blue"></div>
+            <span class="sp-kcard__badge sp-kcard__badge--green">+50%</span>
+            <div class="sp-kcard__label">PROJETS ACTIFS</div>
+            <div class="sp-kcard__val sp-kcard__val--blue">{{ stats.projetsActifs }}</div>
+            <div class="sp-kcard__sub">{{ stats.nouveauxProjets }} nouveau(x) ce mois</div>
+          </div>
+
+          <div class="sp-kcard" routerLink="/admin/collaborateurs" style="cursor:pointer">
+            <div class="sp-kcard__bar sp-kcard__bar--green"></div>
+            <span class="sp-kcard__badge sp-kcard__badge--neutral">stable</span>
+            <div class="sp-kcard__label">UTILISATEURS</div>
+            <div class="sp-kcard__val sp-kcard__val--green">{{ stats.totalCollaborateurs }}</div>
+            <div class="sp-kcard__sub">{{ stats.nouveauxCollabs }} nouveaux profils</div>
+          </div>
+
+          <div class="sp-kcard" routerLink="/admin/affectation" style="cursor:pointer">
+            <div class="sp-kcard__bar sp-kcard__bar--amber"></div>
+            <span class="sp-kcard__badge sp-kcard__badge--warn">Vigilance</span>
+            <div class="sp-kcard__label">TAUX D'AFFECTATION</div>
+            <div class="sp-kcard__val sp-kcard__val--amber">{{ stats.tauxAffectation }}%</div>
+            <div class="sp-kcard__sub">Cible recommandée : 72%</div>
+          </div>
+
+          <div class="sp-kcard" routerLink="/admin/projets" style="cursor:pointer">
+            <div class="sp-kcard__bar sp-kcard__bar--red"></div>
+            <span class="sp-kcard__badge sp-kcard__badge--neutral">{{ stats.projetsEnRetard }}</span>
+            <div class="sp-kcard__label">PROJETS EN RETARD</div>
+            <div class="sp-kcard__val">{{ stats.projetsEnRetard }}</div>
+            <div class="sp-kcard__sub">Suivi immédiat requis</div>
+          </div>
+
+          <div class="sp-kcard" routerLink="/admin/collaborateurs" style="cursor:pointer">
+            <div class="sp-kcard__bar sp-kcard__bar--purple"></div>
+            <span class="sp-kcard__badge sp-kcard__badge--neutral">{{ stats.totalCollaborateurs }} total</span>
+            <div class="sp-kcard__label">COMPTES UTILISATEURS</div>
+            <div class="sp-kcard__val sp-kcard__val--purple">{{ stats.totalCollaborateurs }}</div>
+            <div class="sp-kcard__sub">2 admins · 5 managers · 4 collabs</div>
+          </div>
+
+        </div>
+
+        <!-- ── ROW 1 : RÉPARTITION + VIGILANCE ──────────────── -->
+        <div class="sp-two-col">
+
+          <!-- Utilisateurs par rôle -->
+          <article class="sp-panel">
+            <div class="sp-panel__hd">
+              <div>
+                <span class="sp-kicker">RÉPARTITION</span>
+                <h3>Utilisateurs par rôle</h3>
+              </div>
+            </div>
+
+            <div class="sp-donut-wrap">
+              <div class="sp-donut-container">
+                <svg width="110" height="110" viewBox="0 0 200 200" class="sp-donut-svg">
+                  <circle cx="100" cy="100" r="70" fill="none" stroke="#e2e8f0" stroke-width="26"/>
+                  <circle cx="100" cy="100" r="70" fill="none" stroke="#3b82f6" stroke-width="26"
+                    [attr.stroke-dasharray]="getDonutDash(repartition.collaborateurs)"
+                    [attr.stroke-dashoffset]="getDonutOffset(0)"/>
+                  <circle cx="100" cy="100" r="70" fill="none" stroke="#8b5cf6" stroke-width="26"
+                    [attr.stroke-dasharray]="getDonutDash(repartition.managers)"
+                    [attr.stroke-dashoffset]="getDonutOffset(repartition.collaborateurs)"/>
+                  <circle cx="100" cy="100" r="70" fill="none" stroke="#10b981" stroke-width="26"
+                    [attr.stroke-dasharray]="getDonutDash(repartition.admins)"
+                    [attr.stroke-dashoffset]="getDonutOffset(repartition.collaborateurs + repartition.managers)"/>
+                </svg>
+                <div class="sp-donut-center">
+                  <span class="sp-donut-total">{{ repartition.collaborateurs + repartition.managers + repartition.admins }}</span>
+                  <span class="sp-donut-sub">Total</span>
+                </div>
+              </div>
+
+              <div class="sp-donut-legend">
+                <div class="sp-dleg-item">
+                  <div class="sp-dleg-row">
+                    <span class="sp-dleg-dot" style="background:#3b82f6"></span>
+                    <span class="sp-dleg-name">Collaborateurs</span>
+                    <span class="sp-dleg-val">{{ repartition.collaborateurs }} <small>({{ getLegBarPct(repartition.collaborateurs) }}%)</small></span>
+                  </div>
+                  <div class="sp-dleg-bar">
+                    <div class="sp-dleg-fill" style="background:#3b82f6" [style.width.%]="getLegBarPct(repartition.collaborateurs)"></div>
+                  </div>
+                </div>
+                <div class="sp-dleg-item">
+                  <div class="sp-dleg-row">
+                    <span class="sp-dleg-dot" style="background:#8b5cf6"></span>
+                    <span class="sp-dleg-name">Managers</span>
+                    <span class="sp-dleg-val">{{ repartition.managers }} <small>({{ getLegBarPct(repartition.managers) }}%)</small></span>
+                  </div>
+                  <div class="sp-dleg-bar">
+                    <div class="sp-dleg-fill" style="background:#8b5cf6" [style.width.%]="getLegBarPct(repartition.managers)"></div>
+                  </div>
+                </div>
+                <div class="sp-dleg-item">
+                  <div class="sp-dleg-row">
+                    <span class="sp-dleg-dot" style="background:#10b981"></span>
+                    <span class="sp-dleg-name">Admins</span>
+                    <span class="sp-dleg-val">{{ repartition.admins }} <small>({{ getLegBarPct(repartition.admins) }}%)</small></span>
+                  </div>
+                  <div class="sp-dleg-bar">
+                    <div class="sp-dleg-fill" style="background:#10b981" [style.width.%]="getLegBarPct(repartition.admins)"></div>
+                  </div>
+                </div>
+                <button class="sp-roles-btn" routerLink="/admin/roles">→ Consulter rôles</button>
+              </div>
+            </div>
+          </article>
+
+          <!-- Points de vigilance -->
+          <article class="sp-panel">
+            <div class="sp-panel__hd">
+              <div>
+                <span class="sp-kicker">ALERTES SYSTÈME</span>
+                <h3>Points de vigilance</h3>
+              </div>
+              <a class="sp-link-btn" routerLink="/admin/notifications">Toutes →</a>
+            </div>
+
+            <div class="sp-alert-list" *ngIf="alertes.length; else fallbackAlerts">
+              <div class="sp-alert"
+                *ngFor="let a of alertes"
+                [class.sp-alert--danger]="a.type === 'danger' || a.type === 'urgent'"
+                [class.sp-alert--warn]="a.type === 'warning'"
+                [class.sp-alert--info]="a.type === 'info'"
+                [class.sp-alert--ok]="a.type === 'ok'">
+                <div class="sp-alert__ico">
+                  <svg viewBox="0 0 16 16" fill="none">
+                    <path d="M8 2L14.5 13H1.5L8 2Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
+                    <path d="M8 6v3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+                    <circle cx="8" cy="11" r=".6" fill="currentColor"/>
+                  </svg>
+                </div>
+                <div class="sp-alert__body">
+                  <strong>{{ a.message }}</strong>
+                  <span>{{ a.time }}</span>
+                </div>
+                <span class="sp-alert__badge">{{ a.type | uppercase }}</span>
+              </div>
+            </div>
+
+            <ng-template #fallbackAlerts>
+              <div class="sp-alert-list">
+                <div class="sp-alert sp-alert--warn">
+                  <div class="sp-alert__ico">
+                    <svg viewBox="0 0 16 16" fill="none">
+                      <path d="M8 2L14.5 13H1.5L8 2Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
+                      <path d="M8 6v3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+                      <circle cx="8" cy="11" r=".6" fill="currentColor"/>
+                    </svg>
+                  </div>
+                  <div class="sp-alert__body">
+                    <strong>8 collaborateurs sans affectation</strong>
+                    <span>Aujourd'hui — à signaler au Manager</span>
+                  </div>
+                  <span class="sp-alert__badge">WARNING</span>
+                </div>
+                <div class="sp-alert sp-alert--info">
+                  <div class="sp-alert__ico">
+                    <svg viewBox="0 0 16 16" fill="none">
+                      <circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.5"/>
+                      <path d="M8 7v5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                      <circle cx="8" cy="5" r=".6" fill="currentColor"/>
+                    </svg>
+                  </div>
+                  <div class="sp-alert__body">
+                    <strong>2 ressources actuellement indisponibles</strong>
+                    <span>Aujourd'hui</span>
+                  </div>
+                  <span class="sp-alert__badge">INFO</span>
+                </div>
+                <div class="sp-alert sp-alert--ok">
+                  <div class="sp-alert__ico">
+                    <svg viewBox="0 0 16 16" fill="none">
+                      <polyline points="4 8 7 11 12 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                  </div>
+                  <div class="sp-alert__body">
+                    <strong>0 projet en retard</strong>
+                    <span>Aucun suivi urgent requis</span>
+                  </div>
+                  <span class="sp-alert__badge">OK</span>
+                </div>
+              </div>
+            </ng-template>
+          </article>
+
+        </div>
+
+        <!-- ── TIMELINE ──────────────────────────────────────── -->
+        <article class="sp-panel">
+          <div class="sp-panel__hd">
+            <div>
+              <span class="sp-kicker">ACTIVITÉ</span>
+              <h3>Timeline d'administration</h3>
+            </div>
+            <a class="sp-link-btn" routerLink="/admin/notifications">Journal complet →</a>
+          </div>
+
+          <div class="sp-timeline" *ngIf="activiteRecente.length; else fallbackTimeline">
+            <div class="sp-tl-item" *ngFor="let act of activiteRecente">
+              <div class="sp-tl-av"
+                [class.sp-tl-av--blue]="act.categorie === 'projet'"
+                [class.sp-tl-av--purple]="act.categorie === 'admin'"
+                [class.sp-tl-av--green]="act.categorie === 'collab'"
+                [class.sp-tl-av--amber]="act.categorie === 'affectation'"
+              >{{ act.initiales }}</div>
+              <div class="sp-tl-body">
+                <strong>{{ act.action }}</strong>
+                <span>{{ act.temps }} ·
+                  <span class="sp-tl-tag"
+                    [class.sp-tl-tag--blue]="act.categorie === 'projet'"
+                    [class.sp-tl-tag--green]="act.categorie === 'collab' || act.categorie === 'affectation'"
+                  >{{ act.categorie === 'collab' || act.categorie === 'affectation' ? 'Collab' : 'Projet' }}</span>
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <ng-template #fallbackTimeline>
+            <div class="sp-timeline">
+              <div class="sp-tl-item">
+                <div class="sp-tl-av sp-tl-av--blue">A</div>
+                <div class="sp-tl-body">
+                  <strong>Projet "abccn" planifié</strong>
+                  <span>à l'instant · <span class="sp-tl-tag sp-tl-tag--blue">Projet</span></span>
+                </div>
+              </div>
+              <div class="sp-tl-item">
+                <div class="sp-tl-av sp-tl-av--purple">F</div>
+                <div class="sp-tl-body">
+                  <strong>Projet "frgtyjukinhbvg" planifié</strong>
+                  <span>il y a 12h · <span class="sp-tl-tag sp-tl-tag--blue">Projet</span></span>
+                </div>
+              </div>
+              <div class="sp-tl-item">
+                <div class="sp-tl-av sp-tl-av--green">MB</div>
+                <div class="sp-tl-body">
+                  <strong>Affectation mise à jour : mouadh bibeni → bbbp</strong>
+                  <span>il y a 19h · <span class="sp-tl-tag sp-tl-tag--green">Collab</span></span>
+                </div>
+              </div>
+              <div class="sp-tl-item">
+                <div class="sp-tl-av sp-tl-av--amber">NB</div>
+                <div class="sp-tl-body">
+                  <strong>Affectation mise à jour : nour ben romdhane → frgtyjukinhbvg</strong>
+                  <span>il y a 20h · <span class="sp-tl-tag sp-tl-tag--green">Collab</span></span>
+                </div>
+              </div>
+            </div>
+          </ng-template>
+        </article>
+
+        <!-- ── ACCÈS RAPIDES ─────────────────────────────────── -->
+        <article class="sp-panel">
+          <div class="sp-panel__hd">
+            <span class="sp-kicker">ADMINISTRATION — ACCÈS RAPIDES</span>
+          </div>
+
+          <div class="sp-quick-grid">
+
+            <div class="sp-qcard" routerLink="/admin/collaborateurs/nouveau" style="cursor:pointer">
+              <svg viewBox="0 0 16 16" fill="none" class="sp-qcard__ico" style="color:#3b82f6">
+                <circle cx="8" cy="5" r="2.5" stroke="currentColor" stroke-width="1.4"/>
+                <path d="M2 13c0-3.314 2.686-6 6-6s6 2.686 6 6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+                <path d="M8 10v4M6 12h4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+              </svg>
+              <div class="sp-qcard__title">Créer un utilisateur</div>
+              <div class="sp-qcard__sub">+ Créer</div>
+            </div>
+
+            <div class="sp-qcard" routerLink="/admin/roles" style="cursor:pointer">
+              <svg viewBox="0 0 16 16" fill="none" class="sp-qcard__ico" style="color:#8b5cf6">
+                <path d="M8 1.5L14 4v4c0 3.5-2.5 5.5-6 6.5C2.5 13.5 0 11.5 0 8V4l6-2.5Z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/>
+                <path d="M5.5 8l1.5 1.5L10.5 6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              <div class="sp-qcard__title">Consulter rôles</div>
+              <div class="sp-qcard__sub">Configurer</div>
+            </div>
+
+            <div class="sp-qcard" routerLink="/admin/audit" style="cursor:pointer">
+              <svg viewBox="0 0 16 16" fill="none" class="sp-qcard__ico" style="color:#f59e0b">
+                <rect x="2" y="2" width="12" height="12" rx="2" stroke="currentColor" stroke-width="1.4"/>
+                <path d="M5 6h6M5 9h6M5 12h3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+              </svg>
+              <div class="sp-qcard__title">Journal d'audit</div>
+              <div class="sp-qcard__sub">Voir logs</div>
+            </div>
+
+            <div class="sp-qcard" routerLink="/admin/parametres" style="cursor:pointer">
+              <svg viewBox="0 0 16 16" fill="none" class="sp-qcard__ico" style="color:#10b981">
+                <circle cx="8" cy="8" r="2" stroke="currentColor" stroke-width="1.4"/>
+                <path d="M8 2v1M8 13v1M2 8h1M13 8h1M3.5 3.5l.7.7M11.8 11.8l.7.7M3.5 12.5l.7-.7M11.8 4.2l.7-.7" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+              </svg>
+              <div class="sp-qcard__title">Paramètres système</div>
+              <div class="sp-qcard__sub">Accéder</div>
+            </div>
+
+          </div>
+        </article>
+
+      </ng-container>
+    </div>
+  </div>
+</section>
+<!-- ── PDF success toast ──────────────────────────────── -->
+<div *ngIf="pdfSuccess" class="sp-pdf-toast">
+  <i class="ti ti-circle-check"></i> PDF généré avec succès&nbsp;!
+</div>

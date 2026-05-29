@@ -1,0 +1,435 @@
+﻿<section class="sp-root">
+  <app-admin-sidebar></app-admin-sidebar>
+
+  <div class="sp-main">
+
+    <!-- ══ TOPBAR ════════════════════════════════════════════ -->
+    <header class="sp-topbar">
+      <div class="sp-topbar__left">
+        <nav class="sp-topbar__breadcrumb">
+          <span>SmartAssign</span>
+          <span class="sp-topbar__sep">›</span>
+          <span>Admin</span>
+          <span class="sp-topbar__sep">›</span>
+          <span class="sp-topbar__current">Collaborateurs</span>
+        </nav>
+        <h1 class="sp-topbar__title">Gestion des collaborateurs</h1>
+      </div>
+      <div class="sp-topbar__right">
+        <div class="sp-status-pill">
+          <span class="sp-status-dot"></span>
+          Plateforme saine
+        </div>
+        <button class="sp-btn sp-btn--ghost sp-btn--pill" (click)="exporterCSV()">
+          <svg viewBox="0 0 16 16" fill="none">
+            <path d="M8 2v9" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+            <path d="M4.5 8.5L8 12l3.5-3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M2 13h12" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+          </svg>
+          Exporter
+        </button>
+        <button class="sp-btn sp-btn--primary sp-btn--pill" (click)="exportPdf()">
+          <svg viewBox="0 0 16 16" fill="none">
+            <path d="M3 2h7l3 3v9a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1Z" stroke="currentColor" stroke-width="1.4"/>
+            <path d="M10 2v4h4M6 9h4M6 12h2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+          </svg>
+          Export PDF
+        </button>
+        <div class="sp-av-sm" routerLink="/admin/profil" style="cursor:pointer" title="Mon profil">AP</div>
+      </div>
+    </header>
+
+    <!-- ══ BODY ══════════════════════════════════════════════ -->
+    <div class="sp-body">
+
+      <!-- KPI CARDS -->
+      <div class="sp-kpi-grid">
+
+        <div class="sp-kcard">
+          <div class="sp-kcard__bar" style="background:#3b82f6"></div>
+          <span class="sp-kcard__badge sp-kcard__badge--neutral">Total</span>
+          <div class="sp-kcard__label">COLLABORATEURS</div>
+          <div class="sp-kcard__val" style="color:#3b82f6">{{ collaborateurs.length }}</div>
+          <div class="sp-kcard__sub">Inscrits sur la plateforme</div>
+        </div>
+
+        <div class="sp-kcard">
+          <div class="sp-kcard__bar" style="background:#10b981"></div>
+          <span class="sp-kcard__badge sp-kcard__badge--green">Actifs</span>
+          <div class="sp-kcard__label">DISPONIBLES</div>
+          <div class="sp-kcard__val" style="color:#10b981">{{ disponiblesCount }}</div>
+          <div class="sp-kcard__sub">Prêts à être affectés</div>
+        </div>
+
+        <div class="sp-kcard">
+          <div class="sp-kcard__bar" style="background:#f59e0b"></div>
+          <span class="sp-kcard__badge sp-kcard__badge--warn">Occupés</span>
+          <div class="sp-kcard__label">EN MISSION</div>
+          <div class="sp-kcard__val" style="color:#f59e0b">{{ occupesCount }}</div>
+          <div class="sp-kcard__sub">Affectés sur un projet</div>
+        </div>
+
+        <div class="sp-kcard">
+          <div class="sp-kcard__bar" style="background:#8b5cf6"></div>
+          <span class="sp-kcard__badge sp-kcard__badge--neutral">Moy.</span>
+          <div class="sp-kcard__label">EXP. MOYENNE</div>
+          <div class="sp-kcard__val" style="color:#8b5cf6">{{ moyenneExperience }} <span style="font-size:14px;font-weight:400">ans</span></div>
+          <div class="sp-kcard__sub">{{ totalCompetences }} compétence(s) totales</div>
+        </div>
+
+      </div>
+
+      <!-- MAIN CARD: filtres + tableau -->
+      <div class="sp-main-card">
+
+        <!-- FILTER ROW -->
+        <div class="sp-filter-row">
+          <div class="sp-search-wrap">
+            <svg class="sp-search-ico" viewBox="0 0 16 16" fill="none">
+              <circle cx="6.5" cy="6.5" r="4.5" stroke="currentColor" stroke-width="1.4"/>
+              <path d="M10 10l3.5 3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+            </svg>
+            <input type="text" class="sp-input sp-input--search"
+              placeholder="Nom, email ou compétence…"
+              [(ngModel)]="searchTerm"
+              (ngModelChange)="currentPage = 1" />
+          </div>
+
+          <div class="sp-select-wrap">
+            <select class="sp-select" [(ngModel)]="roleFilter" (ngModelChange)="currentPage = 1">
+              <option value="all">Tous les rôles</option>
+              <option value="ADMIN">Admin</option>
+              <option value="MANAGER">Manager</option>
+              <option value="COLLAB">Collaborateur</option>
+            </select>
+          </div>
+
+          <div class="sp-select-wrap">
+            <select class="sp-select" [(ngModel)]="disponibiliteFilter" (ngModelChange)="currentPage = 1">
+              <option value="all">Tous statuts</option>
+              <option value="actif">Actif</option>
+              <option value="inactif">Inactif</option>
+            </select>
+          </div>
+
+          <button class="sp-btn sp-btn--primary sp-btn--sm" (click)="openCreateModal()">
+            <svg viewBox="0 0 16 16" fill="none"><path d="M8 2v12M2 8h12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+            Créer
+          </button>
+
+          <button type="button" class="sp-btn sp-btn--ghost sp-btn--csv" (click)="openCsvModal()">
+            <svg viewBox="0 0 16 16" fill="none">
+              <path d="M8 12V3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+              <path d="M4.5 6.5L8 3l3.5 3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M2 13h12" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+            </svg>
+            Import CSV
+          </button>
+
+          <button class="sp-btn sp-btn--ghost sp-btn--csv" (click)="exporterCSV()">
+            <svg viewBox="0 0 16 16" fill="none">
+              <path d="M8 2v9" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+              <path d="M4.5 8.5L8 12l3.5-3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M2 13h12" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+            </svg>
+            Export CSV
+          </button>
+        </div>
+
+        <div class="sp-inner-divider"></div>
+
+        <!-- ROLE TABS -->
+        <div class="sp-tab-row">
+          <button class="sp-tab" [class.sp-tab--active]="roleFilter === 'all'"     (click)="roleFilter = 'all';    currentPage = 1">Tous ({{ collaborateurs.length }})</button>
+          <button class="sp-tab" [class.sp-tab--active]="roleFilter === 'ADMIN'"   (click)="roleFilter = 'ADMIN';  currentPage = 1">Admins</button>
+          <button class="sp-tab" [class.sp-tab--active]="roleFilter === 'MANAGER'" (click)="roleFilter = 'MANAGER';currentPage = 1">Managers</button>
+          <button class="sp-tab" [class.sp-tab--active]="roleFilter === 'COLLAB'"  (click)="roleFilter = 'COLLAB'; currentPage = 1">Collaborateurs</button>
+        </div>
+
+        <div class="sp-inner-divider"></div>
+
+        <!-- LOADER -->
+        <div class="sp-loader" *ngIf="isLoading">
+          <div class="sp-spinner"></div>
+        </div>
+
+        <!-- ERROR -->
+        <div class="sp-error" *ngIf="errorMessage && !isLoading">
+          {{ errorMessage }}
+        </div>
+
+        <!-- TABLE -->
+        <div class="sp-table-wrap" *ngIf="!isLoading && !errorMessage">
+
+          <!-- THEAD -->
+          <div class="sp-table-head">
+            <div class="sp-th">Collaborateur</div>
+            <div class="sp-th">Email</div>
+            <div class="sp-th">Rôle</div>
+            <div class="sp-th">Statut</div>
+            <div class="sp-th">Disponibilité</div>
+            <div class="sp-th">Actions</div>
+          </div>
+
+          <!-- EMPTY -->
+          <div class="sp-empty" *ngIf="filteredCollaborateurs.length === 0">
+            Aucun collaborateur ne correspond aux filtres.
+          </div>
+
+          <!-- ROWS -->
+          <div class="sp-table-row"
+               *ngFor="let c of paginatedCollaborateurs; trackBy: trackByCollaborateur">
+
+            <!-- Collaborateur -->
+            <div class="sp-td sp-td--user">
+              <div class="sp-avatar" [ngClass]="avatarClass(c.role)">
+                {{ initiales(c.nom, c.prenom) }}
+              </div>
+              <div>
+                <div class="sp-td__name">{{ c.prenom }} {{ c.nom }}</div>
+                <div class="sp-td__sub">#{{ c.id }}</div>
+              </div>
+            </div>
+
+            <!-- Email -->
+            <div class="sp-td sp-td--mono">{{ c.email }}</div>
+
+            <!-- Rôle -->
+            <div class="sp-td">
+              <span class="sp-badge" [ngClass]="roleBadgeClass(c.role)">
+                {{ roleLabel(c.role) }}
+              </span>
+            </div>
+
+            <!-- Statut -->
+            <div class="sp-td">
+              <span class="sp-badge" [class.sp-badge--green]="c.disponible" [class.sp-badge--neutral]="!c.disponible">
+                {{ c.disponible ? 'Actif' : 'Suspendu' }}
+              </span>
+            </div>
+
+            <!-- Disponibilité -->
+            <div class="sp-td">
+              <button class="sp-dispo-toggle"
+                [class.sp-dispo-toggle--on]="c.disponible"
+                [class.sp-dispo-toggle--off]="!c.disponible"
+                (click)="toggleDisponibilite(c)">
+                {{ c.disponible ? 'Disponible' : 'Occupé' }}
+              </button>
+            </div>
+
+            <!-- Actions -->
+            <div class="sp-td sp-td--actions">
+              <button class="sp-action-btn" title="Modifier" (click)="openEditModal(c.id!)">
+                <i class="ti ti-pencil"></i>
+              </button>
+              <button class="sp-action-btn" title="Consulter" (click)="openViewModal(c)">
+                <i class="ti ti-eye"></i>
+              </button>
+              <button class="sp-action-btn sp-action-btn--danger" title="Supprimer" (click)="supprimer(c.id!)">
+                <i class="ti ti-trash"></i>
+              </button>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- PAGINATION -->
+        <div class="sp-pagination" *ngIf="totalPages > 1">
+          <button class="sp-page-btn" [disabled]="currentPage === 1" (click)="goToPage(currentPage - 1)">‹</button>
+          <button class="sp-page-btn"
+            *ngFor="let p of pageNumbers"
+            [class.sp-page-btn--active]="p === currentPage"
+            (click)="goToPage(p)">
+            {{ p }}
+          </button>
+          <button class="sp-page-btn" [disabled]="currentPage === totalPages" (click)="goToPage(currentPage + 1)">›</button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ MODALS ════════════════════════════════════════════════ -->
+
+<!-- Create -->
+<div class="cm-overlay" *ngIf="isCreateModalOpen" (click)="closeCreateModal()" (keydown.escape)="closeCreateModal()">
+  <div class="cm-box" (click)="$event.stopPropagation()">
+
+    <!-- Header -->
+    <div class="cm-header">
+      <i class="ti ti-user-plus cm-header__ico"></i>
+      <span class="cm-header__title">Créer un utilisateur</span>
+    </div>
+
+    <!-- Error -->
+    <div class="cm-error" *ngIf="createFormError">
+      {{ createFormError }}
+      <button class="cm-error__close" type="button" (click)="createFormError = ''">×</button>
+    </div>
+
+    <!-- Row 1: Prénom + Nom -->
+    <div class="cm-row cm-row--2">
+      <div class="cm-field">
+        <label class="cm-label">Prénom</label>
+        <input type="text" class="cm-input" placeholder="Prénom" [(ngModel)]="createForm.prenom" />
+      </div>
+      <div class="cm-field">
+        <label class="cm-label">Nom</label>
+        <input type="text" class="cm-input" placeholder="Nom" [(ngModel)]="createForm.nom" />
+      </div>
+    </div>
+
+    <!-- Row 2: Email -->
+    <div class="cm-field">
+      <label class="cm-label">Email</label>
+      <input type="email" class="cm-input" placeholder="email@smartassign.tn" [(ngModel)]="createForm.email" />
+    </div>
+
+    <!-- Row 3: Rôle -->
+    <div class="cm-field">
+      <label class="cm-label">Rôle</label>
+      <div class="cm-select-wrap">
+        <select class="cm-input cm-select" [(ngModel)]="createForm.role">
+          <option value="COLLAB">Collaborateur</option>
+          <option value="MANAGER">Manager</option>
+          <option value="ADMIN">Administrateur</option>
+        </select>
+        <i class="ti ti-chevron-down cm-select-arrow"></i>
+      </div>
+    </div>
+
+    <!-- Row 4: Mot de passe temporaire -->
+    <div class="cm-field">
+      <label class="cm-label cm-label--blue">Mot de passe temporaire</label>
+      <input type="text" class="cm-input cm-input--auto" placeholder="Généré automatiquement" readonly />
+    </div>
+
+    <!-- Footer -->
+    <div class="cm-footer">
+      <button type="button" class="cm-btn cm-btn--cancel" (click)="closeCreateModal()">Annuler</button>
+      <button type="button" class="cm-btn cm-btn--submit" (click)="submitCreateForm()">
+        <i class="ti ti-check"></i> Créer le compte
+      </button>
+    </div>
+
+  </div>
+</div>
+
+<!-- Edit -->
+<div class="sp-modal-overlay" *ngIf="editedCollaborateurId !== null" (click)="closeEditModal()">
+  <div class="sp-modal" (click)="$event.stopPropagation()">
+    <app-formulaire-collaborateur
+      [embedded]="true"
+      [editId]="editedCollaborateurId"
+      (created)="onEditSaved()"
+      (cancel)="closeEditModal()">
+    </app-formulaire-collaborateur>
+  </div>
+</div>
+
+<!-- View -->
+<div class="sp-modal-overlay" *ngIf="viewedCollaborateur" (click)="closeViewModal()">
+  <div class="sp-modal sp-modal--view" (click)="$event.stopPropagation()">
+    <div class="sp-modal__hd sp-view-hd">
+      <div class="sp-avatar sp-avatar--lg" [ngClass]="avatarClass(viewedCollaborateur.role)">
+        {{ initiales(viewedCollaborateur.nom, viewedCollaborateur.prenom) }}
+      </div>
+      <div class="sp-view-hd__main">
+        <h2 class="sp-modal__name">{{ viewedCollaborateur.prenom }} {{ viewedCollaborateur.nom }}</h2>
+        <p class="sp-view-hd__email">{{ viewedCollaborateur.email }}</p>
+        <div class="sp-view-hd__badges">
+          <span class="sp-badge sp-badge--blue">{{ roleLabel(viewedCollaborateur.role) }}</span>
+          <span class="sp-badge sp-badge--green">Actif</span>
+        </div>
+      </div>
+      <button class="sp-modal__close" (click)="closeViewModal()">×</button>
+    </div>
+
+    <div class="sp-modal__body">
+      <div class="sp-detail-row">
+        <span>Téléphone</span>
+        <span>{{ $any(viewedCollaborateur).telephone || '—' }}</span>
+      </div>
+      <div class="sp-detail-row" *ngIf="viewedCollaborateur.role !== 'ADMIN'">
+        <span>Disponibilité</span>
+        <span class="sp-badge" [class.sp-badge--green]="viewedCollaborateur.disponible" [class.sp-badge--amber]="!viewedCollaborateur.disponible">
+          {{ viewedCollaborateur.disponible ? 'Disponible' : 'Occupé' }}
+        </span>
+      </div>
+      <div class="sp-detail-row" *ngIf="viewedCollaborateur.role !== 'ADMIN'">
+        <span>Expérience</span>
+        <span>{{ viewedCollaborateur.experienceAnnees }} ans</span>
+      </div>
+
+      <div class="sp-view-comps"
+           *ngIf="viewedCollaborateur.role !== 'ADMIN' && viewedCollaborateur.role !== 'MANAGER' && competenceLabels(viewedCollaborateur).length">
+        <p class="sp-view-comps__title">COMPÉTENCES</p>
+        <div class="sp-comp-list sp-comp-list--start">
+          <span class="sp-chip" *ngFor="let lbl of competenceLabels(viewedCollaborateur)">{{ lbl }}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="sp-modal__ft">
+      <button class="sp-btn sp-btn--ghost" (click)="closeViewModal()">Fermer</button>
+    </div>
+  </div>
+</div>
+
+<!-- CSV Import modal -->
+<div class="cm-overlay" *ngIf="showCsvModal" (click)="closeCsvModal()">
+  <div class="cm-box" (click)="$event.stopPropagation()">
+
+    <!-- Header -->
+    <div class="cm-header">
+      <i class="ti ti-upload cm-header__ico"></i>
+      <span class="cm-header__title">Import CSV</span>
+    </div>
+
+    <!-- Drop zone -->
+    <div class="csv-dropzone"
+         [class.csv-dropzone--over]="csvDragging"
+         (dragover)="onCsvDragOver($event)"
+         (dragleave)="onCsvDragLeave()"
+         (drop)="onCsvDrop($event)"
+         (click)="csvHiddenInput.click()">
+      <span class="csv-dropzone__icon">📁</span>
+      <p class="csv-dropzone__main">Glissez votre fichier CSV ici</p>
+      <p class="csv-dropzone__sub">ou cliquez pour sélectionner</p>
+    </div>
+
+    <input #csvHiddenInput type="file" accept=".csv" style="display:none" (change)="onCsvFileChange($event)" />
+
+    <p class="csv-modal__hint">Format attendu : prenom, nom, email, role, departement, telephone</p>
+
+    <!-- Footer -->
+    <div class="cm-footer">
+      <button type="button" class="cm-btn cm-btn--cancel" (click)="closeCsvModal()">Annuler</button>
+      <button type="button" class="cm-btn cm-btn--submit" (click)="csvHiddenInput.click()">
+        <i class="ti ti-upload"></i> Sélectionner un fichier
+      </button>
+    </div>
+
+  </div>
+</div>
+
+<!-- Delete confirm -->
+<div class="sp-modal-overlay" *ngIf="deleteTargetId !== null" (click)="closeDeleteModal()">
+  <div class="sp-modal sp-modal--sm" (click)="$event.stopPropagation()">
+    <h3 class="sp-modal__danger-title">Supprimer le collaborateur ?</h3>
+    <p class="sp-modal__danger-msg">
+      <strong>{{ deleteTargetName }}</strong> sera définitivement supprimé. Cette action est irréversible.
+    </p>
+    <div class="sp-modal__ft">
+      <button class="sp-btn sp-btn--ghost" (click)="closeDeleteModal()" [disabled]="isDeleting">Annuler</button>
+      <button class="sp-btn sp-btn--danger" (click)="confirmerSuppression()" [disabled]="isDeleting">
+        {{ isDeleting ? 'Suppression…' : 'Supprimer' }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="sp-toast" *ngIf="toastMessage">{{ toastMessage }}</div>

@@ -1,0 +1,72 @@
+<section class="sp-root" [class.sp-root--plain]="disabled">
+  <aside class="sp-sidebar" *ngIf="!disabled">
+    <div class="sp-sidebar__brand">
+      <img src="assets/logo sopra.png" alt="Sopra HR" class="app-logo" style="width:34px;height:34px;object-fit:contain;background:none!important;border-radius:0!important;display:block;box-shadow:none!important;padding:0!important;z-index:2;position:relative;" />
+      <div class="sp-brand-text">
+        <span class="sp-brand-name">Sopra HR</span>
+        <span class="sp-brand-tag">ESPACE COLLABORATEUR</span>
+      </div>
+    </div>
+
+    <nav class="sp-nav">
+      <p class="sp-nav__section">Principal</p>
+      <a class="sp-nav__item" [class.sp-nav__item--active]="activeSection === 'dashboard'" routerLink="/collaborateurs/dashboard">
+        <i class="ti ti-layout-dashboard sp-nav__ico"></i>
+        Dashboard
+      </a>
+
+      <p class="sp-nav__section sp-nav__section--spaced">Mon espace</p>
+      <a class="sp-nav__item" [class.sp-nav__item--active]="activeSection === 'projets'" routerLink="/mes-projets">
+        <i class="ti ti-folder sp-nav__ico"></i>
+        Mes projets
+      </a>
+      <a class="sp-nav__item" [class.sp-nav__item--active]="activeSection === 'planning'" routerLink="/planning">
+        <i class="ti ti-calendar sp-nav__ico"></i>
+        Mon planning
+      </a>
+      <a class="sp-nav__item" [class.sp-nav__item--active]="activeSection === 'historique'" routerLink="/historique">
+        <i class="ti ti-history sp-nav__ico"></i>
+        Historique
+      </a>
+
+      <p class="sp-nav__section sp-nav__section--spaced">Outils</p>
+      <a class="sp-nav__item" [class.sp-nav__item--active]="activeSection === 'notifications'" routerLink="/notifications">
+        <i class="ti ti-bell sp-nav__ico"></i>
+        Notifications
+        <span class="sp-nav__badge">1</span>
+      </a>
+      <a class="sp-nav__item" [class.sp-nav__item--active]="activeSection === 'profil'" routerLink="/mon-profil">
+        <i class="ti ti-user sp-nav__ico"></i>
+        Mon profil
+      </a>
+    </nav>
+
+    <div class="sp-sidebar__footer">
+      <div class="sp-footer-user">
+        <div class="sp-user-av">{{ userInitials }}</div>
+        <div class="sp-user-info">
+          <span class="sp-user-name">{{ userName }}</span>
+          <span class="sp-user-role">Collaborateur</span>
+        </div>
+      </div>
+      <button type="button" class="sp-logout-btn" (click)="logout()">
+        <i class="ti ti-logout"></i>
+        Déconnexion
+      </button>
+    </div>
+
+  </aside>
+
+  <div class="sp-main" [class.sp-main--plain]="disabled">
+    <ng-content select="[shell-topbar]"></ng-content>
+    <div class="sp-body" [class.sp-body--plain]="disabled">
+      <ng-content></ng-content>
+    </div>
+  </div>
+
+  <app-notifications-panel
+    *ngIf="!disabled"
+    [open]="notificationsPanelOpen"
+    (close)="closeNotificationsPanel()"
+  ></app-notifications-panel>
+</section>

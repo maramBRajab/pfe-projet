@@ -1,0 +1,173 @@
+$bg: #f2f7fc;
+
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  width: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+:host {
+  display: block;
+  height: 100%;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+.app-shell {
+  height: 100%;
+  min-height: 100vh;
+  width: 100%;
+  background: linear-gradient(180deg, #f7fbff 0%, $bg 100%);
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+}
+
+.global-session-actions {
+  position: fixed;
+  top: 18px;
+  right: 20px;
+  z-index: 1200;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.global-session-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px 8px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.08);
+  backdrop-filter: blur(10px);
+}
+
+.global-session-chip__avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.global-session-chip__label {
+  color: #0f172a;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.global-logout-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1px solid rgba(220, 38, 38, 0.16);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.94);
+  color: #b91c1c;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.08);
+  transition: transform 0.16s ease, box-shadow 0.16s ease, background 0.16s ease;
+}
+
+.global-logout-btn svg {
+  width: 14px;
+  height: 14px;
+  stroke: currentColor;
+}
+
+.global-logout-btn:hover {
+  transform: translateY(-1px);
+  background: #fff1f2;
+  box-shadow: 0 18px 36px rgba(185, 28, 28, 0.14);
+}
+
+.global-logout-btn:active {
+  transform: translateY(0);
+}
+
+.shell-main {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+}
+
+.shell-content {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: visible;
+  margin: 0;
+  padding: 0;
+}
+
+.shell-content > router-outlet + * {
+  display: flex;
+  flex: 1 0 auto;
+  min-height: 100%;
+}
+
+app-admin-dashboard,
+app-liste-collaborateurs,
+app-liste-projets,
+app-resultats,
+app-admin-notifications-page,
+app-admin-profil,
+app-formulaire-collaborateur,
+app-formulaire-projet,
+app-manager-shell,
+app-manager-dashboard,
+app-manager-collaborateurs-liste,
+app-manager-projets-liste,
+app-historique-affectations {
+  flex: 1 1 auto;
+  display: flex;
+  min-height: 0;
+  overflow: hidden;
+}
+
+@media (max-width: 720px) {
+  .global-session-actions {
+    top: 12px;
+    right: 12px;
+    left: 12px;
+    justify-content: flex-end;
+  }
+
+  .global-session-chip__label {
+    display: none;
+  }
+
+  .global-logout-btn {
+    padding: 0 12px;
+  }
+}

@@ -1,0 +1,251 @@
+﻿<app-collaborateur-shell activeSection="planning">
+
+  <!-- TOPBAR -->
+  <header shell-topbar class="plng-topbar">
+    <div class="plng-topbar__left">
+      <nav class="plng-topbar__bc">
+        <span>SmartAssign</span>
+        <span class="plng-topbar__sep">&#x203A;</span>
+        <span>Collaborateur</span>
+        <span class="plng-topbar__sep">&#x203A;</span>
+        <span class="plng-topbar__cur">Planning</span>
+      </nav>
+      <h1 class="plng-topbar__title">Mon planning</h1>
+    </div>
+    <div class="plng-topbar__right">
+      <div class="plng-status-pill" [class.plng-status-pill--risk]="headerStatusTone === 'risk'">
+        <span class="plng-status-dot"></span>
+        {{ headerStatusLabel }}
+      </div>
+      <button type="button" class="plng-btn plng-btn--primary" (click)="resetMonth()">
+        Mois courant
+      </button>
+      <div class="plng-av">{{ userInitials }}</div>
+    </div>
+  </header>
+
+  <!-- DATE LABEL -->
+  <p class="plng-date-lbl">Pilotage personnel &mdash; {{ today | date:'EEEE d MMMM yyyy':'':'fr-FR' | titlecase }}</p>
+
+  <!-- ERROR -->
+  <div class="plng-error" *ngIf="errorMessage">{{ errorMessage }}</div>
+
+  <!-- LOADER -->
+  <div class="plng-loader" *ngIf="isLoading">
+    <div class="plng-spinner"></div>
+    Chargement du planning&hellip;
+  </div>
+
+  <ng-container *ngIf="!isLoading && !errorMessage">
+
+    <!-- KPI GRID -->
+    <div class="plng-kpi-grid">
+
+      <!-- Card 1: Projets planifies -->
+      <div class="plng-kcard">
+        <div class="plng-kcard__bar plng-kcard__bar--blue"></div>
+        <div class="plng-kcard__hd">
+          <span class="plng-kbadge plng-kbadge--green">{{ metricChipLabel(metrics[0]) }}</span>
+        </div>
+        <div class="plng-kcard__lbl">Projets planifi&eacute;s</div>
+        <div class="plng-kcard__val" style="color:#3b82f6">{{ metrics[0]?.value }}</div>
+        <div class="plng-kcard__sub">Missions ouvertes</div>
+      </div>
+
+      <!-- Card 2: Taches visibles -->
+      <div class="plng-kcard">
+        <div class="plng-kcard__bar plng-kcard__bar--green"></div>
+        <div class="plng-kcard__hd">
+          <span class="plng-kbadge plng-kbadge--gray">{{ metricChipLabel(metrics[1]) }}</span>
+        </div>
+        <div class="plng-kcard__lbl">T&acirc;ches visibles</div>
+        <div class="plng-kcard__val" style="color:#10b981">{{ metrics[1]?.value }}</div>
+        <div class="plng-kcard__sub">Actions depuis le backend</div>
+      </div>
+
+      <!-- Card 3: Disponibilite -->
+      <div class="plng-kcard">
+        <div class="plng-kcard__bar plng-kcard__bar--amber"></div>
+        <div class="plng-kcard__hd">
+          <span class="plng-kbadge plng-kbadge--amber">{{ availabilityState === 'partielle' ? 'Partielle' : availabilityState === 'indisponible' ? 'Indisponible' : 'Disponible' }}</span>
+        </div>
+        <div class="plng-kcard__lbl">Disponibilit&eacute;</div>
+        <div class="plng-kcard__val plng-kcard__val--sm" style="color:#f59e0b">{{ metrics[2]?.value }}</div>
+        <div class="plng-kcard__sub">{{ metrics[2]?.hint }}</div>
+      </div>
+
+      <!-- Card 4: Charge moyenne -->
+      <div class="plng-kcard">
+        <div class="plng-kcard__bar plng-kcard__bar--green"></div>
+        <div class="plng-kcard__hd">
+          <span class="plng-kbadge plng-kbadge--gray">{{ metricChipLabel(metrics[3]) }}</span>
+        </div>
+        <div class="plng-kcard__lbl">Charge moyenne</div>
+        <div class="plng-kcard__val" style="color:#10b981">{{ metrics[3]?.value }}</div>
+        <div class="plng-kcard__sub">{{ metrics[3]?.hint }}</div>
+      </div>
+
+    </div><!-- /kpi-grid -->
+
+    <!-- MAIN 2-COL GRID -->
+    <div class="plng-main-grid">
+
+      <!-- LEFT COLUMN -->
+      <div class="plng-left-col">
+
+        <!-- CALENDAR CARD -->
+        <div class="plng-card plng-card--mb">
+
+          <div class="plng-card__hd">
+            <div>
+              <div class="plng-card__kicker">NAVIGATION &mdash; CALENDRIER ET TIMELINE</div>
+              <div class="plng-card__month">{{ monthLabel | titlecase }}</div>
+            </div>
+            <div class="plng-nav-btns">
+              <button type="button" class="plng-btn plng-btn--ghost plng-btn--sm" (click)="previousMonth()">&larr; Mois pr&eacute;c&eacute;dent</button>
+              <button type="button" class="plng-btn plng-btn--ghost plng-btn--sm" (click)="nextMonth()">Mois suivant &rarr;</button>
+            </div>
+          </div>
+
+          <!-- Project filter -->
+          <div class="plng-filter-row">
+            <div class="plng-select-wrap">
+              <select [ngModel]="activeProjectFilter" (ngModelChange)="applyProjectFilter($event)" class="plng-select">
+                <option value="all">Tous les projets</option>
+                <option *ngFor="let p of projectOptions" [value]="p">{{ p }}</option>
+              </select>
+              <i class="ti ti-chevron-down plng-select-icon"></i>
+            </div>
+          </div>
+
+          <!-- Legend pills -->
+          <div class="plng-legend">
+            <span class="plng-legend-pill plng-legend-pill--amber">Disponibilit&eacute; partielle</span>
+            <span class="plng-legend-pill plng-legend-pill--blue">{{ activeProjectLabel }}</span>
+          </div>
+
+          <!-- Calendar grid -->
+          <div class="plng-cal">
+            <div class="plng-cal__hd">
+              <span>LUN</span><span>MAR</span><span>MER</span><span>JEU</span><span>VEN</span><span>SAM</span><span>DIM</span>
+            </div>
+            <div class="plng-cal__body">
+              <div
+                *ngFor="let day of calendarDays"
+                class="plng-cal__cell"
+                [class.plng-cal__cell--out]="!day.inCurrentMonth"
+                [class.plng-cal__cell--today]="day.isToday"
+                [class.plng-cal__cell--sel]="isDaySelected(day)"
+                (click)="selectDay(day)"
+              >
+                <span class="plng-cal__num">{{ day.dayNumber }}</span>
+                <div class="plng-cal__dots">
+                  <span *ngIf="day.markers.includes('leave')"   class="plng-dot" style="background:#f59e0b"></span>
+                  <span *ngIf="day.markers.includes('mission')" class="plng-dot" style="background:#3b82f6"></span>
+                  <span *ngIf="day.markers.includes('task')"    class="plng-dot" style="background:#ef4444"></span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div><!-- /calendar card -->
+
+      </div><!-- /left col -->
+
+      <!-- RIGHT COLUMN -->
+      <div class="plng-right-col">
+
+        <!-- Moments cles card -->
+        <div class="plng-card">
+          <div class="plng-card__hd plng-card__hd--bottom">
+            <div class="plng-card__title">Moments cl&eacute;s</div>
+            <span class="plng-badge-blue">{{ activeProjectLabel }}</span>
+          </div>
+          <div class="plng-moments" *ngIf="timeline.length; else emptyTimeline">
+            <div *ngFor="let event of timeline; trackBy: trackByEvent" class="plng-moment">
+              <span class="plng-moment__dot" [style.background]="event.accent"></span>
+              <div class="plng-moment__body">
+                <div class="plng-moment__title">{{ event.title }}</div>
+                <div class="plng-moment__sub">{{ event.subtitle }}</div>
+              </div>
+              <span class="plng-moment__date">{{ event.date | date:'d MMM':'':'fr-FR' }}</span>
+            </div>
+          </div>
+          <ng-template #emptyTimeline>
+            <div class="plng-empty">
+              <i class="ti ti-calendar"></i>
+              Aucun &eacute;v&eacute;nement ce mois-ci
+            </div>
+          </ng-template>
+        </div>
+
+        <!-- Tasks card -->
+        <div class="plng-card">
+          <div class="plng-card__kicker plng-card__kicker--mb">T&Acirc;CHES DE LA P&Eacute;RIODE</div>
+          <div class="plng-tasks" *ngIf="tasks.length; else emptyTasks">
+            <div *ngFor="let task of tasks; trackBy: trackByTask" class="plng-task">
+              <div class="plng-task__hd">
+                <span class="plng-task__title">{{ task.title }}</span>
+                <span class="plng-task__date">{{ task.dueDate | date:'d MMM':'':'fr-FR' }}</span>
+              </div>
+              <div class="plng-task__tags">
+                <span class="plng-badge" [ngClass]="priorityBadgeClass(task.priority)">{{ task.priority }}</span>
+                <span class="plng-badge" [ngClass]="statusBadgeClass(task.status)">{{ taskStatusLabel(task.status) }}</span>
+                <span class="plng-task__proj">{{ task.project }}</span>
+              </div>
+            </div>
+          </div>
+          <ng-template #emptyTasks>
+            <div class="plng-empty">
+              <i class="ti ti-folder"></i>
+              Aucune t&acirc;che ce mois-ci
+            </div>
+          </ng-template>
+        </div>
+
+      </div><!-- /right col -->
+
+    </div><!-- /main grid -->
+
+    <!-- CHART CARD - full width -->
+    <div class="plng-card plng-card--full">
+      <div class="plng-card__kicker">EX&Eacute;CUTION</div>
+      <div class="plng-card__title">Graphique de charge hebdomadaire</div>
+
+      <!-- Bar chart -->
+      <div class="plng-chart">
+        <div *ngFor="let bar of workloadBars" class="plng-chart__group">
+          <div class="plng-chart__bar"
+               [style.height.px]="barHeight(bar.value)"
+               [style.background]="barColor(bar.tone)"></div>
+          <span class="plng-chart__lbl">{{ bar.label }} &middot; {{ bar.value }}%</span>
+        </div>
+      </div>
+
+      <!-- Availability alert note -->
+      <div class="plng-alert-note"
+           *ngIf="leaves.length && (availabilityState === 'partielle' || availabilityState === 'indisponible')">
+        <i class="ti ti-alert-triangle"></i>
+        <span>Disponibilit&eacute; partielle &middot; {{ leaves[0].startDate | date:'d MMM':'':'fr-FR' }} &ndash; {{ leaves[0].endDate | date:'d MMM':'':'fr-FR' }}</span>
+      </div>
+
+      <!-- Availability cards -->
+      <div class="plng-avail-grid" *ngIf="leaves.length">
+        <div *ngFor="let leave of leaves" class="plng-avcard">
+          <div class="plng-avcard__title">{{ leave.label }}</div>
+          <div class="plng-avcard__sub">
+            {{ leave.startDate | date:'d MMM':'':'fr-FR' }} &ndash; {{ leave.endDate | date:'d MMM':'':'fr-FR' }}
+            &middot; {{ leave.type }}
+          </div>
+          <span class="plng-avcard__badge"
+                [class.plng-avcard__badge--red]="leave.impact === 'INDISPONIBLE'"
+                [class.plng-avcard__badge--amber]="leave.impact !== 'INDISPONIBLE'">
+            {{ leave.impact === 'INDISPONIBLE' ? 'INDISPONIBLE' : 'PARTIELLE' }}
+          </span>
+        </div>
+      </div>
+
+    </div><!-- /chart card full -->
+
+  </ng-container>
+</app-collaborateur-shell>

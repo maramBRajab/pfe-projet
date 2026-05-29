@@ -1,0 +1,378 @@
+﻿// ═══════════════════════════════════════════════════════════════
+// SMARTASSIGN — Rapports système SCSS — Design System 2026
+// ═══════════════════════════════════════════════════════════════
+
+.sp-root {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+  background: var(--bg);
+  font-family: 'DM Sans', sans-serif;
+  color: var(--text);
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+}
+
+.sp-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-width: 0;
+}
+
+// ── Topbar ─────────────────────────────────────────────────────
+.sp-topbar {
+  height: 56px;
+  background: var(--card);
+  border-bottom: 1px solid var(--border);
+  padding: 0 28px;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+
+  &__left { display: flex; flex-direction: column; gap: 1px; }
+
+  &__breadcrumb {
+    display: flex; align-items: center; gap: 4px;
+    font-size: 12.5px; color: var(--text2);
+  }
+
+  &__sep     { color: var(--text3); }
+  &__current { color: var(--text2); }
+
+  &__title {
+    font-size: 20px; font-weight: 600; color: var(--text); margin: 0; line-height: 1.2;
+  }
+
+  &__right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+}
+
+// ── Status pill ────────────────────────────────────────────────
+.sp-status-pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  border: 1px solid var(--border); border-radius: 20px;
+  padding: 5px 12px; font-size: 12px; font-weight: 500; color: var(--green);
+}
+
+.sp-status-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--green); flex-shrink: 0;
+}
+
+// ── Buttons ────────────────────────────────────────────────────
+.sp-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  border-radius: 8px; padding: 7px 16px; font-size: 13px;
+  font-family: 'DM Sans', sans-serif; cursor: pointer;
+  border: 1px solid transparent;
+
+  svg { width: 14px; height: 14px; fill: none; stroke-width: 1.5; flex-shrink: 0; }
+
+  &--ghost {
+    background: transparent; border-color: var(--border); color: var(--text2);
+    svg { stroke: var(--text2); }
+    &:hover { border-color: var(--accent); color: var(--accent); }
+  }
+
+  &--primary {
+    background: var(--accent); border-color: var(--accent); color: #fff;
+    svg { stroke: rgba(255,255,255,0.9); }
+    &:hover { background: #2563eb; }
+  }
+
+  &--sm { padding: 4px 10px; font-size: 11.5px; }
+  &--pill { height: 30px; padding: 0 12px; border-radius: 6px; font-size: 12px; }
+}
+
+.sp-av-sm {
+  width: 26px; height: 26px; border-radius: 50%;
+  background: var(--accent); color: #fff;
+  font-size: 10px; font-weight: 600;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+
+// ── Body ───────────────────────────────────────────────────────
+.sp-body {
+  flex: 1; overflow-y: auto; padding: 28px;
+  display: flex; flex-direction: column; gap: 20px;
+
+  &::-webkit-scrollbar       { width: 5px; }
+  &::-webkit-scrollbar-track { background: transparent; }
+  &::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+}
+
+// ── Info banner ────────────────────────────────────────────────
+.sp-info-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  border-radius: 10px;
+  padding: 14px 18px;
+
+  &--warn {
+    background: #fff7ed;
+    border: 1px dashed #fed7aa;
+
+    .sp-info-banner__icon { color: #f59e0b; }
+    p { color: #92400e; }
+  }
+
+  &__icon {
+    flex-shrink: 0;
+    margin-top: 1px;
+    svg { width: 16px; height: 16px; stroke: currentColor; fill: none; }
+  }
+
+  p {
+    margin: 0;
+    font-size: 12.5px;
+    line-height: 1.5;
+  }
+}
+
+// ── KPI grid ───────────────────────────────────────────────────
+.sp-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+}
+
+.sp-kcard {
+  position: relative;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px 20px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  overflow: hidden;
+
+  &__bar {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    border-radius: 12px 12px 0 0;
+  }
+
+  &__badge {
+    position: absolute;
+    top: 14px; right: 14px;
+    font-size: 11px; font-weight: 500;
+    padding: 3px 8px; border-radius: 10px;
+
+    &--neutral { background: #f1f5f9; color: var(--text2); }
+    &--green   { background: #dcfce7; color: #166534; }
+    &--warn    { background: #fef9c3; color: #854d0e; }
+  }
+
+  &__label {
+    font-size: 11px; font-weight: 500; color: var(--text2);
+    text-transform: uppercase; letter-spacing: 0.06em;
+    margin-top: 14px; margin-bottom: 6px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+
+  &__val {
+    font-size: 26px; font-weight: 600; line-height: 1; color: var(--text);
+  }
+
+  &__sub {
+    font-size: 11.5px; color: var(--text3); margin-top: 5px;
+  }
+}
+
+// ── Main 2-col grid ────────────────────────────────────────────
+.sp-main-grid {
+  display: grid;
+  grid-template-columns: 1fr 440px;
+  gap: 20px;
+  align-items: stretch;
+}
+
+// ── Chart card ─────────────────────────────────────────────────
+.sp-chart-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px 16px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+
+  &__hd {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+
+    h3 {
+      margin: 0;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+    }
+  }
+}
+
+.sp-bar-chart {
+  width: 100%;
+}
+
+.sp-chart-stats {
+  display: flex;
+  gap: 20px;
+  padding-top: 10px;
+  border-top: 1px solid #cbd5e1;
+  margin-top: 8px;
+}
+
+.sp-chart-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+
+  &__lbl {
+    font-size: 10px;
+    color: var(--text3);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  &__val {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+
+    &--green { color: var(--green); }
+    &--red   { color: var(--red); }
+  }
+}
+
+// ── Health card ────────────────────────────────────────────────
+.sp-health-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+
+  &__title {
+    margin: 0 0 20px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+  }
+}
+
+.sp-health-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.sp-health-row {
+  &__labels {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+    color: var(--text);
+    margin-bottom: 6px;
+  }
+
+  &__val {
+    font-weight: 600;
+    font-size: 13px;
+  }
+}
+
+.sp-progress {
+  height: 6px;
+  background: #f1f5f9;
+  border-radius: 3px;
+  overflow: hidden;
+
+  &__fill {
+    height: 6px;
+    border-radius: 3px;
+  }
+}
+
+.sp-health-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  background: #eff6ff;
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin-top: 16px;
+
+  &__ico {
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+    stroke: #3b82f6;
+    fill: none;
+    margin-top: 1px;
+  }
+
+  span {
+    font-size: 12px;
+    color: #1e40af;
+    line-height: 1.4;
+  }
+}
+
+// ── Département card ─────────────────────────────────────────────
+.sp-dept-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px 20px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+
+  &__title {
+    margin: 0 0 14px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+  }
+}
+
+.sp-dept-list {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.sp-dept-row {
+  display: grid;
+  grid-template-columns: 170px 1fr 36px;
+  align-items: center;
+  gap: 10px;
+
+  &__name {
+    font-size: 12.5px;
+    color: var(--text2);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  &__bar-wrap {
+    background: #f1f5f9;
+    border-radius: 4px;
+    height: 8px;
+    overflow: hidden;
+  }
+
+  &__bar {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.3s ease;
+  }
+
+  &__count {
+    font-size: 12.5px;
+    font-weight: 600;
+    text-align: right;
+  }
+}

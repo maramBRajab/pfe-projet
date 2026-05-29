@@ -1,0 +1,138 @@
+<aside class="sp-sidebar">
+
+  <!-- ── LOGO ── -->
+  <div class="sp-sidebar__brand">
+    <img src="assets/logo sopra.png" alt="Sopra HR" class="app-logo" style="width:34px;height:34px;object-fit:contain;background:none!important;border-radius:0!important;display:block;box-shadow:none!important;padding:0!important;z-index:2;position:relative;" />
+    <div class="sp-brand-text">
+      <span class="sp-brand-name">Sopra HR</span>
+      <span class="sp-brand-tag">Sopra HR Software</span>
+    </div>
+  </div>
+
+  <!-- ── NAV ── -->
+  <nav class="sp-nav">
+
+    <!-- PRINCIPAL -->
+    <p class="sp-nav__section">Principal</p>
+
+    <a class="sp-nav__item" routerLink="/admin/dashboard" routerLinkActive="sp-nav__item--active" [routerLinkActiveOptions]="{ exact: true }">
+      <span class="sp-nav__ico">
+        <svg viewBox="0 0 16 16" fill="none">
+          <rect x="1.5" y="1.5" width="5.5" height="5.5" rx="1.4" fill="currentColor"/>
+          <rect x="9" y="1.5" width="5.5" height="5.5" rx="1.4" fill="currentColor" opacity=".55"/>
+          <rect x="1.5" y="9" width="5.5" height="5.5" rx="1.4" fill="currentColor" opacity=".55"/>
+          <rect x="9" y="9" width="5.5" height="5.5" rx="1.4" fill="currentColor" opacity=".3"/>
+        </svg>
+      </span>
+      Supervision
+    </a>
+
+    <!-- GESTION -->
+    <p class="sp-nav__section sp-nav__section--spaced">Gestion</p>
+
+    <a class="sp-nav__item" routerLink="/admin/collaborateurs" routerLinkActive="sp-nav__item--active">
+      <span class="sp-nav__ico">
+        <svg viewBox="0 0 16 16" fill="none">
+          <circle cx="6" cy="5" r="2.5" stroke="currentColor" stroke-width="1.4"/>
+          <path d="M1.5 13c0-2.485 2.015-4.5 4.5-4.5s4.5 2.015 4.5 4.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+          <circle cx="11.5" cy="5" r="2" stroke="currentColor" stroke-width="1.3"/>
+          <path d="M13.5 12.5c0-1.657-1.118-3-2.5-3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+        </svg>
+      </span>
+      Utilisateurs
+    </a>
+
+    <a class="sp-nav__item" routerLink="/admin/roles" routerLinkActive="sp-nav__item--active">
+      <span class="sp-nav__ico">
+        <svg viewBox="0 0 16 16" fill="none">
+          <path d="M8 1.5L14 4v4c0 3.5-2.5 5.5-6 6.5C2.5 13.5 0 11.5 0 8V4l6-2.5Z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/>
+          <path d="M5.5 8l1.5 1.5L10.5 6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </span>
+      Rôles &amp; Permissions
+    </a>
+
+    <!-- SYSTÈME -->
+    <p class="sp-nav__section sp-nav__section--spaced">Système</p>
+
+    <a class="sp-nav__item" routerLink="/admin/audit" routerLinkActive="sp-nav__item--active">
+      <span class="sp-nav__ico">
+        <svg viewBox="0 0 16 16" fill="none">
+          <rect x="2" y="2" width="12" height="12" rx="2" stroke="currentColor" stroke-width="1.3"/>
+          <path d="M5 6h6M5 9h4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+        </svg>
+      </span>
+      Journal d'audit
+    </a>
+
+    <a class="sp-nav__item" routerLink="/admin/rapports" routerLinkActive="sp-nav__item--active">
+      <span class="sp-nav__ico">
+        <svg viewBox="0 0 16 16" fill="none">
+          <rect x="1.5" y="9" width="3" height="5.5" rx="1" stroke="currentColor" stroke-width="1.3"/>
+          <rect x="6.5" y="5.5" width="3" height="9" rx="1" stroke="currentColor" stroke-width="1.3"/>
+          <rect x="11.5" y="1.5" width="3" height="13" rx="1" stroke="currentColor" stroke-width="1.3"/>
+        </svg>
+      </span>
+      Rapports système
+    </a>
+
+    <a class="sp-nav__item" routerLink="/admin/notifications" routerLinkActive="sp-nav__item--active">
+      <span class="sp-nav__ico">
+        <svg viewBox="0 0 16 16" fill="none">
+          <path d="M8 2a4 4 0 0 0-4 4v2.5l-1.5 1.5V11h11v-1L12 8.5V6a4 4 0 0 0-4-4Z" stroke="currentColor" stroke-width="1.3"/>
+          <path d="M6.5 11.5a1.5 1.5 0 0 0 3 0" stroke="currentColor" stroke-width="1.3"/>
+        </svg>
+      </span>
+      Notifications
+      <span class="sp-nav__badge sp-nav__badge--notif" *ngIf="notificationsPanel.notificationCount() > 0">
+        {{ notificationsPanel.notificationCount() }}
+      </span>
+      <span class="sp-nav__badge sp-nav__badge--notif" *ngIf="notificationsPanel.notificationCount() === 0">2</span>
+    </a>
+
+    <a class="sp-nav__item" routerLink="/admin/parametres" routerLinkActive="sp-nav__item--active">
+      <span class="sp-nav__ico">
+        <svg viewBox="0 0 16 16" fill="none">
+          <circle cx="8" cy="8" r="2.2" stroke="currentColor" stroke-width="1.3"/>
+          <path d="M8 2v1M8 13v1M2 8h1M13 8h1M3.5 3.5l.7.7M11.8 11.8l.7.7M3.5 12.5l.7-.7M11.8 4.2l.7-.7" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+        </svg>
+      </span>
+      Paramètres
+    </a>
+
+  </nav>
+
+  <!-- ── USER BLOCK ── -->
+  <div class="sp-user-block" [class.sp-user-block--open]="userMenuOpen">
+    <div class="sp-user-block__row" (click)="userMenuOpen = !userMenuOpen">
+      <div class="sp-user-block__av">{{ userInitials }}</div>
+      <div class="sp-user-block__info">
+        <span class="sp-user-block__name">{{ userDisplayName }}</span>
+        <span class="sp-user-block__role">{{ userRoleLabel }}</span>
+      </div>
+      <svg class="sp-user-block__caret" viewBox="0 0 16 16" fill="none">
+        <path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+
+    <div class="sp-user-block__menu" *ngIf="userMenuOpen">
+      <button type="button" class="sp-user-block__menu-item" routerLink="/admin/profil" (click)="userMenuOpen = false">
+        <svg viewBox="0 0 16 16" fill="none">
+          <circle cx="8" cy="5.5" r="2.5" stroke="currentColor" stroke-width="1.4"/>
+          <path d="M2 13.5c0-3.038 2.686-5.5 6-5.5s6 2.462 6 5.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+        </svg>
+        Profil
+      </button>
+    </div>
+
+    <button type="button" class="sp-user-block__logout" (click)="logout()">
+      <svg viewBox="0 0 16 16" fill="none">
+        <path d="M6 14H3a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1h3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+        <path d="M10.5 11l3-3-3-3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M13.5 8H6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+      </svg>
+      Déconnexion
+    </button>
+  </div>
+
+</aside>

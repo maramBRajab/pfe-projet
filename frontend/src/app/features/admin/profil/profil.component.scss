@@ -1,0 +1,411 @@
+// ── Design Tokens ───────────────────────────────────────────
+:root {
+  --navy:   #0f1c3a;
+  --accent: #3b82f6;
+  --green:  #10b981;
+  --amber:  #f59e0b;
+  --red:    #ef4444;
+  --purple: #8b5cf6;
+  --bg:     #f4f6fa;
+  --card:   #ffffff;
+  --border: #e2e8f0;
+  --text:   #1e293b;
+  --text2:  #64748b;
+  --text3:  #94a3b8;
+}
+
+// ── Shell ────────────────────────────────────────────────────
+.sp-root {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+  background: var(--bg);
+  font-family: 'DM Sans', system-ui, sans-serif;
+  color: var(--text);
+}
+
+.sp-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+// ── Topbar ───────────────────────────────────────────────────
+.sp-topbar {
+  height: 56px;
+  background: #fff;
+  border-bottom: 1px solid var(--border);
+  padding: 0 28px;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+
+  &__left { display: flex; flex-direction: column; gap: 2px; }
+
+  &__breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+    color: var(--text3);
+  }
+
+  &__sep     { color: var(--text3); margin: 0 2px; }
+  &__current { color: var(--text2); }
+
+  &__title {
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--text);
+    margin: 0;
+    line-height: 1;
+  }
+
+  &__right {
+    margin-left: auto;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+  }
+}
+
+.sp-status-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--green);
+}
+.sp-status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--green);
+}
+.sp-av-sm {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+// ── Body ─────────────────────────────────────────────────────
+.sp-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 32px;
+}
+
+// ── Profile Header Card ───────────────────────────────────────
+.pf-header {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px 22px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 20px;
+
+  &__av {
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    background: var(--accent);
+    color: #fff;
+    font-size: 15px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  &__info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+  }
+
+  &__name {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  &__role {
+    font-size: 12px;
+    color: var(--text2);
+  }
+
+  &__email {
+    font-size: 11.5px;
+    color: var(--text3);
+    margin-top: 1px;
+  }
+
+  &__badges {
+    display: flex;
+    gap: 6px;
+    margin-top: 7px;
+    flex-wrap: nowrap;
+    align-items: center;
+  }
+
+  &__stats {
+    display: flex;
+    border-left: 1px solid var(--border);
+    padding-left: 20px;
+    flex-shrink: 0;
+  }
+}
+
+// ── Profile badges ───────────────────────────────────────────
+.pf-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 500;
+
+  i { font-size: 11px; }
+
+  &--green { background: #dcfce7; color: #166534; }
+  &--blue  { background: #dbeafe; color: #1e40af; }
+  &--gray  {
+    background: #f1f5f9;
+    color: #475569;
+    border: 1px solid var(--border);
+  }
+
+  &__check-icon { color: var(--green) !important; }
+}
+
+// ── Stats in header ──────────────────────────────────────────
+.pf-stat {
+  text-align: center;
+  padding: 0 14px;
+  border-right: 1px solid var(--border);
+
+  &:last-child { border-right: none; }
+
+  &__val {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text);
+
+    &--blue  { color: var(--accent); }
+    &--amber { color: var(--amber); }
+    &--red   { color: var(--red); }
+  }
+
+  &__lbl {
+    font-size: 10px;
+    color: var(--text3);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-top: 2px;
+  }
+}
+
+// ── Two-column layout ────────────────────────────────────────
+.pf-two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.pf-right-col {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+// ── Cards ────────────────────────────────────────────────────
+.pf-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px 18px;
+  position: relative;
+
+  &__lbl {
+    font-size: 9.5px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text3);
+    margin-bottom: 2px;
+  }
+
+  &__title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 12px;
+  }
+}
+
+// ── Form ─────────────────────────────────────────────────────
+.pf-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.pf-fg {
+  margin-bottom: 10px;
+  display: flex;
+  flex-direction: column;
+}
+
+.pf-fl {
+  font-size: 10.5px;
+  font-weight: 500;
+  color: var(--text2);
+  margin-bottom: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.pf-fi {
+  width: 100%;
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  font-size: 12.5px;
+  font-family: 'DM Sans', system-ui, sans-serif;
+  color: var(--text);
+  background: var(--card);
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color 0.15s, box-shadow 0.15s;
+
+  &:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.08);
+  }
+
+  &::placeholder { color: var(--text3); }
+}
+
+.pf-btn-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+  margin-bottom: 0;
+}
+
+.pf-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 14px;
+  border-radius: 7px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  font-family: 'DM Sans', system-ui, sans-serif;
+  transition: all 0.15s;
+
+  i { font-size: 14px; }
+
+  &:disabled { opacity: 0.6; cursor: not-allowed; }
+
+  &--primary {
+    background: var(--accent);
+    color: #fff;
+    &:hover:not(:disabled) { background: #2563eb; }
+  }
+
+  &--secondary {
+    background: transparent;
+    color: var(--text2);
+    border: 1px solid var(--border);
+    &:hover { background: var(--bg); }
+  }
+}
+
+.pf-feedback {
+  font-size: 12.5px;
+  margin-top: 10px;
+  border-radius: 6px;
+  padding: 7px 12px;
+
+  &--success { background: #d1fae5; color: #065f46; }
+  &--error   { background: #fee2e2; color: #991b1b; }
+}
+
+// ── Permissions ──────────────────────────────────────────────
+.pf-perm-badge {
+  position: absolute;
+  top: 22px;
+  right: 22px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: #dcfce7;
+  color: #166534;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 500;
+
+  i { font-size: 11px; }
+}
+
+.pf-perm-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.pf-perm {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  border-top: 3px solid var(--green);
+  padding: 14px 16px;
+
+  &__name {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+
+    i { font-size: 14px; color: var(--green); }
+  }
+
+  &__status {
+    font-size: 10.5px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--green);
+  }
+}
+
+// ── Responsive ───────────────────────────────────────────────
+@media (max-width: 1100px) {
+  .pf-header        { flex-wrap: wrap; }
+  .pf-header__stats { border-left: none; padding-left: 0; border-top: 1px solid var(--border); padding-top: 16px; width: 100%; }
+  .pf-two-col       { grid-template-columns: 1fr; }
+}

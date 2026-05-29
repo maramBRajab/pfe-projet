@@ -1,0 +1,164 @@
+﻿<app-manager-shell activeSection="historique">
+
+  <!-- TOPBAR -->
+  <header shell-topbar class="ha-topbar">
+    <div class="ha-topbar__left">
+      <nav class="ha-bc">
+        <span>SmartAssign</span>
+        <span class="ha-bc__sep">›</span>
+        <span>Manager</span>
+        <span class="ha-bc__sep">›</span>
+        <span class="ha-bc__cur">Historique</span>
+      </nav>
+      <h1 class="ha-topbar__title">Historique des affectations</h1>
+    </div>
+    <div class="ha-topbar__right">
+      <div class="ha-status-pill">
+        <span class="ha-status-dot"></span>
+        Données synchronisées
+      </div>
+      <button type="button" class="ha-btn ha-btn--primary">
+        <i class="ti ti-player-play"></i> Exporter CSV
+      </button>
+      <div class="ha-topbar-av">MS</div>
+    </div>
+  </header>
+
+  <!-- CONTENT -->
+  <div class="ha-content">
+
+    <!-- KPI GRID -->
+    <div class="ha-kpi-grid">
+      <div class="ha-kcard">
+        <div class="ha-kcard__bar" style="background:#3b82f6"></div>
+        <div class="ha-kcard__hd"><span class="ha-kbadge ha-kbadge--neutral">Stable</span></div>
+        <div class="ha-kcard__lbl">TOTAL AFFECTATIONS</div>
+        <div class="ha-kcard__val" style="color:#3b82f6">{{ totalCount }}</div>
+        <div class="ha-kcard__sub">Enregistrées en BDD</div>
+      </div>
+      <div class="ha-kcard">
+        <div class="ha-kcard__bar" style="background:#10b981"></div>
+        <div class="ha-kcard__hd"><span class="ha-kbadge ha-kbadge--green">+49%</span></div>
+        <div class="ha-kcard__lbl">SCORE MOYEN GLOBAL</div>
+        <div class="ha-kcard__val" style="color:#10b981">{{ avgScore }}%</div>
+        <div class="ha-kcard__sub">Compatibilité moyenne</div>
+      </div>
+      <div class="ha-kcard">
+        <div class="ha-kcard__bar" style="background:#f59e0b"></div>
+        <div class="ha-kcard__hd"><span class="ha-kbadge ha-kbadge--amber">Ce mois</span></div>
+        <div class="ha-kcard__lbl">CE MOIS</div>
+        <div class="ha-kcard__val" style="color:#f59e0b">{{ thisMonthCount }}</div>
+        <div class="ha-kcard__sub">Affectations réalisées</div>
+      </div>
+      <div class="ha-kcard">
+        <div class="ha-kcard__bar" style="background:#8b5cf6"></div>
+        <div class="ha-kcard__hd"><span class="ha-kbadge ha-kbadge--purple">Best</span></div>
+        <div class="ha-kcard__lbl">MEILLEUR SCORE</div>
+        <div class="ha-kcard__val" style="color:#8b5cf6">{{ bestScore }}%</div>
+        <div class="ha-kcard__sub">{{ bestScoreLabel }}</div>
+      </div>
+      <div class="ha-kcard">
+        <div class="ha-kcard__bar" style="background:#ef4444"></div>
+        <div class="ha-kcard__hd"><span class="ha-kbadge ha-kbadge--neutral">0</span></div>
+        <div class="ha-kcard__lbl">EXPORTS PDF</div>
+        <div class="ha-kcard__val" style="color:#1e293b">0</div>
+        <div class="ha-kcard__sub">Aucun export ce mois</div>
+      </div>
+    </div>
+
+    <!-- MAIN CARD -->
+    <div class="ha-card">
+      <div class="ha-card__hd">
+        <div>
+          <div class="ha-card__sect-lbl">TRAÇABILITÉ</div>
+          <div class="ha-card__title">Historique des affectations</div>
+        </div>
+        <div class="ha-card__actions">
+          <button type="button" class="ha-btn ha-btn--ghost ha-btn--sm">
+            <i class="ti ti-download"></i> Exporter CSV
+          </button>
+          <button type="button" class="ha-btn ha-btn--ghost ha-btn--sm">
+            <i class="ti ti-file-export"></i> Export PDF
+          </button>
+        </div>
+      </div>
+
+      <!-- Filters -->
+      <div class="ha-filters">
+        <div class="ha-search">
+          <i class="ti ti-search ha-search__ico"></i>
+          <input type="text" class="ha-search__input" [(ngModel)]="searchTerm"
+            placeholder="Rechercher un collaborateur ou projet…" />
+        </div>
+        <select class="ha-select" [(ngModel)]="filterProjet">
+          <option value="">Tous les projets</option>
+          <option *ngFor="let p of projetOptions" [value]="p">{{ p }}</option>
+        </select>
+        <select class="ha-select ha-select--sm" [(ngModel)]="filterPeriod">
+          <option value="month">Ce mois</option>
+          <option value="all">Tout</option>
+        </select>
+      </div>
+
+      <!-- Results row -->
+      <div class="ha-results-row">
+        <span><strong>{{ filteredAffectations.length }}</strong> affectation(s)</span>
+        <span class="ha-results-row__score">Score moyen global : {{ avgScore }}%</span>
+      </div>
+
+      <!-- Table -->
+      <div class="ha-table">
+        <div class="ha-table__head">
+          <span>PROJET</span>
+          <span>COLLABORATEUR</span>
+          <span>SCORE</span>
+          <span>DATE</span>
+          <span>POTENTIEL</span>
+          <span>STATUT</span>
+        </div>
+
+        <div *ngIf="isLoading" class="ha-state">Chargement de l'historique...</div>
+        <div *ngIf="!isLoading && errorMessage" class="ha-state ha-state--error">{{ errorMessage }}</div>
+
+        <ng-container *ngIf="!isLoading && !errorMessage">
+          <div class="ha-table__row" *ngFor="let a of filteredAffectations; trackBy: trackByAffectation">
+            <span class="ha-col ha-col--projet">{{ a.projet.nom }}</span>
+            <span class="ha-col ha-col--collab">{{ a.collaborateur.prenom }} {{ a.collaborateur.nom }}</span>
+            <span class="ha-col ha-col--score">
+              <span class="ha-mini-bar">
+                <span class="ha-mini-bar__fill"
+                  [style.width.px]="(a.score / 100) * 60"
+                  [style.background]="getScoreColor(a.score)"></span>
+              </span>
+              <span class="ha-score-pct" [style.color]="getScoreColor(a.score)">{{ a.score }}%</span>
+            </span>
+            <span class="ha-col ha-col--date">
+              <span class="ha-date-pill">{{ a.dateAffectation | date:'dd/MM/yyyy' }}</span>
+            </span>
+            <span class="ha-col ha-col--potentiel">
+              <span class="ha-potentiel" [ngClass]="getPotentielClass(a.score)">
+                <i class="ti" [ngClass]="getPotentielIcon(a.score)"></i>
+                {{ getPotentiel(a.score) }}
+              </span>
+            </span>
+            <span class="ha-col ha-col--statut">
+              <span class="ha-statut">
+                <i class="ti ti-check"></i> Affecté
+              </span>
+            </span>
+          </div>
+          <div class="ha-state" *ngIf="!filteredAffectations.length">
+            Aucune affectation ne correspond aux filtres.
+          </div>
+        </ng-container>
+      </div>
+
+      <!-- Table footer -->
+      <div class="ha-table__footer">
+        <span><span class="ha-green-dot"></span> {{ filteredAffectations.length }} affectation(s) au total</span>
+        <a routerLink="/manager/affectation" class="ha-new-analysis">Lancer une nouvelle analyse →</a>
+      </div>
+    </div>
+  </div>
+
+</app-manager-shell>

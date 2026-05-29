@@ -1,0 +1,109 @@
+<app-manager-shell activeSection="projets">
+  <section class="manager-page">
+    <div class="page-shell" *ngIf="!isLoading && projet; else stateTpl">
+    <header class="page-hero">
+      <div class="hero-main">
+        <div class="hero-meta-row">
+          <div class="brand-lockup">
+            <div class="brand-mark">SA</div>
+            <div>
+              <span class="page-tag">Pilotage projet</span>
+              <div class="hero-subtitle">SmartAssign · Détail projet</div>
+            </div>
+          </div>
+        </div>
+        <h1>{{ projet.nom }}</h1>
+        <p>{{ projet.description || 'Projet en cours de pilotage par le manager.' }}</p>
+        <div class="hero-badges">
+          <span class="hero-badge">{{ statusLabel(projet.statut) }}</span>
+          <span class="hero-badge">{{ competenceLabels.length }} compétence(s)</span>
+          <span class="hero-badge">{{ affectations.length }} affectation(s)</span>
+          <span class="hero-badge">Score moyen {{ averageScore }}%</span>
+        </div>
+        <div class="hero-actions">
+          <a [routerLink]="['/manager/projets/edit', projet.id]" class="btn btn--primary">Modifier le projet</a>
+          <a [routerLink]="['/manager/affectation']" [queryParams]="{ projetId: projet.id }" class="btn btn--ghost">Analyser les recommandations</a>
+        </div>
+      </div>
+    </header>
+
+    <section class="stats-grid">
+      <article class="stat-card">
+        <span>Statut</span>
+        <strong>{{ statusLabel(projet.statut) }}</strong>
+      </article>
+      <article class="stat-card">
+        <span>Compétences requises</span>
+        <strong>{{ competenceLabels.length }}</strong>
+      </article>
+      <article class="stat-card">
+        <span>Affectations</span>
+        <strong>{{ affectations.length }}</strong>
+      </article>
+      <article class="stat-card">
+        <span>Score moyen</span>
+        <strong>{{ averageScore }}%</strong>
+      </article>
+    </section>
+
+    <section class="content-grid">
+      <article class="panel">
+        <div class="panel-head">
+          <h2>Données clés</h2>
+        </div>
+        <div class="meta-list">
+          <div>
+            <span>Date de début</span>
+            <strong>{{ projet.dateDebut | date:'dd MMM yyyy' }}</strong>
+          </div>
+          <div>
+            <span>Date de fin</span>
+            <strong>{{ projet.dateFin | date:'dd MMM yyyy' }}</strong>
+          </div>
+        </div>
+        <div class="skills" *ngIf="competenceLabels.length; else emptySkills">
+          <span class="skill-chip" *ngFor="let skill of competenceLabels">{{ skill }}</span>
+        </div>
+        <ng-template #emptySkills>
+          <p class="muted">Aucune compétence n’est encore associée à ce projet.</p>
+        </ng-template>
+      </article>
+
+      <article class="panel panel--wide">
+        <div class="panel-head">
+          <h2>Collaborateurs affectés</h2>
+          <a routerLink="/manager/affectations-en-cours">Voir toutes les affectations</a>
+        </div>
+
+        <div class="assignment-list" *ngIf="affectations.length; else emptyAssignments">
+          <div class="assignment-row" *ngFor="let affectation of affectations; trackBy: trackByAffectation">
+            <div class="avatar">{{ initiales(affectation) }}</div>
+            <div class="assignment-copy">
+              <strong>{{ affectation.collaborateur.prenom }} {{ affectation.collaborateur.nom }}</strong>
+              <span>{{ affectation.collaborateur.email }}</span>
+            </div>
+            <div class="assignment-meta">
+              <span>{{ affectation.score }}%</span>
+              <span>{{ affectation.dateAffectation | date:'dd MMM yyyy' }}</span>
+            </div>
+          </div>
+        </div>
+
+        <ng-template #emptyAssignments>
+          <p class="muted">Aucun collaborateur n'est encore affecté à ce projet.</p>
+        </ng-template>
+      </article>
+    </section>
+  </div>
+
+    <ng-template #stateTpl>
+      <section class="state-card" *ngIf="isLoading">
+        <strong>Chargement du détail projet...</strong>
+      </section>
+      <section class="state-card state-card--error" *ngIf="!isLoading && errorMessage">
+        <strong>{{ errorMessage }}</strong>
+        <a routerLink="/manager/projets" class="btn btn--ghost">Retour à la liste</a>
+      </section>
+    </ng-template>
+  </section>
+</app-manager-shell>

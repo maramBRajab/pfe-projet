@@ -1,0 +1,241 @@
+﻿<app-collaborateur-shell activeSection="dashboard">
+
+  <!-- -- TOPBAR -------------------------------------------- -->
+  <header shell-topbar class="cd-topbar">
+    <div class="cd-topbar__left">
+      <nav class="cd-topbar__bc">
+        <span>SmartAssign</span>
+        <span class="cd-topbar__sep">›</span>
+        <span>Collaborateur</span>
+        <span class="cd-topbar__sep">›</span>
+        <span class="cd-topbar__cur">Dashboard</span>
+      </nav>
+      <h1 class="cd-topbar__title">Dashboard collaborateur</h1>
+    </div>
+    <div class="cd-topbar__right">
+      <div class="cd-status-pill">
+        <span class="cd-status-dot"></span>
+        <span>{{ dashboardStatusLabel }}</span>
+      </div>
+      <a class="cd-btn cd-btn--primary cd-btn--sm" routerLink="/mon-profil">
+        Compléter mon profil
+      </a>
+      <div class="cd-av">{{ userInitials }}</div>
+    </div>
+  </header>
+
+  <!-- -- CONTENT ------------------------------------------- -->
+
+  <!-- Date label -->
+  <p class="cd-date-lbl">Pilotage Personnel &mdash; {{ currentDate | date:'EEEE d MMMM yyyy':'':'fr' | titlecase }}</p>
+
+  <!-- -- KPI GRID -------------------------------------------- -->
+  <div class="cd-kpi-grid">
+
+    <!-- CARD 1: PROJETS ACTIFS -->
+    <div class="cd-kcard">
+      <div class="cd-kcard__bar cd-kcard__bar--blue"></div>
+      <div class="cd-kcard__hd">
+        <span class="cd-kbadge" [ngClass]="kpiProjectsCount > 0 ? 'cd-kbadge--green' : 'cd-kbadge--gray'">
+          {{ kpiProjectsCount > 0 ? 'En cours' : 'Aucun' }}
+        </span>
+      </div>
+      <div class="cd-kcard__lbl">PROJETS ACTIFS</div>
+      <div class="cd-kcard__val" style="color:#3b82f6">{{ statWidgets[0]?.value ?? 0 }}</div>
+      <div class="cd-kcard__sub">{{ statWidgets[0]?.hint ?? 'Mission(s) en cours' }}</div>
+    </div>
+
+    <!-- CARD 2: DISPONIBILITÉ -->
+    <div class="cd-kcard">
+      <div class="cd-kcard__bar cd-kcard__bar--amber"></div>
+      <div class="cd-kcard__hd">
+        <span class="cd-kbadge cd-kbadge--amber">Partielle</span>
+      </div>
+      <div class="cd-kcard__lbl">DISPONIBILITÉ</div>
+      <div class="cd-kcard__val cd-kcard__val--sm" style="color:#f59e0b">{{ statWidgets[1]?.value ?? 'Disponible' }}</div>
+      <div class="cd-kcard__sub">{{ statWidgets[1]?.hint ?? 'Statut collaborateur courant' }}</div>
+    </div>
+
+    <!-- CARD 3: Compétences -->
+    <div class="cd-kcard">
+      <div class="cd-kcard__bar" [ngClass]="kpiSkillsCount > 0 ? 'cd-kcard__bar--purple' : 'cd-kcard__bar--red'"></div>
+      <div class="cd-kcard__hd">
+        <span class="cd-kbadge" [ngClass]="kpiSkillsCount > 0 ? 'cd-kbadge--green' : 'cd-kbadge--gray'">Profil</span>
+      </div>
+      <div class="cd-kcard__lbl">Compétences</div>
+      <div class="cd-kcard__val" [style.color]="kpiSkillsCount > 0 ? '#8b5cf6' : '#ef4444'">{{ statWidgets[2]?.value ?? 0 }}</div>
+      <div class="cd-kcard__sub">{{ statWidgets[2]?.hint ?? 'Aucune renseignée' }}</div>
+    </div>
+
+    <!-- CARD 4: CHARGE MOYENNE -->
+    <div class="cd-kcard">
+      <div class="cd-kcard__bar" [ngClass]="(statWidgets[3]?.tone ?? 'default') === 'alert' ? 'cd-kcard__bar--amber' : 'cd-kcard__bar--green'"></div>
+      <div class="cd-kcard__hd">
+        <span class="cd-kbadge cd-kbadge--gray">Synthèse</span>
+      </div>
+      <div class="cd-kcard__lbl">CHARGE MOYENNE</div>
+      <div class="cd-kcard__val" [style.color]="(statWidgets[3]?.tone ?? 'default') === 'alert' ? '#f59e0b' : '#10b981'">{{ statWidgets[3]?.value ?? '0%' }}</div>
+      <div class="cd-kcard__sub">{{ statWidgets[3]?.hint ?? 'Charge maîtrisée' }}</div>
+    </div>
+
+  </div>
+
+  <!-- -- PROFILE COMPLETION CARD -------------------------- -->
+  <div class="cd-pf-card">
+    <div class="cd-pf-card__main">
+      <span class="cd-lbl">MON PROFIL</span>
+      <p class="cd-pf-card__title">Complétude du profil</p>
+      <p class="cd-pf-card__sub">Mettez à jour vos informations pour être mieux affecté</p>
+    </div>
+    <div class="cd-pf-card__pct">
+      <span class="cd-pf-card__pct-val">{{ profileCompletion }}%</span>
+      <span class="cd-pf-card__pct-hint">Il manque : {{ missingItems }}</span>
+    </div>
+    <div class="cd-pf-card__bar-row">
+      <div class="cd-progress-track">
+        <div class="cd-progress-fill" [style.width.%]="profileCompletion"></div>
+      </div>
+    </div>
+    <div class="cd-pf-card__checklist">
+      <span class="cd-check"><i class="ti ti-check cd-check--ok"></i>Prénom &amp; Nom</span>
+      <span class="cd-check"><i class="ti ti-check cd-check--ok"></i>Email</span>
+      <span class="cd-check"><i class="ti ti-x cd-check--no"></i>Compétences</span>
+      <span class="cd-check"><i class="ti ti-x cd-check--no"></i>Photo de profil</span>
+      <span class="cd-check"><i class="ti ti-x cd-check--no"></i>Téléphone</span>
+      <a class="cd-btn cd-btn--primary cd-pf-cta" routerLink="/mon-profil">
+        <i class="ti ti-arrow-right"></i> Compléter mon profil
+      </a>
+    </div>
+  </div>
+
+  <!-- -- MAIN 2-COL GRID --------------------------------- -->
+  <div class="cd-main-grid">
+
+    <!-- - LEFT ------------------------------------------- -->
+    <div class="cd-col-left">
+
+      <!-- Prochains jalons -->
+      <div class="cd-card cd-card--stretch">
+        <div class="cd-card__hd">
+          <div>
+            <span class="cd-lbl">PLANNING</span>
+            <h2 class="cd-card__title">Prochains jalons</h2>
+          </div>
+          <a class="cd-btn cd-btn--ghost cd-btn--sm" routerLink="/planning">Voir &rarr;</a>
+        </div>
+        <div class="cd-jalons">
+          <div class="cd-jalon">
+            <span class="cd-jalon__dot" style="background:#ef4444"></span>
+            <div class="cd-jalon__body">
+              <span class="cd-jalon__name">DSN — Livraison phase 1</span>
+              <span class="cd-jalon__date">24 avr.</span>
+            </div>
+            <span class="cd-jalon__pill cd-jalon__pill--red">Dans 3 jours</span>
+          </div>
+          <div class="cd-jalon">
+            <span class="cd-jalon__dot" style="background:#3b82f6"></span>
+            <div class="cd-jalon__body">
+              <span class="cd-jalon__name">azzeer — Fin de mission</span>
+              <span class="cd-jalon__date">12 juil.</span>
+            </div>
+            <span class="cd-jalon__pill cd-jalon__pill--blue">Dans 73 jours</span>
+          </div>
+          <div class="cd-jalon cd-jalon--last">
+            <span class="cd-jalon__dot" style="background:#f59e0b"></span>
+            <div class="cd-jalon__body">
+              <span class="cd-jalon__name">Revue de mi-parcours</span>
+              <span class="cd-jalon__date">30 mai</span>
+            </div>
+            <span class="cd-jalon__pill cd-jalon__pill--amber">Dans 30 jours</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Workspace: ACCÈS RAPIDES -->
+      <div class="cd-card">
+        <span class="cd-lbl cd-lbl--mb">WORKSPACE — ACCÈS RAPIDES</span>
+        <div class="cd-tiles">
+          <a class="cd-tile" routerLink="/mes-projets">
+            <i class="ti ti-folder cd-tile__ico" style="color:#3b82f6"></i>
+            <span class="cd-tile__title">Mes projets</span>
+            <span class="cd-tile__sub">Voir &rarr;</span>
+          </a>
+          <a class="cd-tile" routerLink="/planning">
+            <i class="ti ti-calendar cd-tile__ico" style="color:#10b981"></i>
+            <span class="cd-tile__title">Mon planning</span>
+            <span class="cd-tile__sub">Voir &rarr;</span>
+          </a>
+          <a class="cd-tile" routerLink="/mon-profil">
+            <i class="ti ti-award cd-tile__ico" style="color:#8b5cf6"></i>
+            <span class="cd-tile__title">Compétences</span>
+            <span class="cd-tile__sub">Voir &rarr;</span>
+          </a>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- - RIGHT ------------------------------------------- -->
+    <div class="cd-col-right">
+
+      <!-- Points de vigilance -->
+      <div class="cd-card cd-card--stretch">
+        <div style="margin-bottom:14px">
+          <span class="cd-lbl">SUIVI</span>
+          <h2 class="cd-card__title">Points de vigilance</h2>
+        </div>
+
+        <div class="cd-alert cd-alert--warning">
+          <i class="ti ti-alert-triangle cd-alert__ico"></i>
+          <div class="cd-alert__body">
+            <span class="cd-alert__title">Disponibilité marquée Partielle</span>
+            <span class="cd-alert__sub">État collaborateur · 14-15 mai</span>
+          </div>
+          <span class="cd-alert__badge cd-alert__badge--warning">WARNING</span>
+        </div>
+
+        <div class="cd-alert cd-alert--info">
+          <i class="ti ti-info-circle cd-alert__ico"></i>
+          <div class="cd-alert__body">
+            <span class="cd-alert__title">0 mission active visible</span>
+            <span class="cd-alert__sub">Tableau de bord</span>
+          </div>
+          <span class="cd-alert__badge cd-alert__badge--info">INFO</span>
+        </div>
+      </div>
+
+      <!-- Journal collaborateur -->
+      <div class="cd-card">
+        <div class="cd-card__hd" style="margin-bottom:14px">
+          <div>
+            <span class="cd-lbl">ACTIVITÉ RÉCENTE</span>
+            <h2 class="cd-card__title">Journal collaborateur</h2>
+          </div>
+          <a class="cd-voir" routerLink="/historique">Voir &rarr;</a>
+        </div>
+
+        <ng-container *ngIf="activiteRecente.length; else fallbackJournal">
+          <div class="cd-journal-item" *ngFor="let entry of activiteRecente.slice(0,3)">
+            <div class="cd-journal-av">{{ entry.initiales }}</div>
+            <div class="cd-journal-body">
+              <span class="cd-journal-title">{{ entry.action }}</span>
+              <span class="cd-journal-sub">{{ entry.temps }}</span>
+            </div>
+          </div>
+        </ng-container>
+
+        <ng-template #fallbackJournal>
+          <div class="cd-journal-item">
+            <div class="cd-journal-av">ET</div>
+            <div class="cd-journal-body">
+              <span class="cd-journal-title">Disponibilité actuelle : Partielle</span>
+              <span class="cd-journal-sub">planning courant · admin</span>
+            </div>
+          </div>
+        </ng-template>
+      </div>
+
+    </div>
+  </div>
+
+</app-collaborateur-shell>

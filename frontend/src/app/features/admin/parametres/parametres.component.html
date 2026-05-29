@@ -1,0 +1,278 @@
+<section class="sp-root">
+  <app-admin-sidebar></app-admin-sidebar>
+
+  <div class="sp-main">
+
+    <!-- -- TOPBAR -------------------------------------------- -->
+    <header class="sp-topbar">
+      <div class="sp-topbar__left">
+        <nav class="sp-topbar__breadcrumb">
+          <span>SmartAssign</span>
+          <span class="sp-topbar__sep">›</span>
+          <span>Admin</span>
+          <span class="sp-topbar__sep">›</span>
+          <span class="sp-topbar__current">Paramètres</span>
+        </nav>
+        <h1 class="sp-topbar__title">Paramètres</h1>
+      </div>
+      <div class="sp-topbar__right">
+        <div class="sp-status-pill">
+          <span class="sp-status-dot"></span>
+          Plateforme saine
+        </div>
+        <button type="button" class="sp-btn sp-btn--ghost sp-btn--pill" (click)="exporterCSV()">
+          <svg viewBox="0 0 16 16" fill="none">
+            <path d="M8 2v9" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+            <path d="M4.5 8.5L8 12l3.5-3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M2 13h12" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+          </svg>
+          Exporter
+        </button>
+        <button type="button" class="sp-btn sp-btn--primary sp-btn--pill" (click)="exporterPDF()">
+          <svg viewBox="0 0 16 16" fill="none">
+            <path d="M3 2h7l3 3v9a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1Z" stroke="currentColor" stroke-width="1.4"/>
+            <path d="M10 2v4h4M6 9h4M6 12h2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+          </svg>
+          Export PDF
+        </button>
+        <div class="sp-av-sm" routerLink="/admin/profil" style="cursor:pointer" title="Mon profil">AP</div>
+      </div>
+    </header>
+
+    <!-- -- BODY ---------------------------------------------- -->
+    <div class="sp-body">
+
+      <!-- Toast -->
+      <div class="sp-toast"
+           [class.sp-toast--success]="toast.type === 'success'"
+           [class.sp-toast--error]="toast.type === 'error'"
+           *ngIf="toast.visible">
+        {{ toast.message }}
+      </div>
+
+      <!-- Action row -->
+      <div class="sp-action-row">
+        <button type="button" class="sp-btn sp-btn--ghost sp-btn--pill" (click)="reinitialiserTout()">
+          Réinitialiser
+        </button>
+        <button type="button" class="sp-btn sp-btn--primary sp-btn--pill" (click)="sauvegarder()">
+          <i class="ti ti-check"></i>
+          Sauvegarder les modifications
+        </button>
+      </div>
+
+      <!-- -- KPI Cards ---------------------------------------- -->
+      <div class="sp-kpi-grid">
+
+        <div class="sp-kcard">
+          <div class="sp-kcard__bar" style="background:#3b82f6"></div>
+          <span class="sp-kcard__badge sp-kcard__badge--green">Actif</span>
+          <div class="sp-kcard__label">SEUIL COMPATIBILITé</div>
+          <div class="sp-kcard__val" style="color:#3b82f6">{{ affectations.seuilCompatibilite }}%</div>
+          <div class="sp-kcard__sub">Score minimum requis</div>
+        </div>
+
+        <div class="sp-kcard">
+          <div class="sp-kcard__bar" style="background:#10b981"></div>
+          <span class="sp-kcard__badge sp-kcard__badge--neutral">Auto</span>
+          <div class="sp-kcard__label">PROFILS MAX RECOMMANDéS</div>
+          <div class="sp-kcard__val" style="color:#10b981">{{ affectations.nbProfilsMax }}</div>
+          <div class="sp-kcard__sub">Matching automatique</div>
+        </div>
+
+        <div class="sp-kcard">
+          <div class="sp-kcard__bar" style="background:#f59e0b"></div>
+          <span class="sp-kcard__badge sp-kcard__badge--neutral">Session</span>
+          <div class="sp-kcard__label">Durée de session</div>
+          <div class="sp-kcard__val" style="color:#f59e0b">{{ securite.dureeSession }}</div>
+          <div class="sp-kcard__sub">Minutes d'inactivité</div>
+        </div>
+
+        <div class="sp-kcard">
+          <div class="sp-kcard__bar" style="background:#ef4444"></div>
+          <span class="sp-kcard__badge sp-kcard__badge--neutral">Normal</span>
+          <div class="sp-kcard__label">MODE MAINTENANCE</div>
+          <div class="sp-kcard__val">{{ general.modeMaintenance ? 'ON' : 'OFF' }}</div>
+          <div class="sp-kcard__sub">2FA {{ securite.doubleAuth ? 'activé' : 'désactivé' }}</div>
+        </div>
+
+      </div>
+
+      <!-- -- Main 2-col grid ---------------------------------- -->
+      <div class="sp-main-grid">
+
+        <!-- Left column -->
+        <div class="sp-col">
+
+          <!-- Card A: Affectations -->
+          <div class="sp-card">
+            <div class="sp-card__section-lbl">Configuration — Affectations</div>
+
+            <div class="sp-field">
+              <label class="sp-field__lbl">Seuil de compatibilité minimum (%)</label>
+              <input type="number" min="0" max="100"
+                     [(ngModel)]="affectations.seuilCompatibilite"
+                     (ngModelChange)="markUnsaved()">
+              <span class="sp-field__hint">Score minimum pour qu'un profil soit recommandé</span>
+            </div>
+
+            <div class="sp-field sp-field--mt">
+              <label class="sp-field__lbl">Nombre max de profils recommandés</label>
+              <input type="number" min="1" max="20"
+                     [(ngModel)]="affectations.nbProfilsMax"
+                     (ngModelChange)="markUnsaved()">
+            </div>
+
+            <div class="sp-toggle-row">
+              <div class="sp-toggle-row__info">
+                <strong>Activer le matching automatique</strong>
+                <span>Lance l'analyse automatiquement lors de la création d'un projet</span>
+              </div>
+              <button type="button" class="sp-toggle"
+                      [class.sp-toggle--on]="affectations.matchingAuto"
+                      (click)="affectations.matchingAuto = !affectations.matchingAuto; markUnsaved()">
+              </button>
+            </div>
+          </div>
+
+          <!-- Card B: Plateforme -->
+          <div class="sp-card">
+            <div class="sp-card__section-lbl">Configuration — Plateforme</div>
+
+            <div class="sp-field">
+              <label class="sp-field__lbl">Nom de la plateforme</label>
+              <input type="text"
+                     [(ngModel)]="general.nomPlateforme"
+                     (ngModelChange)="markUnsaved()">
+            </div>
+
+            <div class="sp-toggle-row">
+              <div class="sp-toggle-row__info">
+                <strong>Mode maintenance</strong>
+                <span>Désactive l'accès aux utilisateurs non-admin</span>
+              </div>
+              <button type="button" class="sp-toggle"
+                      [class.sp-toggle--on]="general.modeMaintenance"
+                      (click)="general.modeMaintenance = !general.modeMaintenance; markUnsaved()">
+              </button>
+            </div>
+          </div>
+
+        </div><!-- /left col -->
+
+        <!-- Right column -->
+        <div class="sp-col">
+
+          <!-- Card C: S›curit› + Sessions -->
+          <div class="sp-card">
+            <div class="sp-card__section-lbl">Configuration — Sécurité</div>
+
+            <div class="sp-field">
+              <label class="sp-field__lbl">Durée de session (minutes)</label>
+              <input type="number" min="5" max="480"
+                     [(ngModel)]="securite.dureeSession"
+                     (ngModelChange)="markUnsaved()">
+              <span class="sp-field__hint">Déconnexion automatique après inactivité</span>
+            </div>
+
+            <div class="sp-toggle-row">
+              <div class="sp-toggle-row__info">
+                <strong>Double authentification (2FA)</strong>
+                <span>Activer la vérification en deux étapes à la connexion</span>
+              </div>
+              <button type="button" class="sp-toggle"
+                      [class.sp-toggle--on]="securite.doubleAuth"
+                      (click)="securite.doubleAuth = !securite.doubleAuth; markUnsaved()">
+              </button>
+            </div>
+
+            <div class="sp-info-note">
+              <i class="ti ti-info-circle"></i>
+              <span>Ajouté ✓ — Gestion des sessions actives : voir qui est connecté maintenant et forcer la déconnexion.</span>
+            </div>
+
+            <!-- Sub-section: sessions actives -->
+            <div class="sp-section-lbl sp-section-lbl--mt">SESSIONS ACTIVES</div>
+
+            <div class="sp-session">
+              <div class="sp-session__av" style="background:#3b82f6">AP</div>
+              <div class="sp-session__info">
+                <div class="sp-session__title">
+                 Chrome — Windows 11
+                  <span class="sp-session__badge">Session actuelle</span>
+                </div>
+                <div class="sp-session__sub">192.168.1.10 · Connecté il y a 3 min</div>
+              </div>
+            </div>
+
+            <div class="sp-session sp-session--sep">
+              <div class="sp-session__av" style="background:#10b981">MK</div>
+              <div class="sp-session__info">
+                <div class="sp-session__title">
+Firefox — macOS</div>
+                <div class="sp-session__sub">192.168.1.45 · Connecté il y a 22 min</div>
+              </div>
+              <button type="button" class="sp-btn-disconnect">
+                <i class="ti ti-logout"></i> Déconnecter
+              </button>
+            </div>
+
+            <div class="sp-session sp-session--sep">
+              <div class="sp-session__av" style="background:#f59e0b">NB</div>
+              <div class="sp-session__info">
+                <div class="sp-session__title">Chrome — Ubuntu</div>
+                <div class="sp-session__sub">192.168.1.22 · Connecté il y a 1h</div>
+              </div>
+              <button type="button" class="sp-btn-disconnect">
+                <i class="ti ti-logout"></i> Déconnecter
+              </button>
+            </div>
+
+          </div><!-- /card C -->
+
+          <!-- Card D: Notifications -->
+          <div class="sp-card">
+            <div class="sp-card__section-lbl">Configuration — Notifications</div>
+
+            <div class="sp-toggle-row sp-toggle-row--first">
+              <div class="sp-toggle-row__info">
+                <strong>Alertes critiques</strong>
+                <span>Recevoir les alertes de niveau critique</span>
+              </div>
+              <button type="button" class="sp-toggle"
+                      [class.sp-toggle--on]="notif.alertesCritiques"
+                      (click)="notif.alertesCritiques = !notif.alertesCritiques; markUnsaved()">
+              </button>
+            </div>
+
+            <div class="sp-toggle-row sp-toggle-row--sep">
+              <div class="sp-toggle-row__info">
+                <strong>Alertes de vigilance</strong>
+                <span>Recevoir les alertes de niveau vigilance</span>
+              </div>
+              <button type="button" class="sp-toggle"
+                      [class.sp-toggle--on]="notif.alertesVigilance"
+                      (click)="notif.alertesVigilance = !notif.alertesVigilance; markUnsaved()">
+              </button>
+            </div>
+
+            <div class="sp-toggle-row sp-toggle-row--sep">
+              <div class="sp-toggle-row__info">
+                <strong>Notifications par email</strong>
+                <span>Envoyer les alertes par email en plus de l'interface</span>
+              </div>
+              <button type="button" class="sp-toggle"
+                      [class.sp-toggle--on]="notif.notifEmail"
+                      (click)="notif.notifEmail = !notif.notifEmail; markUnsaved()">
+              </button>
+            </div>
+
+          </div><!-- /card D -->
+
+        </div><!-- /right col -->
+
+      </div><!-- /main-grid -->
+
+    </div><!-- /sp-body -->
+  </div><!-- /sp-main -->
+</section>

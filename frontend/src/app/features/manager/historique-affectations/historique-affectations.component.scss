@@ -1,0 +1,406 @@
+﻿@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; }
+
+:host {
+  display: block;
+  font-family: "DM Sans", sans-serif;
+}
+
+// ══ TOPBAR ════════════════════════════════════════════════════
+.ha-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.ha-topbar__left { display: flex; flex-direction: column; gap: 2px; }
+
+.ha-bc {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  color: #64748b;
+  &__sep { color: #94a3b8; }
+  &__cur { color: #1e293b; font-weight: 500; }
+}
+
+.ha-topbar__title {
+  font-size: 20px;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0;
+}
+
+.ha-topbar__right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ha-status-pill {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: #10b981;
+}
+
+.ha-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #10b981;
+}
+
+.ha-topbar-av {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #10b981;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+// ══ BUTTONS ═══════════════════════════════════════════════════
+.ha-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  font-family: "DM Sans", sans-serif;
+  cursor: pointer;
+  transition: background 0.15s;
+
+  i { font-size: 15px; }
+
+  &--ghost {
+    background: transparent;
+    border: 1px solid #e2e8f0;
+    color: #64748b;
+    &:hover { background: #f8fafc; }
+  }
+
+  &--primary {
+    background: #3b82f6;
+    color: #fff;
+    border: none;
+    &:hover { background: #2563eb; }
+  }
+
+  &--sm { padding: 6px 12px; font-size: 12.5px; }
+}
+
+// ══ CONTENT ═══════════════════════════════════════════════════
+.ha-content { padding: 0; }
+
+// ══ KPI GRID ══════════════════════════════════════════════════
+.ha-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+.ha-kcard {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 10px 14px;
+  position: relative;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+
+.ha-kcard__bar {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  border-radius: 10px 10px 0 0;
+}
+
+.ha-kcard__hd { margin-bottom: 5px; }
+
+.ha-kbadge {
+  display: inline-block;
+  padding: 2px 7px;
+  border-radius: 8px;
+  font-size: 10px;
+  font-weight: 500;
+
+  &--neutral { background: #f1f5f9; color: #64748b; }
+  &--green   { background: #dcfce7; color: #166534; font-weight: 600; }
+  &--amber   { background: #fef9c3; color: #854d0e; }
+  &--purple  { background: #ede9fe; color: #5b21b6; }
+}
+
+.ha-kcard__lbl {
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #64748b;
+  margin-bottom: 3px;
+}
+
+.ha-kcard__val {
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1;
+  margin-bottom: 3px;
+}
+
+.ha-kcard__sub {
+  font-size: 11px;
+  color: #94a3b8;
+  margin-top: 3px;
+}
+
+// ══ MAIN CARD ═════════════════════════════════════════════════
+.ha-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 14px 16px;
+}
+
+.ha-card__hd {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.ha-card__sect-lbl {
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #94a3b8;
+  margin-bottom: 2px;
+}
+
+.ha-card__title {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.ha-card__actions { display: flex; gap: 6px; }
+
+// ══ FILTERS ═══════════════════════════════════════════════════
+.ha-filters {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.ha-search {
+  flex: 5;
+  min-width: 480px;
+  position: relative;
+
+  &__ico {
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #94a3b8;
+    font-size: 13px;
+    pointer-events: none;
+  }
+
+  &__input {
+    width: 100%;
+    height: 30px;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    padding: 0 12px 0 30px;
+    font-size: 12px;
+    color: #1e293b;
+    font-family: "DM Sans", sans-serif;
+    outline: none;
+
+    &::placeholder { color: #94a3b8; }
+    &:focus { border-color: #3b82f6; }
+  }
+}
+
+.ha-select {
+  height: 30px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 0 26px 0 10px;
+  font-size: 12px;
+  color: #64748b;
+  font-family: "DM Sans", sans-serif;
+  appearance: none;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") no-repeat right 8px center #fff;
+  outline: none;
+  cursor: pointer;
+  flex: 0 0 auto;
+  width: 130px;
+
+  &--sm { width: 100px; }
+  &:focus { border-color: #3b82f6; }
+}
+
+// Compact ghost buttons inside this card
+.ha-card .ha-btn--sm {
+  padding: 4px 10px;
+  font-size: 11.5px;
+  border-radius: 6px;
+  i { font-size: 13px; }
+}
+
+// ══ RESULTS ROW ═══════════════════════════════════════════════
+.ha-results-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  font-size: 11.5px;
+  color: #64748b;
+
+  strong { color: #1e293b; font-weight: 600; }
+  &__score { color: #3b82f6; font-weight: 500; }
+}
+
+// ══ TABLE ═════════════════════════════════════════════════════
+.ha-table {
+  &__head {
+    display: grid;
+    grid-template-columns: 1.5fr 1.5fr 1fr 1fr 1.2fr 1fr;
+    padding: 8px 0;
+    border-bottom: 1px solid #e2e8f0;
+
+    span {
+      font-size: 10px;
+      font-weight: 600;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+  }
+
+  &__row {
+    display: grid;
+    grid-template-columns: 1.5fr 1.5fr 1fr 1fr 1.2fr 1fr;
+    padding: 8px 0;
+    border-bottom: 1px solid #cbd5e1;
+    align-items: center;
+
+    &:hover { background: #fafbff; }
+    &:last-child { border-bottom: none; }
+  }
+
+  &__footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 10px;
+    border-top: 1px solid #f1f5f9;
+    margin-top: 4px;
+    font-size: 11.5px;
+    color: #64748b;
+  }
+}
+
+.ha-col {
+  display: flex;
+  align-items: center;
+
+  &--projet { font-size: 12px; font-weight: 600; color: #1e293b; }
+  &--collab { font-size: 11.5px; color: #64748b; }
+  &--score  { display: flex; align-items: center; gap: 8px; }
+}
+
+.ha-mini-bar {
+  width: 48px;
+  height: 5px;
+  border-radius: 3px;
+  background: #f1f5f9;
+  overflow: hidden;
+  flex-shrink: 0;
+
+  &__fill { height: 5px; border-radius: 3px; }
+}
+
+.ha-score-pct { font-size: 11.5px; font-weight: 600; }
+
+.ha-date-pill {
+  background: #f1f5f9;
+  color: #64748b;
+  border-radius: 5px;
+  font-size: 11px;
+  padding: 2px 8px;
+}
+
+.ha-potentiel {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 9px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.4;
+
+  i { font-size: 11px; }
+
+  &--red   { background: #fee2e2; color: #991b1b; i { color: #ef4444; } }
+  &--amber { background: #fef9c3; color: #92400e; i { color: #f59e0b; } }
+  &--green { background: #dcfce7; color: #166534; i { color: #10b981; } }
+}
+
+.ha-statut {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 9px;
+  border-radius: 20px;
+  background: #dcfce7;
+  color: #166534;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.4;
+
+  i { font-size: 11px; color: #10b981; }
+}
+
+.ha-green-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #10b981;
+  margin-right: 5px;
+  vertical-align: middle;
+}
+
+.ha-new-analysis {
+  font-size: 11.5px;
+  color: #3b82f6;
+  font-weight: 500;
+  cursor: pointer;
+  text-decoration: none;
+  &:hover { color: #2563eb; }
+}
+
+.ha-state {
+  padding: 18px;
+  text-align: center;
+  font-size: 12px;
+  color: #64748b;
+  &--error { color: #ef4444; }
+}

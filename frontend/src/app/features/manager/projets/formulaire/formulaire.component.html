@@ -1,0 +1,102 @@
+﻿<app-manager-shell activeSection="projets">
+<div class="fmp" [class.fmp--embedded]="embedded" [class.fmp--standalone]="!embedded">
+<div class="fmp__card">
+
+  <!-- Header -->
+  <div class="fmp__hdr">
+    <div class="fmp__hdr-left">
+      <a *ngIf="!embedded" [routerLink]="listRoute" class="fmp__back">
+        <svg viewBox="0 0 16 16" fill="none"><path d="M10 3.333L5.333 8L10 12.667" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Retour à la liste
+      </a>
+      <h2 class="fmp__title">{{ title }}</h2>
+    </div>
+    <button *ngIf="embedded" type="button" class="fmp__close" (click)="handleCancel()" aria-label="Fermer">
+      <svg viewBox="0 0 16 16" fill="none"><path d="M4 4L12 12M12 4L4 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+    </button>
+  </div>
+
+  <!-- Error banner -->
+  <div *ngIf="errorMessage" class="fmp__error">{{ errorMessage }}</div>
+
+  <!-- Loading -->
+  <div *ngIf="isLoading" class="fmp__loading">
+    <div class="fmp__spinner"></div>
+    <span>Chargement du projet...</span>
+  </div>
+
+  <!-- Form body -->
+  <div class="fmp__body" *ngIf="!isLoading">
+
+    <!-- Informations -->
+    <div class="fmp__section">
+      <p class="fmp__section-label">Informations</p>
+      <div class="fmp__field">
+        <label class="fmp__label" for="nom">Nom du projet <span class="fmp__req">*</span></label>
+        <input class="fmp__input" id="nom" type="text" [(ngModel)]="projet.nom" placeholder="Ex: Programme CRM 360">
+      </div>
+      <div class="fmp__field">
+        <label class="fmp__label" for="description">Description <span class="fmp__req">*</span></label>
+        <textarea class="fmp__input fmp__textarea" id="description" [(ngModel)]="projet.description" rows="3" placeholder="Description, périmètre, objectifs..."></textarea>
+      </div>
+    </div>
+
+    <!-- Planification -->
+    <div class="fmp__section">
+      <p class="fmp__section-label">Planification</p>
+      <div class="fmp__row">
+        <div class="fmp__field">
+          <label class="fmp__label" for="dateDebut">Date de début <span class="fmp__req">*</span></label>
+          <input class="fmp__input" id="dateDebut" type="date" [(ngModel)]="projet.dateDebut">
+        </div>
+        <div class="fmp__field">
+          <label class="fmp__label" for="dateFin">Date de fin <span class="fmp__req">*</span></label>
+          <input class="fmp__input" id="dateFin" type="date" [(ngModel)]="projet.dateFin">
+        </div>
+      </div>
+      <div class="fmp__field">
+        <label class="fmp__label" for="statut">Statut <span class="fmp__req">*</span></label>
+        <select class="fmp__input fmp__select" id="statut" [(ngModel)]="projet.statut">
+          <option value="en_attente">En attente</option>
+          <option value="en_cours">En cours</option>
+          <option value="termine">Terminé</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Competences -->
+    <div class="fmp__section">
+      <p class="fmp__section-label">Compétences requises</p>
+      <div *ngIf="loadingCompetences" class="fmp__loading-inline">Chargement des compétences...</div>
+      <div class="fmp__chips" *ngIf="!loadingCompetences && availableCompetences.length; else noProjectCompetenceData">
+        <button type="button" class="fmp__chip"
+          *ngFor="let competence of availableCompetences"
+          [class.fmp__chip--active]="isCompetenceSelected(competence.id)"
+          (click)="toggleCompetence(competence.id)">
+          {{ competence.nom }}
+        </button>
+      </div>
+      <ng-template #noProjectCompetenceData>
+        <div class="fmp__empty">Aucune compétence disponible pour le moment.</div>
+      </ng-template>
+      <p *ngIf="!loadingCompetences && selectedCompetenceIds.length" class="fmp__chips-count">
+        {{ competencesPreview }}
+      </p>
+    </div>
+
+  </div>
+
+  <!-- Footer -->
+  <div class="fmp__footer" *ngIf="!isLoading">
+    <button type="button" class="fmp__btn fmp__btn--cancel" (click)="handleCancel()">
+      Annuler
+    </button>
+    <button type="button" class="fmp__btn fmp__btn--save" (click)="sauvegarder()" [disabled]="isSaving || formInvalid">
+      <svg *ngIf="!isSaving" viewBox="0 0 16 16" fill="none"><path d="M3.333 8L6.333 11L12.667 4.667" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      {{ isSaving ? 'Enregistrement...' : (isEditMode ? 'Enregistrer les modifications' : 'Créer le projet') }}
+    </button>
+  </div>
+
+</div><!-- /fmp__card -->
+</div><!-- /fmp -->
+</app-manager-shell>

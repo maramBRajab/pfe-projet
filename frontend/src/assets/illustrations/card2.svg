@@ -1,0 +1,60 @@
+﻿<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 200" fill="none">
+  <!-- bg blobs -->
+  <circle cx="50"  cy="40"  r="55" fill="#eff6ff" opacity=".6"/>
+  <circle cx="240" cy="170" r="50" fill="#dbeafe" opacity=".4"/>
+
+  <!-- network nodes background -->
+  <circle cx="60"  cy="130" r="18" fill="#eff6ff" stroke="#bfdbfe" stroke-width="1.5"/>
+  <circle cx="110" cy="155" r="14" fill="#dbeafe" stroke="#93c5fd" stroke-width="1.5"/>
+  <circle cx="48"  cy="155" r="10" fill="#dbeafe" stroke="#93c5fd" stroke-width="1.5"/>
+  <!-- connectors -->
+  <line x1="70"  y1="138" x2="100" y2="150" stroke="#93c5fd" stroke-width="1.5" stroke-dasharray="3 2"/>
+  <line x1="58"  y1="138" x2="52"  y2="146" stroke="#93c5fd" stroke-width="1.5" stroke-dasharray="3 2"/>
+  <!-- person icons in nodes -->
+  <circle cx="60"  cy="125" r="5"  fill="#93c5fd"/>
+  <path   d="M52 138 Q60 133 68 138" fill="#bfdbfe"/>
+  <circle cx="110" cy="151" r="4"  fill="#60a5fa"/>
+  <circle cx="48"  cy="151" r="3"  fill="#60a5fa"/>
+
+  <!-- magnifying glass handle -->
+  <path d="M168 148 L192 172" stroke="#1e293b" stroke-width="10" stroke-linecap="round"/>
+  <!-- magnifying glass ring -->
+  <circle cx="148" cy="128" r="46" fill="#dbeafe" opacity=".5"/>
+  <circle cx="148" cy="128" r="46" stroke="#2563eb" stroke-width="6" fill="none"/>
+  <!-- inner glass shine -->
+  <circle cx="148" cy="128" r="38" fill="white" opacity=".6"/>
+  <!-- inside glass: match lines -->
+  <circle cx="148" cy="116" r="14" fill="#bfdbfe"/>
+  <circle cx="148" cy="112" r="6"  fill="#93c5fd"/>
+  <path   d="M135 126 Q148 120 161 126" fill="#93c5fd"/>
+  <!-- match tick inside glass -->
+  <rect x="128" y="131" width="40" height="5" rx="2.5" fill="#2563eb" opacity=".5"/>
+  <rect x="128" y="140" width="30" height="5" rx="2.5" fill="#2563eb" opacity=".35"/>
+  <!-- sparkle match dots -->
+  <circle cx="200" cy="110" r="5" fill="#fbbf24"/>
+  <circle cx="212" cy="122" r="3" fill="#fbbf24" opacity=".7"/>
+  <circle cx="196" cy="130" r="4" fill="#2563eb" opacity=".6"/>
+
+  <!-- person holding glass -->
+  <!-- person legs -->
+  <path d="M218 168 Q222 182 218 192" stroke="#334155" stroke-width="11" stroke-linecap="round"/>
+  <path d="M238 168 Q242 182 244 192" stroke="#334155" stroke-width="11" stroke-linecap="round"/>
+  <!-- person body -->
+  <rect x="210" y="126" width="36" height="46" rx="12" fill="#7c3aed"/>
+  <!-- arm holding glass -->
+  <path d="M210 140 Q192 145 180 150" stroke="#fcd9b6" stroke-width="11" stroke-linecap="round"/>
+  <circle cx="178" cy="151" r="7" fill="#fcd9b6"/>
+  <!-- other arm -->
+  <path d="M246 140 Q254 148 255 158" stroke="#fcd9b6" stroke-width="11" stroke-linecap="round"/>
+  <!-- neck -->
+  <rect x="220" y="114" width="16" height="14" rx="6" fill="#fcd9b6"/>
+  <!-- head -->
+  <circle cx="228" cy="102" r="18" fill="#fcd9b6"/>
+  <!-- hair -->
+  <path d="M210 98 Q212 84 228 82 Q244 80 248 95 L246 102 Q238 88 228 90 Q216 91 210 100Z" fill="#92400e"/>
+  <!-- eyes -->
+  <ellipse cx="222" cy="101" rx="2.5" ry="3" fill="#1e293b"/>
+  <ellipse cx="234" cy="101" rx="2.5" ry="3" fill="#1e293b"/>
+  <!-- smile -->
+  <path d="M222 110 Q228 115 234 110" stroke="#f87171" stroke-width="1.8" stroke-linecap="round" fill="none"/>
+</svg>

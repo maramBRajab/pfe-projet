@@ -1,0 +1,353 @@
+<!-- ══ NAVBAR ════════════════════════════════════════════════════════ -->
+<nav class="lp-nav">
+  <div class="lp-nav__inner">
+
+    <!-- Logo -->
+    <a routerLink="/" class="lp-brand">
+      <img src="assets/logo sopra.png" alt="Sopra HR" class="app-logo lp-brand__logo" />
+      <div class="lp-brand__text">
+        <div class="lp-brand__name">SmartAssign</div>
+        <div class="lp-brand__tag">Sopra HR Software</div>
+      </div>
+    </a>
+
+    <!-- Center links -->
+    <div class="lp-nav__links">
+      <a (click)="scrollTo('fonctionnement')">Fonctionnement</a>
+      <a (click)="scrollTo('fonctionnalites')">Fonctionnalités</a>
+      <a (click)="scrollTo('roles')">Rôles</a>
+      <a (click)="scrollTo('resultats')">Résultats</a>
+    </div>
+
+    <!-- Right actions -->
+    <div class="lp-nav__right">
+      <a routerLink="/login" class="lp-btn lp-btn--primary lp-btn--sm">
+        <i class="ti ti-login"></i> Se connecter
+      </a>
+    </div>
+  </div>
+</nav>
+
+<!-- ══ HERO ══════════════════════════════════════════════════════════ -->
+<section class="lp-hero">
+  <div class="lp-hero__inner">
+
+    <!-- LEFT -->
+    <div class="lp-hero__left">
+      <div class="lp-pill">
+        <i class="ti ti-cpu"></i>
+        <span>PLATEFORME RH INTELLIGENTE</span>
+      </div>
+
+      <h1 class="lp-hero__title">
+        Affectez les bons talents aux bons
+        <span class="lp-hl">projets</span>
+      </h1>
+
+      <p class="lp-hero__desc">
+        SmartAssign analyse les compétences, détecte les disponibilités
+        et recommande les meilleurs profils en quelques secondes grâce à l’IA.
+      </p>
+
+      <div class="lp-social">
+        <div class="lp-avatars">
+          <div class="lp-av" style="background:#3b82f6">AP</div>
+          <div class="lp-av" style="background:#10b981">MS</div>
+          <div class="lp-av" style="background:#f59e0b">NB</div>
+          <div class="lp-av" style="background:#ef4444">OA</div>
+          <div class="lp-av" style="background:#f59e0b">CD</div>
+        </div>
+        <div class="lp-social__text">
+          <strong>+84 collaborateurs</strong> gérés sur la plateforme
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT — Mock dashboard -->
+    <div class="lp-hero__right">
+
+      <!-- Floating badge top-left -->
+      <div class="lp-float lp-float--tl">
+        <div class="lp-float__ico" style="background:#dcfce7">
+          <i class="ti ti-robot" style="color:#10b981"></i>
+        </div>
+        <div class="lp-float__body">
+          <div class="lp-float__title">IA active</div>
+          <div class="lp-float__sub">Score moyen 51%</div>
+        </div>
+      </div>
+
+      <!-- Dark card -->
+      <div class="lp-mock">
+        <div class="lp-mock__bar">
+          <span class="lp-dot lp-dot--red"></span>
+          <span class="lp-dot lp-dot--amber"></span>
+          <span class="lp-dot lp-dot--green"></span>
+          <span class="lp-mock__url">smartassign.io — Supervision globale</span>
+        </div>
+
+        <div class="lp-mock__inner">
+          <div class="lp-mock__hd">
+            <span class="lp-mock__hd-title">Supervision globale</span>
+            <span class="lp-mock__live">
+              <span class="lp-dot lp-dot--green"></span> En direct
+            </span>
+          </div>
+
+          <div class="lp-kpis" *ngIf="kpis">
+            <div class="lp-kpi">
+              <div class="lp-kpi__v" style="color:#3b82f6">{{ kpis.projetsActifs }}</div>
+              <div class="lp-kpi__l">PROJETS ACTIFS</div>
+            </div>
+            <div class="lp-kpi">
+              <div class="lp-kpi__v" style="color:#10b981">{{ kpis.totalCollaborateurs }}</div>
+              <div class="lp-kpi__l">UTILISATEURS</div>
+            </div>
+            <div class="lp-kpi">
+              <div class="lp-kpi__v" style="color:#f59e0b">{{ iaScore !== null ? iaScore + '%' : (kpis.tauxAffectation + '%') }}</div>
+              <div class="lp-kpi__l">SCORE IA MOYEN</div>
+            </div>
+          </div>
+
+          <div class="lp-reco-label">RECOMMANDATIONS IA</div>
+          <div class="lp-reco" *ngIf="recommandations.length > 0; else noReco">
+            <div class="lp-reco__row" *ngFor="let reco of recommandations">
+              <div class="lp-reco__av" [style.background]="'#10b981'">{{ reco.collaborateurNom ? (reco.collaborateurNom.split(' ').map(n => n[0]).join('').toUpperCase()) : '?' }}</div>
+              <div class="lp-reco__name">
+                <div>{{ reco.collaborateurNom }}</div>
+                <div class="lp-reco__skills">{{ reco['skills'] || '' }}</div>
+              </div>
+              <div class="lp-score lp-score--amber">{{ reco.score }}%</div>
+              <button class="lp-btn lp-btn--primary lp-btn--xs">Affecter</button>
+            </div>
+          </div>
+          <ng-template #noReco>
+            <div class="lp-reco__row">Aucune recommandation IA disponible.</div>
+          </ng-template>
+        </div>
+      </div>
+
+      <!-- Floating confirmation bottom-right -->
+      <div class="lp-float lp-float--br">
+        <div class="lp-float__ico" style="background:#dcfce7">
+          <i class="ti ti-check" style="color:#10b981"></i>
+        </div>
+        <div class="lp-float__body">
+          <div class="lp-float__title">Affectation confirmée</div>
+          <div class="lp-float__sub">may ksida → bbbp</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ STATS BAR ═════════════════════════════════════════════════════ -->
+<section class="lp-statsbar" *ngIf="results.length > 0">
+  <div class="lp-statsbar__cell" *ngFor="let stat of results">
+    <div class="lp-statsbar__v" [style.color]="stat.color">{{ stat.value }}{{ stat.unit }}</div>
+    <div class="lp-statsbar__l">{{ stat.label }}</div>
+  </div>
+</section>
+
+<!-- ══ FONCTIONNEMENT ════════════════════════════════════════════════ -->
+<section id="fonctionnement" class="lp-section lp-section--white">
+  <div class="lp-section__inner">
+    <div class="lp-tag">FONCTIONNEMENT</div>
+    <h2 class="lp-h2">De la demande à l’affectation en 4 étapes</h2>
+    <p class="lp-sub">
+      Un processus guidé par l’IA, conçu pour aller vite sans sacrifier la pertinence.
+    </p>
+
+    <div class="lp-steps">
+      <div class="lp-step" *ngFor="let step of steps; let i = index">
+        <div class="lp-step__badge" [style.background]="step.badgeBg">{{ step.num }}</div>
+        <div class="lp-step__title">{{ step.title }}</div>
+        <div class="lp-step__desc">{{ step.desc }}</div>
+        <i *ngIf="i < steps.length - 1" class="ti ti-arrow-right lp-step__arrow"></i>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ FONCTIONNALITÉS ═══════════════════════════════════════════════ -->
+<section id="fonctionnalites" class="lp-section lp-section--gray">
+  <div class="lp-section__inner">
+    <div class="lp-tag">FONCTIONNALITÉS</div>
+    <h2 class="lp-h2">Tout ce dont vous avez besoin</h2>
+    <p class="lp-sub">
+      Une plateforme complète pour gérer vos ressources humaines et projets en temps réel.
+    </p>
+
+    <div class="lp-features">
+      <div class="lp-feat" *ngFor="let f of features">
+        <div class="lp-feat__ico"
+             [style.background]="f.iconBg">
+          <i class="ti" [class]="'ti ' + f.icon" [style.color]="f.iconColor"></i>
+        </div>
+        <div class="lp-feat__title">{{ f.title }}</div>
+        <div class="lp-feat__desc">{{ f.desc }}</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ RÔLES ═════════════════════════════════════════════════════════ -->
+<section id="roles" class="lp-section lp-section--white">
+  <div class="lp-section__inner">
+    <div class="lp-tag">RÔLES</div>
+    <h2 class="lp-h2">Une plateforme, trois rôles</h2>
+    <p class="lp-sub">
+      Chaque utilisateur accède à un espace personnalisé adapté à ses responsabilités.
+    </p>
+
+    <div class="lp-roles">
+
+      <!-- Admin -->
+      <div class="lp-role lp-role--navy">
+        <div class="lp-role__ico"><i class="ti ti-crown"></i></div>
+        <div class="lp-role__title">Administrateur</div>
+        <div class="lp-role__desc">
+          Contrôle total de la plateforme. Supervise l’ensemble du système
+          sans intervenir directement dans les affectations.
+        </div>
+        <ul class="lp-role__list">
+          <li><i class="ti ti-check" style="color:#60a5fa"></i> Gérer utilisateurs &amp; rôles</li>
+          <li><i class="ti ti-check" style="color:#60a5fa"></i> Configurer les permissions</li>
+          <li><i class="ti ti-check" style="color:#60a5fa"></i> Journal d’audit complet</li>
+          <li><i class="ti ti-check" style="color:#60a5fa"></i> Paramètres système</li>
+          <li><i class="ti ti-check" style="color:#60a5fa"></i> Supervision globale (lecture)</li>
+        </ul>
+      </div>
+
+      <!-- Manager -->
+      <div class="lp-role lp-role--blue">
+        <div class="lp-role__ico"><i class="ti ti-briefcase"></i></div>
+        <div class="lp-role__title">Manager</div>
+        <div class="lp-role__desc">
+          Acteur principal de la gestion opérationnelle. Crée les projets
+          et optimise l’affectation des ressources.
+        </div>
+        <ul class="lp-role__list">
+          <li><i class="ti ti-check" style="color:#bfdbfe"></i> Créer &amp; gérer des projets</li>
+          <li><i class="ti ti-check" style="color:#bfdbfe"></i> Affecter des collaborateurs</li>
+          <li><i class="ti ti-check" style="color:#bfdbfe"></i> Consulter les suggestions IA</li>
+          <li><i class="ti ti-check" style="color:#bfdbfe"></i> Surveiller la charge de travail</li>
+          <li><i class="ti ti-check" style="color:#bfdbfe"></i> Historique des affectations</li>
+        </ul>
+      </div>
+
+      <!-- Collaborateur -->
+      <div class="lp-role lp-role--green">
+        <div class="lp-role__ico"><i class="ti ti-user"></i></div>
+        <div class="lp-role__title">Collaborateur</div>
+        <div class="lp-role__desc">
+          Utilisateur final. Consulte ses missions, met à jour son profil
+          et suit sa charge de travail en temps réel.
+        </div>
+        <ul class="lp-role__list">
+          <li><i class="ti ti-check" style="color:#bbf7d0"></i> Consulter ses projets</li>
+          <li><i class="ti ti-check" style="color:#bbf7d0"></i> Visualiser son planning</li>
+          <li><i class="ti ti-check" style="color:#bbf7d0"></i> Mettre à jour ses compétences</li>
+          <li><i class="ti ti-check" style="color:#bbf7d0"></i> Historique de participations</li>
+          <li><i class="ti ti-check" style="color:#bbf7d0"></i> Notifications personnalisées</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ RÉSULTATS ═════════════════════════════════════════════════════ -->
+<section id="resultats" class="lp-section lp-section--gray">
+  <div class="lp-section__inner">
+
+    <div class="lp-results-head">
+      <div class="lp-tag">RÉSULTATS</div>
+      <h2 class="lp-h2 lp-h2--left">Des performances mesurables</h2>
+      <p class="lp-sub lp-sub--left">
+        SmartAssign transforme la gestion RH avec des indicateurs clés suivis en temps réel.
+      </p>
+    </div>
+
+    <div class="lp-results">
+      <div class="lp-result" *ngFor="let r of results">
+        <div class="lp-result__line">
+          <span class="lp-result__v" [style.color]="r.color">{{ r.value }}</span>
+          <span class="lp-result__u" [style.color]="r.color">{{ r.unit }}</span>
+        </div>
+        <div class="lp-result__l">{{ r.label }}</div>
+        <div class="lp-result__bar">
+          <div class="lp-result__fill"
+               [style.background]="r.color"
+               [style.width.%]="r.percent"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ CTA BANNER ════════════════════════════════════════════════════ -->
+<section class="lp-cta-wrap">
+  <div class="lp-cta">
+    <h2 class="lp-cta__title">Prêt à optimiser vos affectations ?</h2>
+    <p class="lp-cta__sub">
+      Rejoignez SmartAssign et réduisez votre temps de décision de 90%.<br>
+      Démarrez gratuitement en moins de 5 minutes.
+    </p>
+    <div class="lp-cta__btns">
+      <a routerLink="/login" class="lp-btn lp-btn--primary lp-btn--lg">
+        <i class="ti ti-login"></i> Se connecter
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ══ FOOTER ════════════════════════════════════════════════════════ -->
+<footer class="lp-foot">
+  <div class="lp-foot__top">
+    <div class="lp-foot__col">
+      <div class="lp-brand">
+        <div class="lp-brand__logo lp-brand__logo--blue">SA</div>
+        <div class="lp-brand__text">
+          <div class="lp-brand__name" style="color:#fff">SmartAssign</div>
+        </div>
+      </div>
+      <p class="lp-foot__desc">
+        Plateforme RH intelligente d’affectation des collaborateurs aux projets.
+        Analysez les compétences, détectez les disponibilités et recommandez
+        les meilleurs profils grâce à l’IA.
+      </p>
+    </div>
+
+    <div class="lp-foot__col">
+      <div class="lp-foot__label">PRODUIT</div>
+      <a (click)="scrollTo('fonctionnement')">Fonctionnement</a>
+      <a (click)="scrollTo('fonctionnalites')">Fonctionnalités</a>
+      <a (click)="scrollTo('roles')">Rôles</a>
+      <a (click)="scrollTo('resultats')">Résultats</a>
+    </div>
+
+    <div class="lp-foot__col">
+      <div class="lp-foot__label">ACCÈS</div>
+      <a routerLink="/login">Se connecter</a>
+      <a routerLink="/admin/dashboard">Espace Admin</a>
+      <a routerLink="/manager/dashboard">Espace Manager</a>
+      <a routerLink="/collaborateurs/dashboard">Espace Collaborateur</a>
+    </div>
+
+    <div class="lp-foot__col">
+      <div class="lp-foot__label">LÉGAL</div>
+      <a>Confidentialité</a>
+      <a>Mentions légales</a>
+      <a>Contact</a>
+    </div>
+  </div>
+
+  <div class="lp-foot__bottom">
+    <div class="lp-foot__copy">© 2026 SmartAssign — Tous droits réservés</div>
+    <div class="lp-foot__pills">
+      <span>PFE 2026</span>
+      <span>IA-powered</span>
+      <span>Angular 18</span>
+    </div>
+  </div>
+</footer>

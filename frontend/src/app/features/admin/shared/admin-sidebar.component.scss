@@ -1,0 +1,370 @@
+﻿// ═══════════════════════════════════════════════════════════
+// SMARTASSIGN — Admin Sidebar SCSS
+// Pixel-perfect SaaS spec · 2026
+// ═══════════════════════════════════════════════════════════
+
+:host {
+  display: contents;
+}
+
+// ── Design tokens ─────────────────────────────────────────
+$sb-bg:          #0f1c3a;
+$sb-active:      rgba(59,130,246,0.2);
+$sb-hover:       rgba(255,255,255,0.07);
+$sb-border:      rgba(255,255,255,0.08);
+$sb-text:        rgba(255,255,255,0.6);
+$sb-sec:         rgba(255,255,255,0.3);
+$sb-sub:         rgba(255,255,255,0.4);
+$sb-blue:        #3b82f6;
+$sb-radius:      8px;
+$sb-transition:  all .2s ease;
+
+// ── Sidebar shell ─────────────────────────────────────────
+.sp-sidebar {
+  width: 240px;
+  min-width: 240px;
+  height: 100vh;
+  position: sticky;
+  top: 0;
+  align-self: stretch;
+  flex-shrink: 0;
+  background: $sb-bg;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  overflow-x: hidden;
+  border-right: 1px solid $sb-border;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,.06) transparent;
+
+  &::-webkit-scrollbar { width: 3px; }
+  &::-webkit-scrollbar-track { background: transparent; }
+  &::-webkit-scrollbar-thumb { background: rgba(255,255,255,.07); border-radius: 4px; }
+}
+
+// ── Brand / Logo ──────────────────────────────────────────
+.sp-sidebar__brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 20px;
+  border-bottom: 1px solid $sb-border;
+  flex-shrink: 0;
+}
+
+.sp-logo {
+  width: 34px;
+  height: 34px;
+  min-width: 34px;
+  border-radius: 9px;
+  background: $sb-blue;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: -.01em;
+  flex-shrink: 0;
+}
+
+.sp-brand-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.sp-brand-name {
+  display: block;
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff;
+  line-height: 1.2;
+  letter-spacing: -.01em;
+}
+
+.sp-brand-tag {
+  display: block;
+  font-size: 9px;
+  color: $sb-sub;
+  letter-spacing: 1.3px;
+  text-transform: uppercase;
+  font-weight: 500;
+}
+
+// ── Nav container ─────────────────────────────────────────
+.sp-nav {
+  flex: 1;
+  padding: 6px 10px 12px;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  scrollbar-width: none;
+  &::-webkit-scrollbar { display: none; }
+}
+
+// ── Section headings ──────────────────────────────────────
+.sp-nav__section {
+  font-size: 10px;
+  font-weight: 600;
+  color: $sb-sec;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 16px 12px 4px;
+  line-height: 1;
+  flex-shrink: 0;
+
+  &:first-child { padding-top: 8px; }
+}
+
+// ── Nav items ─────────────────────────────────────────────
+.sp-nav__item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  height: 36px;
+  padding: 0 10px;
+  border-radius: $sb-radius;
+  color: $sb-text;
+  font-size: 13px;
+  font-weight: 500;
+  text-decoration: none;
+  font-family: inherit;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+  white-space: nowrap;
+  position: relative;
+  transition: $sb-transition;
+  margin-bottom: 1px;
+
+  &:hover {
+    background: $sb-hover;
+    color: rgba(255,255,255,0.9);
+  }
+
+  &--active {
+    background: $sb-active;
+    color: #fff;
+    font-weight: 600;
+
+    .sp-nav__ico { opacity: 1; color: #60a5fa; }
+  }
+}
+
+// ── Icon wrapper ──────────────────────────────────────────
+.sp-nav__ico {
+  width: 16px;
+  height: 16px;
+  min-width: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  opacity: .75;
+  transition: opacity .2s ease;
+
+  svg {
+    width: 15px;
+    height: 15px;
+    stroke: currentColor;
+  }
+
+  .sp-nav__item:hover &,
+  .sp-nav__item--active & { opacity: 1; }
+}
+
+// ── Notification badge ────────────────────────────────────
+.sp-nav__badge {
+  margin-left: auto;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  font-size: 10px;
+  font-weight: 700;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  flex-shrink: 0;
+
+  &--notif { background: $sb-blue; }
+  &--red    { background: #dc2626; }
+}
+
+// ── User block ────────────────────────────────────────────
+.sp-user-block {
+  border-top: 1px solid $sb-border;
+  padding: 12px 14px 16px;
+  flex-shrink: 0;
+
+  &__row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 0;
+    cursor: pointer;
+    border-radius: $sb-radius;
+    padding: 6px 8px;
+    margin: 0 -8px;
+    transition: background .15s;
+
+    &:hover { background: rgba(255,255,255,.06); }
+  }
+
+  &__caret {
+    width: 14px; height: 14px; stroke: rgba(255,255,255,.45); flex-shrink: 0;
+    transition: transform .2s;
+  }
+
+  &--open &__caret { transform: rotate(180deg); }
+
+  &__menu {
+    margin-top: 6px;
+    background: rgba(255,255,255,.07);
+    border-radius: $sb-radius;
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,.08);
+  }
+
+  &__menu-item {
+    display: flex; align-items: center; gap: 8px;
+    width: 100%; padding: 8px 12px;
+    background: none; border: none;
+    color: rgba(255,255,255,.8); font-size: 12px; font-weight: 500;
+    font-family: inherit; cursor: pointer; text-align: left;
+    transition: background .12s, color .12s;
+
+    svg { width: 14px; height: 14px; stroke: currentColor; fill: none; flex-shrink: 0; }
+
+    &:hover { background: rgba(255,255,255,.08); color: #fff; }
+
+    &--danger {
+      color: #f87171;
+      &:hover { background: rgba(239,68,68,.15); color: #fca5a5; }
+    }
+  }
+
+  &__av {
+    width: 34px;
+    height: 34px;
+    min-width: 34px;
+    border-radius: 50%;
+    background: $sb-blue;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 700;
+    color: #fff;
+    flex-shrink: 0;
+    letter-spacing: -.01em;
+  }
+
+  &__info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+  }
+
+  &__name {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: #fff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  &__role {
+    display: block;
+    font-size: 11px;
+    color: $sb-sub;
+    font-weight: 500;
+  }
+
+  &__profil-link {
+    display: inline-block;
+    margin-top: 3px;
+    padding: 0;
+    background: none;
+    border: none;
+    font-size: 10px;
+    font-weight: 600;
+    font-family: inherit;
+    color: var(--accent, #3b82f6);
+    cursor: pointer;
+    letter-spacing: 0.02em;
+    &:hover { text-decoration: underline; }
+  }
+
+  &__profil {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 6px;
+    width: 100%;
+    padding: 7px 10px;
+    border-radius: $sb-radius;
+    background: none;
+    border: none;
+    color: $sb-text;
+    font-size: 12px;
+    font-weight: 500;
+    font-family: inherit;
+    cursor: pointer;
+    transition: background .15s, color .15s;
+    text-align: left;
+
+    &:hover {
+      background: rgba(59,130,246,.1);
+      color: #3b82f6;
+    }
+
+    svg { width: 14px; height: 14px; stroke: currentColor; fill: none; flex-shrink: 0; }
+  }
+
+  &__logout {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 10px;
+    width: 100%;
+    padding: 7px 10px;
+    border-radius: $sb-radius;
+    background: none;
+    border: none;
+    color: $sb-text;
+    font-size: 12px;
+    font-weight: 500;
+    font-family: inherit;
+    cursor: pointer;
+    transition: background .15s, color .15s;
+    text-align: left;
+
+    &:hover {
+      background: rgba(239,68,68,.1);
+      color: #f87171;
+    }
+
+    svg {
+      width: 14px;
+      height: 14px;
+      stroke: currentColor;
+      flex-shrink: 0;
+    }
+  }
+}
+
+// ── Legacy classes (hidden) ───────────────────────────────
+.sp-icon-section,
+.sp-nav__item--ico,
+.sp-ico-badge,
+.sp-nav__item--logout { display: none; }

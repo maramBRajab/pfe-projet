@@ -1,0 +1,173 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Frontend: Serve",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${workspaceFolder}/frontend/start-frontend.ps1"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "isBackground": true,
+      "problemMatcher": {
+        "owner": "typescript",
+        "pattern": "$tsc",
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": {
+            "regexp": "\\[frontend\\] Starting Angular dev server on port"
+          },
+          "endsPattern": {
+            "regexp": "(Application bundle generation complete|Watch mode enabled|Local:)"
+          }
+        }
+      }
+    },
+    {
+      "label": "Backend: Serve",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${workspaceFolder}/backend/start-backend.ps1"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}/backend"
+      },
+      "isBackground": true,
+      "problemMatcher": {
+        "base": "$msCompile",
+        "owner": "custom",
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": {
+            "regexp": "\\[backend\\] Starting Spring Boot on port"
+          },
+          "endsPattern": {
+            "regexp": "Started PfeApplication"
+          }
+        }
+      }
+    },
+    {
+      "label": "Dev: Full Stack",
+      "dependsOn": ["Backend: Serve", "Frontend: Serve"],
+      "dependsOrder": "parallel"
+    },
+    {
+      "label": "QA: Smoke Routes",
+      "type": "shell",
+      "command": "npm.cmd",
+      "args": ["run", "smoke:routes"],
+      "options": {
+        "cwd": "${workspaceFolder}/frontend"
+      },
+      "dependsOn": ["Dev: Full Stack"],
+      "dependsOrder": "sequence",
+      "problemMatcher": []
+    },
+    {
+      "label": "QA: Smoke Affectation Cancel",
+      "type": "shell",
+      "command": "npm.cmd",
+      "args": ["run", "smoke:affectation-cancel"],
+      "options": {
+        "cwd": "${workspaceFolder}/frontend"
+      },
+      "dependsOn": ["Dev: Full Stack"],
+      "dependsOrder": "sequence",
+      "problemMatcher": []
+    },
+    {
+      "label": "QA: Smoke Full",
+      "dependsOn": ["QA: Smoke Routes", "QA: Smoke Affectation Cancel"],
+      "dependsOrder": "sequence"
+    },
+    {
+      "label": "QA: E2E Routes",
+      "type": "shell",
+      "command": "npm.cmd",
+      "args": ["run", "e2e:routes"],
+      "options": {
+        "cwd": "${workspaceFolder}/frontend"
+      },
+      "dependsOn": ["Dev: Full Stack"],
+      "dependsOrder": "sequence",
+      "problemMatcher": []
+    },
+    {
+      "label": "QA: E2E Affectation Cancel",
+      "type": "shell",
+      "command": "npm.cmd",
+      "args": ["run", "e2e:affectation-cancel"],
+      "options": {
+        "cwd": "${workspaceFolder}/frontend"
+      },
+      "dependsOn": ["Dev: Full Stack"],
+      "dependsOrder": "sequence",
+      "problemMatcher": []
+    },
+    {
+      "label": "QA: E2E Full",
+      "dependsOn": ["QA: E2E Routes", "QA: E2E Affectation Cancel"],
+      "dependsOrder": "sequence"
+    },
+    {
+      "label": "QA: Smoke Full Then Stop",
+      "dependsOn": ["QA: Smoke Full", "Dev: Stop Full Stack"],
+      "dependsOrder": "sequence"
+    },
+    {
+      "label": "QA: E2E Full Then Stop",
+      "dependsOn": ["QA: E2E Full", "Dev: Stop Full Stack"],
+      "dependsOrder": "sequence"
+    },
+    {
+      "label": "Frontend: Stop",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${workspaceFolder}/frontend/stop-frontend.ps1"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Backend: Stop",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${workspaceFolder}/backend/stop-backend.ps1"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Dev: Stop Full Stack",
+      "dependsOn": ["Frontend: Stop", "Backend: Stop"],
+      "dependsOrder": "parallel"
+    }
+  ]
+}

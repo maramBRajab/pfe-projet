@@ -1,0 +1,579 @@
+﻿<section class="sp-root">
+
+  <app-admin-sidebar></app-admin-sidebar>
+
+  <div class="sp-main">
+
+    <!-- TOPBAR -->
+    <header class="sp-topbar">
+      <div class="sp-topbar__left">
+        <nav class="sp-topbar__breadcrumb">
+          <span>SmartAssign</span>
+          <span class="sp-topbar__sep">›</span>
+          <span>Admin</span>
+          <span class="sp-topbar__sep">›</span>
+          <span class="sp-topbar__current">Projets</span>
+        </nav>
+        <h1 class="sp-topbar__title">Gestion des projets</h1>
+      </div>
+      <div class="sp-topbar__right">
+        <div class="sp-status-pill">
+          <span class="sp-status-dot"></span>
+          Portefeuille synchronisé
+        </div>
+        <button type="button" class="sp-btn sp-btn--primary" (click)="openCreateModal()">
+          <svg viewBox="0 0 16 16" fill="none">
+            <path d="M8 3V13M3 8H13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+          Nouveau projet
+        </button>
+        <!-- User menu -->
+        <div class="sp-user-wrap">
+          <button
+            type="button"
+            class="sp-user-chip"
+            [class.sp-user-chip--open]="userMenuOpen"
+            (click)="toggleUserMenu()">
+            <div class="sp-user-chip__av">AP</div>
+            <div class="sp-user-chip__info">
+              <span class="sp-user-chip__name">Admin Principal</span>
+              <span class="sp-user-chip__role">Administrateur</span>
+            </div>
+            <svg class="sp-user-chip__arrow" [class.sp-user-chip__arrow--open]="userMenuOpen" viewBox="0 0 10 6" fill="none">
+              <path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+
+          <div *ngIf="userMenuOpen" class="sp-user-dd">
+            <div class="sp-user-dd__hdr">
+              <div class="sp-user-dd__av">AP</div>
+              <div class="sp-user-dd__meta">
+                <span class="sp-user-dd__name">Admin Principal</span>
+                <span class="sp-user-dd__email">admin&#64;smartassign.tn</span>
+              </div>
+            </div>
+            <div class="sp-user-dd__sep"></div>
+            <button type="button" class="sp-user-dd__item" (click)="navigateTo('/admin/profil')">
+              <svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="5.5" r="2.5" stroke="currentColor" stroke-width="1.4"/><path d="M2.5 13.5c0-3.038 2.462-5.5 5.5-5.5s5.5 2.462 5.5 5.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+              Mon profil
+            </button>
+            <button type="button" class="sp-user-dd__item" (click)="navigateTo('/admin/parametres')">
+              <svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="2" stroke="currentColor" stroke-width="1.4"/><path d="M8 2v1M8 13v1M2 8h1M13 8h1M3.5 3.5l.7.7M11.8 11.8l.7.7M3.5 12.5l.7-.7M11.8 4.2l.7-.7" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+              Paramètres
+            </button>
+            <button type="button" class="sp-user-dd__item" (click)="navigateTo('/admin/notifications')">
+              <svg viewBox="0 0 16 16" fill="none"><path d="M8 2a4 4 0 0 1 4 4c0 4.5 2 5.5 2 5.5H2s2-1 2-5.5a4 4 0 0 1 4-4Z" stroke="currentColor" stroke-width="1.4"/><path d="M6.5 13.5a1.5 1.5 0 0 0 3 0" stroke="currentColor" stroke-width="1.4"/></svg>
+              Notifications
+            </button>
+            <div class="sp-user-dd__sep"></div>
+            <button type="button" class="sp-user-dd__item sp-user-dd__item--danger" (click)="logout()">
+              <svg viewBox="0 0 16 16" fill="none"><path d="M6 14H3a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1h3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M10.5 11l3-3-3-3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M13.5 8H6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+              Déconnexion
+            </button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <div class="sp-body">
+
+      <p class="sp-page-sub">Pilotage quotidien — {{ currentDate | date:'EEEE d MMMM yyyy':'':'fr-FR' }}</p>
+
+      <!-- KPI STRIP -->
+      <div class="sp-kpi-row">
+
+        <div class="sp-kcard sp-kcard--slate">
+          <div class="sp-kcard__head">
+            <span class="sp-kcard__ico">
+              <svg viewBox="0 0 16 16" fill="none">
+                <path d="M2 4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V4Z" stroke="currentColor" stroke-width="1.4"/>
+                <path d="M5 8h6M5 11h4M5 5h3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+              </svg>
+            </span>
+            <span class="sp-kcard__chip sp-kcard__chip--neutral">Catalogue</span>
+          </div>
+          <div class="sp-kcard__label">Total projets</div>
+          <div class="sp-kcard__val">{{ projets.length }}</div>
+          <div class="sp-kcard__note">Portefeuille référencé</div>
+        </div>
+
+        <div class="sp-kcard sp-kcard--blue">
+          <div class="sp-kcard__head">
+            <span class="sp-kcard__ico sp-kcard__ico--blue">
+              <svg viewBox="0 0 16 16" fill="none">
+                <path d="M2 10l3-3 3 3 4-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </span>
+            <span class="sp-kcard__chip sp-kcard__chip--up">En activité</span>
+          </div>
+          <div class="sp-kcard__label">En cours</div>
+          <div class="sp-kcard__val sp-kcard__val--blue">{{ projetsActifsCount }}</div>
+          <div class="sp-kcard__note">Projets actuellement lancés</div>
+        </div>
+
+        <div class="sp-kcard sp-kcard--amber">
+          <div class="sp-kcard__head">
+            <span class="sp-kcard__ico sp-kcard__ico--amber">
+              <svg viewBox="0 0 16 16" fill="none">
+                <circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.4"/>
+                <path d="M8 5v3.5l2 2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+              </svg>
+            </span>
+            <span class="sp-kcard__chip sp-kcard__chip--warn">À cadrer</span>
+          </div>
+          <div class="sp-kcard__label">En attente</div>
+          <div class="sp-kcard__val sp-kcard__val--amber">{{ enAttenteCount }}</div>
+          <div class="sp-kcard__note">Planification à confirmer</div>
+        </div>
+
+        <div class="sp-kcard sp-kcard--green">
+          <div class="sp-kcard__head">
+            <span class="sp-kcard__ico sp-kcard__ico--green">
+              <svg viewBox="0 0 16 16" fill="none">
+                <polyline points="2 9 6 13 14 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </span>
+            <span class="sp-kcard__chip sp-kcard__chip--neutral">Livré</span>
+          </div>
+          <div class="sp-kcard__label">Terminés</div>
+          <div class="sp-kcard__val sp-kcard__val--green">{{ terminesCount }}</div>
+          <div class="sp-kcard__note">Clôturés dans le référentiel</div>
+        </div>
+
+        <div [ngClass]="tauxCompletion >= 70 ? 'sp-kcard sp-kcard--green' : 'sp-kcard sp-kcard--amber'">
+          <div class="sp-kcard__head">
+            <span class="sp-kcard__ico">
+              <svg viewBox="0 0 16 16" fill="none">
+                <path d="M2 12V8l3-3 3 3 4-5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </span>
+            <span class="sp-kcard__chip" [ngClass]="tauxCompletion >= 70 ? 'sp-kcard__chip--up' : 'sp-kcard__chip--warn'">{{ tauxCompletion }}%</span>
+          </div>
+          <div class="sp-kcard__label">Taux de complétion</div>
+          <div class="sp-kcard__val" [ngClass]="tauxCompletion >= 70 ? 'sp-kcard__val--green' : ''">{{ tauxCompletion }}%</div>
+          <div class="sp-kcard__note">Part des projets terminés</div>
+        </div>
+
+      </div>
+
+      <!-- RÉPARTITION DU PORTEFEUILLE ──────────────────────── -->
+      <div class="sp-repartition-card">
+
+        <!-- Section 1: Répartition par statut -->
+        <div class="sp-repartition-card__section">
+          <p class="sp-repartition-card__label">RÉPARTITION PAR STATUT</p>
+          <div class="sp-statut-row">
+            <span class="sp-statut-row__ico">🔵</span>
+            <span class="sp-statut-row__name">En cours</span>
+            <span class="sp-statut-count">{{ projetsActifsCount }}</span>
+            <div class="sp-statut-bar">
+              <div class="sp-statut-bar__fill sp-statut-bar__fill--blue"
+                [style.width.%]="projets.length ? (projetsActifsCount / projets.length * 100) : 0"></div>
+            </div>
+            <span class="sp-statut-pct">{{ projets.length ? (projetsActifsCount / projets.length * 100 | number:'1.0-0') : 0 }}%</span>
+          </div>
+          <div class="sp-statut-row">
+            <span class="sp-statut-row__ico">🟡</span>
+            <span class="sp-statut-row__name">En attente</span>
+            <span class="sp-statut-count">{{ enAttenteCount }}</span>
+            <div class="sp-statut-bar">
+              <div class="sp-statut-bar__fill sp-statut-bar__fill--amber"
+                [style.width.%]="projets.length ? (enAttenteCount / projets.length * 100) : 0"></div>
+            </div>
+            <span class="sp-statut-pct">{{ projets.length ? (enAttenteCount / projets.length * 100 | number:'1.0-0') : 0 }}%</span>
+          </div>
+          <div class="sp-statut-row">
+            <span class="sp-statut-row__ico">🟢</span>
+            <span class="sp-statut-row__name">Terminés</span>
+            <span class="sp-statut-count">{{ terminesCount }}</span>
+            <div class="sp-statut-bar">
+              <div class="sp-statut-bar__fill sp-statut-bar__fill--green"
+                [style.width.%]="projets.length ? (terminesCount / projets.length * 100) : 0"></div>
+            </div>
+            <span class="sp-statut-pct">{{ tauxCompletion }}%</span>
+          </div>
+        </div>
+
+        <!-- Section 2: Performance portefeuille -->
+        <div class="sp-repartition-card__section">
+          <p class="sp-repartition-card__label">INDICATEURS CLÉS</p>
+          <p class="sp-repartition-card__title">Performance portefeuille</p>
+          <div class="sp-metric-row">
+            <span class="sp-metric-row__label">Taux de complétion</span>
+            <span class="sp-metric-row__val" [style.color]="tauxCompletion >= 70 ? '#16a34a' : '#d97706'">{{ tauxCompletion }}%</span>
+          </div>
+          <div class="sp-completion-bar">
+            <div class="sp-completion-bar__fill" [style.width.%]="tauxCompletion"></div>
+          </div>
+          <div class="sp-metric-row">
+            <span class="sp-metric-row__label">Total projets</span>
+            <span class="sp-metric-row__val">{{ projets.length }}</span>
+          </div>
+          <div class="sp-metric-row">
+            <span class="sp-metric-row__label">Projets actifs</span>
+            <span class="sp-metric-row__val" style="color: #2563eb">{{ projetsActifsCount }}</span>
+          </div>
+          <div class="sp-metric-row">
+            <span class="sp-metric-row__label">À cadrer</span>
+            <span class="sp-metric-row__val" style="color: #d97706">{{ enAttenteCount }}</span>
+          </div>
+        </div>
+
+        <!-- Section 3: Actions rapides -->
+        <div class="sp-repartition-card__section">
+          <p class="sp-repartition-card__label">ACTIONS RAPIDES</p>
+          <p class="sp-repartition-card__title">Gestion du portefeuille</p>
+          <div class="sp-admin-actions-grid">
+            <button type="button" class="sp-admin-action-btn" (click)="openCreateModal()">
+              <svg viewBox="0 0 16 16" fill="none"><path d="M8 3V13M3 8H13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+              Nouveau projet
+            </button>
+            <button type="button" class="sp-admin-action-btn" (click)="navigateTo('/admin/rapports')">
+              <svg viewBox="0 0 16 16" fill="none"><rect x="2" y="11" width="2" height="3" rx="0.5" fill="currentColor"/><rect x="5.5" y="8" width="2" height="6" rx="0.5" fill="currentColor"/><rect x="9" y="5" width="2" height="9" rx="0.5" fill="currentColor"/><rect x="12.5" y="2" width="2" height="12" rx="0.5" fill="currentColor"/></svg>
+              Voir rapports
+            </button>
+            <button type="button" class="sp-admin-action-btn" (click)="navigateTo('/admin/parametres')">
+              <svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="2" stroke="currentColor" stroke-width="1.4"/><path d="M8 2v1M8 13v1M2 8h1M13 8h1M3.5 3.5l.7.7M11.8 11.8l.7.7M3.5 12.5l.7-.7M11.8 4.2l.7-.7" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+              Paramètres
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- SEARCH, FILTERS &amp; TABLE -->
+      <div class="sp-main-card">
+
+        <div class="sp-filter-zone">
+          <p class="sp-filter-label">Recherche &amp; Filtres</p>
+          <div class="sp-filter-row">
+            <div class="sp-fg sp-fg--search">
+              <span class="sp-input-ico">
+                <svg viewBox="0 0 16 16" fill="none">
+                  <circle cx="7" cy="7" r="4.5" stroke="currentColor" stroke-width="1.4"/>
+                  <path d="M10.5 10.5L14 14" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+                </svg>
+              </span>
+              <input
+                type="text"
+                [(ngModel)]="searchTerm"
+                placeholder="Nom du projet..."
+              />
+            </div>
+            <div class="sp-fg">
+              <select [(ngModel)]="statutFilter">
+                <option value="all">Tous les statuts</option>
+                <option value="en_attente">En attente</option>
+                <option value="en_cours">En cours</option>
+                <option value="termine">Terminé</option>
+              </select>
+            </div>
+            <button type="button" class="sp-btn-reset" (click)="clearFilters()">Réinitialiser</button>
+          </div>
+          <div class="sp-filter-meta">
+            <span><strong>{{ filteredProjets.length }}</strong> résultat(s)</span>
+            <span>{{ projetsActifsCount }} projet(s) actif(s)</span>
+          </div>
+          <!-- Quick filter pills -->
+          <div class="sp-fpill-bar">
+            <button type="button" class="sp-fpill"
+              [class.sp-fpill--active]="statutFilter === 'all'"
+              (click)="statutFilter = 'all'">Tous</button>
+            <button type="button" class="sp-fpill"
+              [class.sp-fpill--active]="statutFilter === 'en_cours'"
+              (click)="statutFilter = 'en_cours'">En cours</button>
+            <button type="button" class="sp-fpill"
+              [class.sp-fpill--active]="statutFilter === 'en_attente'"
+              (click)="statutFilter = 'en_attente'">En attente</button>
+            <button type="button" class="sp-fpill"
+              [class.sp-fpill--active]="statutFilter === 'termine'"
+              (click)="statutFilter = 'termine'">Terminés</button>
+          </div>
+        </div>
+
+        <!-- Export / actions bar -->
+        <div class="sp-tbl-actions">
+          <span class="sp-tbl-actions__count"><strong>{{ filteredProjets.length }}</strong> projet(s)</span>
+          <div class="sp-tbl-actions__btns">
+            <button type="button" class="sp-tbl-btn" (click)="exporterCSV()">
+              <svg viewBox="0 0 16 16" fill="none"><path d="M8 2v9" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M4.5 8.5L8 12l3.5-3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 13h12" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+              Exporter CSV
+            </button>
+          </div>
+        </div>
+
+        <!-- Table -->
+        <div class="sp-table-wrap">
+          <table class="sp-table">
+            <thead>
+              <tr>
+                <th>Projet</th>
+                <th>Date début</th>
+                <th>Date fin</th>
+                <th>Durée</th>
+                <th>Compétences requises</th>
+                <th>Statut</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+
+              <tr *ngFor="let p of paginatedProjets; trackBy: trackByProjet">
+                <td>
+                  <div class="sp-person-cell">
+                    <div class="sp-person-cell__av sp-person-cell__av--project">
+                      {{ initialesProjet(p.nom) }}
+                    </div>
+                    <div>
+                      <strong class="sp-person-name">{{ p.nom }}</strong>
+                      <span class="sp-person-id">#{{ p.id ?? 'N/A' }}</span>
+                    </div>
+                  </div>
+                </td>
+                <td class="sp-text-sub">{{ p.dateDebut | date:'dd MMM yyyy' }}</td>
+                <td class="sp-text-sub">{{ p.dateFin | date:'dd MMM yyyy' }}</td>
+                <td class="sp-text-sub">{{ dureeJours(p) }} j</td>
+                <td>
+                  <div class="sp-chip-list" *ngIf="competenceLabels(p).length; else noReqs">
+                    <span class="sp-chip" *ngFor="let label of competenceLabels(p) | slice:0:2">{{ label }}</span>
+                    <span class="sp-chip sp-chip--more" *ngIf="competenceLabels(p).length > 2">+{{ competenceLabels(p).length - 2 }}</span>
+                  </div>
+                  <ng-template #noReqs><em class="sp-text-empty">Non renseignées</em></ng-template>
+                </td>
+                <td>
+                  <span class="sp-badge" [ngClass]="statutBadgeClass(p.statut)">
+                    <span class="sp-badge-dot"></span>
+                    {{ statutLabel(p.statut) }}
+                  </span>
+                </td>
+                <td>
+                  <div class="sp-row-actions">
+
+                    <!-- Vue profil -->
+                    <button type="button" class="sp-act-btn" (click)="openViewModal(p)" title="Voir" aria-label="Voir">
+                      <svg viewBox="0 0 16 16" fill="none"><path d="M1.5 8s2.5-5 6.5-5 6.5 5 6.5 5-2.5 5-6.5 5-6.5-5-6.5-5Z" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/><circle cx="8" cy="8" r="2" stroke="currentColor" stroke-width="1.4"/></svg>
+                    </button>
+
+                    <!-- Modifier -->
+                    <button type="button" class="sp-act-btn sp-act-btn--blue" (click)="openEditModal(p.id!)" title="Modifier" aria-label="Modifier">
+                      <svg viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M11.333 2.667a1.886 1.886 0 0 1 2.667 2.666L4.667 14.667H2v-2.667L11.333 2.667Z" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+                      </svg>
+                    </button>
+
+                    <!-- Supprimer -->
+                    <button type="button" class="sp-act-btn sp-act-btn--danger" (click)="openDeleteModal(p.id!, p.nom)" title="Supprimer" aria-label="Supprimer">
+                      <svg viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+                        <polyline points="2,4 14,4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+                        <path d="M5.333 4V2.667h5.334V4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+                        <path d="M4.667 4l.666 9.333h5.334L11.333 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+                        <line x1="6.667" y1="7" x2="6.667" y2="11" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+                        <line x1="9.333" y1="7" x2="9.333" y2="11" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+                      </svg>
+                    </button>
+
+                  </div>
+                </td>
+              </tr>
+
+              <!-- Empty state -->
+              <tr *ngIf="filteredProjets.length === 0">
+                <td colspan="7">
+                  <div class="sp-empty-state">
+                    <div class="sp-empty-state__ico">
+                      <svg viewBox="0 0 48 48" fill="none">
+                        <path d="M8 10a2 2 0 0 1 2-2h28a2 2 0 0 1 2 2v28a2 2 0 0 1-2 2H10a2 2 0 0 1-2-2V10Z" stroke="currentColor" stroke-width="2"/>
+                        <path d="M16 20h16M16 28h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        <circle cx="36" cy="36" r="7" fill="#f8fafc" stroke="currentColor" stroke-width="2"/>
+                        <path d="M36 32v4M36 40h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                      </svg>
+                    </div>
+                    <strong class="sp-empty-state__title">Aucun projet trouvé</strong>
+                    <p class="sp-empty-state__sub">Modifiez vos critères de recherche ou réinitialisez les filtres</p>
+                    <button type="button" class="sp-btn sp-btn--ghost" style="margin-top: 8px" (click)="clearFilters()">Réinitialiser les filtres</button>
+                  </div>
+                </td>
+              </tr>
+
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Pagination -->
+        <div class="sp-pagination" *ngIf="filteredProjets.length > 0">
+          <span class="sp-pagination__info">
+            Affichage {{ (currentPage - 1) * pageSize + 1 }}–{{ min(currentPage * pageSize, filteredProjets.length) }} sur {{ filteredProjets.length }} résultats
+          </span>
+          <div class="sp-pagination__pages">
+            <button class="sp-page-btn" [disabled]="currentPage === 1" (click)="goToPage(currentPage - 1)">
+              <svg viewBox="0 0 10 16" fill="none"><path d="M8 2L2 8l6 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+            <button
+              class="sp-page-btn"
+              [class.sp-page-btn--active]="p === currentPage"
+              *ngFor="let p of pageNumbers"
+              (click)="goToPage(p)">
+              {{ p }}
+            </button>
+            <button class="sp-page-btn" [disabled]="currentPage === totalPages" (click)="goToPage(currentPage + 1)">
+              <svg viewBox="0 0 10 16" fill="none"><path d="M2 2l6 6-6 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+          </div>
+        </div>
+
+      </div><!-- /sp-main-card -->
+
+    </div><!-- /sp-body -->
+  </div><!-- /sp-main -->
+
+  <!-- Modal Création -->
+  <div
+    class="sp-modal-overlay"
+    *ngIf="isCreateModalOpen"
+    (click)="closeCreateModal()"
+    role="dialog"
+    aria-modal="true"
+  >
+    <div class="sp-modal-panel" (click)="$event.stopPropagation()">
+      <app-formulaire-projet
+        [embedded]="true"
+        (cancel)="closeCreateModal()"
+        (saved)="onProjetCreated($event)">
+      </app-formulaire-projet>
+    </div>
+  </div>
+
+  <!-- Modal Modification -->
+  <div
+    class="sp-modal-overlay"
+    *ngIf="editedProjetId !== null"
+    (click)="closeEditModal()"
+    role="dialog"
+    aria-modal="true"
+  >
+    <div class="sp-modal-panel" (click)="$event.stopPropagation()">
+      <app-formulaire-projet
+        [embedded]="true"
+        [editId]="editedProjetId"
+        (cancel)="closeEditModal()"
+        (saved)="onEditSaved($event)">
+      </app-formulaire-projet>
+    </div>
+  </div>
+
+  <!-- Modal Vue projet -->
+  <div
+    class="sp-modal-overlay"
+    *ngIf="viewedProjet"
+    (click)="closeViewModal()"
+    role="dialog"
+    aria-modal="true"
+  >
+    <div class="sp-modal-panel sp-modal-panel--view" (click)="$event.stopPropagation()">
+      <div class="sp-modal-hdr">
+        <h2 class="sp-modal-title">Détails du projet</h2>
+        <button type="button" class="sp-modal-close" (click)="closeViewModal()" aria-label="Fermer">
+          <svg viewBox="0 0 16 16" fill="none"><path d="M3 3l10 10M13 3L3 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+
+      <div class="sp-view-body">
+        <div class="sp-view-identity">
+          <div class="sp-view-av">{{ initialesProjet(viewedProjet.nom) }}</div>
+          <div>
+            <p class="sp-view-name">{{ viewedProjet.nom }}</p>
+            <span class="sp-badge" [ngClass]="statutBadgeClass(viewedProjet.statut)">
+              <span class="sp-badge-dot"></span>
+              {{ statutLabel(viewedProjet.statut) }}
+            </span>
+          </div>
+        </div>
+
+        <div class="sp-view-sep"></div>
+
+        <div class="sp-view-grid">
+          <div class="sp-view-item">
+            <span class="sp-view-lbl">Date de début</span>
+            <span class="sp-view-val">{{ viewedProjet.dateDebut | date:'dd MMM yyyy' }}</span>
+          </div>
+          <div class="sp-view-item">
+            <span class="sp-view-lbl">Date de fin</span>
+            <span class="sp-view-val">{{ viewedProjet.dateFin | date:'dd MMM yyyy' }}</span>
+          </div>
+          <div class="sp-view-item">
+            <span class="sp-view-lbl">Durée</span>
+            <span class="sp-view-val">{{ dureeJours(viewedProjet) }} jour(s)</span>
+          </div>
+          <div class="sp-view-item">
+            <span class="sp-view-lbl">ID</span>
+            <span class="sp-view-val">#{{ viewedProjet.id ?? 'N/A' }}</span>
+          </div>
+        </div>
+
+        <div class="sp-view-section" *ngIf="viewedProjet.description">
+          <p class="sp-view-section-title">Description</p>
+          <p class="sp-view-desc">{{ viewedProjet.description }}</p>
+        </div>
+
+        <div class="sp-view-section">
+          <p class="sp-view-section-title">Compétences requises</p>
+          <div class="sp-chip-list" *ngIf="competenceLabels(viewedProjet).length; else noSkillsView">
+            <span class="sp-chip" *ngFor="let label of competenceLabels(viewedProjet)">{{ label }}</span>
+          </div>
+          <ng-template #noSkillsView>
+            <em class="sp-text-empty">Non renseignées</em>
+          </ng-template>
+        </div>
+      </div>
+
+      <div class="sp-modal-ftr">
+        <button type="button" class="sp-btn sp-btn--ghost" (click)="closeViewModal()">Fermer</button>
+        <button type="button" class="sp-btn sp-btn--primary" (click)="editFromViewModal()">
+          <svg viewBox="0 0 16 16" fill="none"><path d="M11.333 2.667a1.886 1.886 0 0 1 2.667 2.666L4.667 14.667H2v-2.667L11.333 2.667Z" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Modifier
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Suppression -->
+  <div
+    class="sp-modal-overlay"
+    *ngIf="deleteTargetId !== null"
+    (click)="closeDeleteModal()"
+    role="dialog"
+    aria-modal="true"
+  >
+    <div class="sp-modal-panel sp-modal-panel--confirm" (click)="$event.stopPropagation()">
+      <div class="sp-modal-hdr">
+        <h2 class="sp-modal-title">Supprimer le projet</h2>
+        <button type="button" class="sp-modal-close" (click)="closeDeleteModal()" aria-label="Fermer">
+          <svg viewBox="0 0 16 16" fill="none"><path d="M3 3l10 10M13 3L3 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+      <div class="sp-confirm-body">
+        <div class="sp-confirm-icon">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <p class="sp-confirm-msg">
+          Êtes-vous sûr de vouloir supprimer <strong>{{ deleteTargetName }}</strong> ?
+          Cette action est irréversible.
+        </p>
+      </div>
+      <div class="sp-modal-ftr">
+        <button type="button" class="sp-btn sp-btn--ghost" (click)="closeDeleteModal()" [disabled]="isDeleting">Annuler</button>
+        <button type="button" class="sp-btn sp-btn--danger" (click)="confirmerSuppression()" [disabled]="isDeleting">
+          <span *ngIf="!isDeleting">Supprimer</span>
+          <span *ngIf="isDeleting">Suppression...</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="sp-toast" *ngIf="toastMessage">
+    <svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.5" stroke="#22c55e" stroke-width="1.4"/><polyline points="5,8.5 7,10.5 11,6" stroke="#22c55e" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    {{ toastMessage }}
+  </div>
+
+</section>

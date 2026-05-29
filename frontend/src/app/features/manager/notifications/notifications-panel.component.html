@@ -1,0 +1,55 @@
+<div class="notifications-panel" [class.notifications-panel--open]="open" [attr.aria-hidden]="!open">
+  <button type="button" class="notifications-panel__overlay" [attr.tabindex]="open ? 0 : -1" [attr.aria-hidden]="!open" aria-label="Fermer le panneau des notifications manager" (click)="requestClose()"></button>
+
+  <aside class="notifications-panel__drawer" role="dialog" aria-modal="true" aria-labelledby="manager-notifications-title">
+    <header class="notifications-panel__header">
+      <div>
+        <span class="section-kicker">Workspace</span>
+        <h2 id="manager-notifications-title">Notifications</h2>
+        <p>Alertes et signaux de pilotage - {{ currentDate | date:'dd/MM/yyyy' }}</p>
+      </div>
+      <div class="notifications-panel__actions">
+        <button type="button" class="sp-btn sp-btn--ghost" (click)="refreshNotifications()">Actualiser</button>
+        <button type="button" class="notifications-panel__close" aria-label="Fermer" (click)="requestClose()">
+          <svg viewBox="0 0 16 16" fill="none"><path d="M4 4l8 8M12 4 4 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <section class="section-block">
+      <div class="section-head"><div><span class="section-kicker">Vue d'ensemble</span><h3>Indicateurs de notification</h3></div></div>
+
+      <div class="stats-grid">
+        <article class="scard"><div class="scard-top"><span class="scard-icon"><svg viewBox="0 0 16 16" fill="none"><path d="M8 2a4 4 0 0 1 4 4c0 4.5 2 5.5 2 5.5H2s2-1 2-5.5a4 4 0 0 1 4-4Z" stroke="currentColor" stroke-width="1.4"/><path d="M6.5 13.5a1.5 1.5 0 0 0 3 0" stroke="currentColor" stroke-width="1.4"/></svg></span><span class="scard-tag scard-tag--stable">Stable</span></div><div class="scard-label">Total des alertes</div><div class="scard-val">{{ notifications.length }}</div><div class="scard-note">Flux manager consolide</div></article>
+        <article class="scard"><div class="scard-top"><span class="scard-icon"><svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.4"/><path d="M8 8V5.2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><circle cx="8" cy="10.8" r="0.8" fill="currentColor"/></svg></span><span class="scard-tag scard-tag--up">Info</span></div><div class="scard-label">Informations</div><div class="scard-val">{{ infoCount }}</div><div class="scard-note">Messages contextuels</div></article>
+        <article class="scard"><div class="scard-top"><span class="scard-icon scard-icon--amber"><svg viewBox="0 0 16 16" fill="none"><path d="M8 3 13 12H3L8 3Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M8 6.2V8.8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><circle cx="8" cy="11" r="0.7" fill="currentColor"/></svg></span><span class="scard-tag scard-tag--warn">Vigilance</span></div><div class="scard-label">Vigilances</div><div class="scard-val scard-val--amber">{{ warningCount }}</div><div class="scard-note">Points a surveiller</div></article>
+        <article class="scard"><div class="scard-top"><span class="scard-icon scard-icon--red"><svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.4"/><path d="M8 5.2V8.8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><circle cx="8" cy="10.9" r="0.8" fill="currentColor"/></svg></span><span class="scard-tag scard-tag--danger">Critique</span></div><div class="scard-label">Critiques</div><div class="scard-val scard-val--red">{{ dangerCount }}</div><div class="scard-note">Escalade requise</div></article>
+      </div>
+    </section>
+
+    <section class="section-block section-block--grow">
+      <div class="section-head"><div><span class="section-kicker">Workspace</span><h3>Flux des notifications manager</h3></div></div>
+
+      <div class="main-card">
+        <div class="toolbar-row"><div class="toolbar-chip-group"><span class="toolbar-chip">{{ notifications.length }} element(s)</span><span class="toolbar-chip toolbar-chip--soft">{{ dangerCount > 0 ? 'Escalade prioritaire' : 'Flux stable' }}</span></div></div>
+
+        <ng-container *ngIf="notifications.length; else emptyState">
+          <div class="notification-list">
+            <article class="notification-card" *ngFor="let notification of notifications; trackBy: trackByNotification">
+              <div class="notification-card__head">
+                <div><span class="card-kicker">{{ notification.type }}</span><h4>{{ notification.titre }}</h4></div>
+                <span class="status-chip" [ngClass]="'status-chip--' + notificationTone(notification)">{{ notificationLabel(notification) }}</span>
+              </div>
+              <p>{{ notification.message }}</p>
+              <div class="notification-card__meta"><span>{{ notification.dateCreation | date:'dd/MM/yyyy HH:mm' }}</span><span>{{ notification.type }}</span></div>
+            </article>
+          </div>
+        </ng-container>
+
+        <ng-template #emptyState>
+          <div class="empty-state"><h4>Aucune notification manager</h4><p>Aucune notification manager disponible pour le moment.</p></div>
+        </ng-template>
+      </div>
+    </section>
+  </aside>
+</div>

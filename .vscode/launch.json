@@ -1,0 +1,33 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Frontend: Chrome Debug",
+      "type": "pwa-chrome",
+      "request": "launch",
+      "preLaunchTask": "Frontend: Serve",
+      "url": "http://localhost:4200",
+      "webRoot": "${workspaceFolder}/frontend"
+    },
+    {
+      "name": "Backend: Spring Boot Debug",
+      "type": "java",
+      "request": "launch",
+      "mainClass": "com.smartassign.pfe.PfeApplication",
+      "cwd": "${workspaceFolder}/backend",
+      "env": {
+        "SERVER_PORT": "8082"
+      }
+    }
+  ],
+  "compounds": [
+    {
+      "name": "Debug Full Stack",
+      "configurations": [
+        "Backend: Spring Boot Debug",
+        "Frontend: Chrome Debug"
+      ],
+      "stopAll": true
+    }
+  ]
+}
