@@ -14,6 +14,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import com.smartassign.pfe.entity.Utilisateur;
 import com.smartassign.pfe.repository.UtilisateurRepository;
 import com.smartassign.pfe.security.JwtService;
+import com.smartassign.pfe.security.RoleNormalizer;
 
 import io.jsonwebtoken.JwtException;
 
@@ -59,7 +60,7 @@ public class BearerTokenAuthenticationFilter extends OncePerRequestFilter {
         UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
             utilisateur.getEmail(),
             null,
-            List.of(new SimpleGrantedAuthority("ROLE_" + utilisateur.getRole()))
+            List.of(new SimpleGrantedAuthority("ROLE_" + RoleNormalizer.normalize(utilisateur.getRole())))
         );
 
         SecurityContextHolder.getContext().setAuthentication(authentication);

@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { finalize } from 'rxjs';
 import { AuthService, getDefaultRouteForRole } from '../../services/auth';
+import { extractAuthErrorMessage } from '../shared/auth-error.utils';
 
 @Component({
   selector: 'app-login',
@@ -17,7 +18,6 @@ export class LoginComponent {
   // Champs formulaire
   email: string = '';
   password: string = '';
-  motDePasse: string = '';
   rememberMe: boolean = false;
   showPassword: boolean = false;
 
@@ -40,6 +40,17 @@ export class LoginComponent {
     this.errorMessage = '';
     this.emailError = '';
     this.passwordError = '';
+
+    if (role === 'admin') {
+      this.email = 'admin@smartassign.tn';
+      this.password = 'Admin123';
+    } else if (role === 'manager') {
+      this.email = 'manager@smartassign.tn';
+      this.password = 'Manager123';
+    } else {
+      this.email = 'collab@smartassign.tn';
+      this.password = 'Collab123';
+    }
   }
 
   onCredentialsChange(field: 'email' | 'password'): void {
@@ -83,8 +94,11 @@ export class LoginComponent {
         next: (user) => {
           this.router.navigateByUrl(getDefaultRouteForRole(user.role));
         },
-        error: () => {
-          this.errorMessage = 'Email ou mot de passe incorrect.';
+        error: (error) => {
+          this.errorMessage = extractAuthErrorMessage(
+            error,
+            'Email ou mot de passe incorrect.'
+          );
         }
       });
   }

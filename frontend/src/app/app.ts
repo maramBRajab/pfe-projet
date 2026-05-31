@@ -616,7 +616,7 @@ export class AppComponent implements OnInit, OnDestroy {
               { label: 'Supervision', icon: 'supervision', link: '/admin/dashboard', exact: true },
               { label: 'Utilisateurs', icon: 'utilisateurs', link: '/admin/collaborateurs' },
               { label: 'Projets', icon: 'projets', link: '/admin/projets' },
-              { label: 'Affectations', icon: 'affectations', link: '/admin/affectation' }
+              { label: 'Affectations', icon: 'affectations', link: '/manager/affectations-en-cours' }
             ]
           }
         ];

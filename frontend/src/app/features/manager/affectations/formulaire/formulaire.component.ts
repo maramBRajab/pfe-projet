@@ -48,8 +48,17 @@ export class ManagerFormulaireAffectationComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    const routeId = Number(this.route.snapshot.paramMap.get('id'));
-    if (!Number.isNaN(routeId) && routeId > 0) {
+    const idStr = this.route.snapshot.paramMap.get('id');
+    const routeId = Number(idStr);
+    
+    if (!idStr) {
+      // Route /manager/affectations/nouveau (pas d'ID en paramètre)
+      this.id = null;
+    } else if (idStr === 'nouveau' || (!Number.isNaN(routeId) && routeId <= 0)) {
+      // Mode création : ID = 'nouveau' ou ID <= 0
+      this.id = null;
+    } else if (!Number.isNaN(routeId) && routeId > 0) {
+      // Mode édition : charger l'affectation existante
       this.id = routeId;
       this.chargerAffectation(routeId);
     } else {
@@ -59,18 +68,38 @@ export class ManagerFormulaireAffectationComponent implements OnInit {
   }
 
   sauvegarder(): void {
-    if (this.formInvalid || this.isSaving || !this.id || !this.selectedCollaborateurId) return;
+    if (this.formInvalid || this.isSaving || !this.selectedCollaborateurId) return;
     this.isSaving = true;
     this.errorMessage = '';
 
-    this.affectationService.update(this.id, { collaborateurId: this.selectedCollaborateurId }).subscribe({
-      next: () => this.router.navigate(this.listRoute),
-      error: () => {
-        this.errorMessage = 'Impossible de modifier cette affectation.';
-        this.isSaving = false;
-        this.cdr.detectChanges();
-      },
-    });
+    if (this.id && this.id > 0) {
+      // Mode édition
+      this.affectationService.update(this.id, { collaborateurId: this.selectedCollaborateurId }).subscribe({
+        next: () => this.router.navigate(this.listRoute),
+        error: () => {
+          this.errorMessage = 'Impossible de modifier cette affectation.';
+          this.isSaving = false;
+          this.cdr.detectChanges();
+        },
+      });
+    } else {
+      // Mode création
+      const projetId = this.route.snapshot.queryParamMap.get('project');
+      const createRequest: any = { 
+        collaborateurId: this.selectedCollaborateurId
+      };
+      if (projetId) {
+        createRequest.projetId = Number(projetId);
+      }
+      this.affectationService.create(createRequest).subscribe({
+        next: () => this.router.navigate(this.listRoute),
+        error: () => {
+          this.errorMessage = 'Impossible de créer cette affectation.';
+          this.isSaving = false;
+          this.cdr.detectChanges();
+        },
+      });
+    }
   }
 
   private chargerAffectation(id: number): void {

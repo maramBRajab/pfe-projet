@@ -9,6 +9,9 @@ export interface AuthUser {
   email: string;
   role:  string;
   token: string;
+  telephone?: string;
+  poste?: string;
+  departement?: string;
 }
 
 export interface RegisterPayload {
@@ -156,6 +159,42 @@ export class AuthService {
       nom,
       email
     }));
+  }
+
+  updateProfile(payload: {
+    nom: string;
+    email: string;
+    telephone?: string;
+    poste?: string;
+    departement?: string;
+  }): Observable<{ id: number; nom: string; email: string; role: string }> {
+    return this.http
+      .put<{ id: number; nom: string; email: string; role: string }>(
+        `${this.url}/me/profile`,
+        payload
+      )
+      .pipe(
+        tap((res) => {
+          const stored = this.currentUser;
+          if (stored) {
+            localStorage.setItem(
+              this.SESSION_KEY,
+              JSON.stringify({ ...stored, nom: res.nom, email: res.email })
+            );
+          }
+        })
+      );
+  }
+
+  changePassword(payload: {
+    motDePasseActuel: string;
+    nouveauMotDePasse: string;
+    confirmationMotDePasse: string;
+  }): Observable<{ message: string }> {
+    return this.http.put<{ message: string }>(
+      `${this.url}/me/password`,
+      payload
+    );
   }
 
   get currentUser(): AuthUser | null {

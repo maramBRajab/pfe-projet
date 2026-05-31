@@ -18,6 +18,7 @@ export class AdminSidebarComponent implements OnInit {
   userDisplayName = 'Admin Principal';
   userRoleLabel   = 'Administrateur';
   userMenuOpen    = false;
+  adminPhoto: string | null = null;
 
   @HostListener('document:click', ['$event'])
   onDocumentClick(event: MouseEvent): void {
@@ -41,6 +42,7 @@ export class AdminSidebarComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    this.adminPhoto = localStorage.getItem('smartassign_admin_photo');
     const user = this.authService.currentUser;
     if (user) {
       const parts = (user.nom ?? '').trim().split(/\s+/);

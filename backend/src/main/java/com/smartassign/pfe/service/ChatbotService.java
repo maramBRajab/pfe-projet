@@ -571,7 +571,6 @@ public class ChatbotService {
         Optional<Projet> projet = trouverProjet(questionOriginale);
         if (projet.isPresent()) {
             Projet p = projet.get();
-            Set<Long> requises = p.getCompetencesRequises().stream().map(Competence::getId).collect(Collectors.toSet());
 
             // Couvert par les collaborateurs disponibles ?
             Set<Long> couvertes = collaborateurRepository.findByDisponibleTrue().stream()

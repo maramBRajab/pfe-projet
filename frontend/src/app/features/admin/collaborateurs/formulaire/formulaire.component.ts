@@ -7,14 +7,13 @@ import {
   Collaborateur,
   CollaborateurRequest,
 } from '../../../../services/admin';
-import { AdminTopbarComponent } from '../../shared/admin-topbar.component';
 import { AdminSidebarComponent } from '../../shared/admin-sidebar.component';
 import { CompetenceService, Competence } from '../../../../services/manager/competence.service';
 
 @Component({
   selector: 'app-formulaire-collaborateur',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, AdminTopbarComponent, AdminSidebarComponent],
+  imports: [CommonModule, FormsModule, RouterLink, AdminSidebarComponent],
   templateUrl: './formulaire.component.html',
   styleUrl: './formulaire.component.scss'
 })

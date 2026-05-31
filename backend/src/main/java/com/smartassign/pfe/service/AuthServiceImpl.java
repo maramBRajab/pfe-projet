@@ -11,11 +11,17 @@ import java.util.Comparator;
 import java.util.HexFormat;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,6 +35,10 @@ import com.smartassign.pfe.dto.ResetPasswordRequest;
 import com.smartassign.pfe.dto.UserPreferencesRequest;
 import com.smartassign.pfe.dto.UserPreferencesResponse;
 import com.smartassign.pfe.dto.UtilisateurResponse;
+import com.smartassign.pfe.dto.UpdateProfileRequest;
+import com.smartassign.pfe.dto.UpdateProfileResponse;
+import com.smartassign.pfe.dto.ChangePasswordRequest;
+import org.springframework.security.core.context.SecurityContextHolder;
 import com.smartassign.pfe.entity.Affectation;
 import com.smartassign.pfe.entity.Collaborateur;
 import com.smartassign.pfe.entity.Competence;
@@ -48,6 +58,8 @@ import com.smartassign.pfe.repository.ProjetRepository;
 import com.smartassign.pfe.repository.TacheRepository;
 import com.smartassign.pfe.repository.UtilisateurRepository;
 import com.smartassign.pfe.security.JwtService;
+import com.smartassign.pfe.security.PasswordHashUtils;
+import com.smartassign.pfe.security.RoleNormalizer;
 
 import lombok.RequiredArgsConstructor;
 
@@ -56,6 +68,7 @@ import lombok.RequiredArgsConstructor;
 @Transactional
 public class AuthServiceImpl implements AuthService {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(AuthServiceImpl.class);
     private static final Base64.Encoder TOKEN_ENCODER = Base64.getUrlEncoder().withoutPadding();
 
     private final UtilisateurRepository utilisateurRepository;
@@ -70,6 +83,7 @@ public class AuthServiceImpl implements AuthService {
     private final JdbcTemplate jdbcTemplate;
     private final JwtService jwtService;
     private final PasswordEncoder passwordEncoder;
+    private final AuthenticationManager authenticationManager;
 
     @Value("${app.password-reset.token-expiration-minutes:30}")
     private long passwordResetExpirationMinutes;
@@ -89,19 +103,38 @@ public class AuthServiceImpl implements AuthService {
 
     public AuthResponse login(AuthRequest request) {
         String normalizedEmail = normalizeEmail(request.getEmail());
-        Utilisateur user = utilisateurRepository
-            .findByEmailIgnoreCase(normalizedEmail)
-                .orElseThrow(() -> new BusinessException("Email ou mot de passe incorrect"));
+        String rawPassword = normalizeRawPassword(request.getMotDePasse());
 
-        if (!matchesAndUpgradePassword(user, request.getMotDePasse())) {
-            throw new BusinessException("Email ou mot de passe incorrect");
+        LOGGER.info("Tentative de connexion pour {}", normalizedEmail);
+
+        Utilisateur user = utilisateurRepository.findByEmailIgnoreCase(normalizedEmail)
+                .orElseThrow(() -> {
+                    LOGGER.warn("Connexion echouee — email inconnu : {}", normalizedEmail);
+                    return new BusinessException("Email ou mot de passe incorrect");
+                });
+
+        LOGGER.debug(
+                "Utilisateur trouve : id={}, email={}, role={}",
+                user.getId(),
+                user.getEmail(),
+                user.getRole());
+
+        upgradeLegacyPasswordIfNeeded(user, rawPassword);
+        authenticateCredentials(normalizedEmail, rawPassword);
+
+        String normalizedRole = RoleNormalizer.normalize(user.getRole());
+        if (!normalizedRole.equals(user.getRole())) {
+            user.setRole(normalizedRole);
+            utilisateurRepository.save(user);
         }
+
+        LOGGER.info("Connexion reussie pour {} (role={})", normalizedEmail, normalizedRole);
 
         return AuthResponse.builder()
                 .id(user.getId())
                 .nom(user.getNom())
                 .email(user.getEmail())
-                .role(user.getRole())
+                .role(normalizedRole)
                 .token(jwtService.generateToken(user))
                 .build();
     }
@@ -147,24 +180,50 @@ public class AuthServiceImpl implements AuthService {
 
     public MessageResponse requestPasswordReset(ForgotPasswordRequest request) {
         String normalizedEmail = normalizeEmail(request.getEmail());
-        Utilisateur user = utilisateurRepository.findByEmailIgnoreCase(normalizedEmail)
-                .orElseThrow(() -> new ResourceNotFoundException("Aucun compte n'est associe a cette adresse e-mail."));
+        LOGGER.info("Demande de reinitialisation de mot de passe recue pour {}", normalizedEmail);
 
-        passwordResetTokenRepository.deleteByUtilisateur_Id(user.getId());
+        Optional<Utilisateur> utilisateurOptional = utilisateurRepository.findByEmailIgnoreCase(normalizedEmail);
 
-        String rawToken = generateResetToken();
-        LocalDateTime expiresAt = LocalDateTime.now().plusMinutes(passwordResetExpirationMinutes);
+        if (utilisateurOptional.isPresent()) {
+            Utilisateur user = utilisateurOptional.get();
+            passwordResetTokenRepository.deleteByUtilisateur_Id(user.getId());
 
-        passwordResetTokenRepository.save(PasswordResetToken.builder()
-                .utilisateur(user)
-                .tokenHash(hashToken(rawToken))
-                .expiresAt(expiresAt)
-                .build());
+            String rawToken = generateResetToken();
+            LocalDateTime expiresAt = LocalDateTime.now().plusMinutes(passwordResetExpirationMinutes);
 
-        String resetLink = buildResetLink(rawToken);
-        passwordResetNotificationService.sendResetLink(user.getEmail(), user.getNom(), resetLink, expiresAt);
+            passwordResetTokenRepository.save(PasswordResetToken.builder()
+                    .utilisateur(user)
+                    .tokenHash(hashToken(rawToken))
+                    .expiresAt(expiresAt)
+                    .build());
 
-        return new MessageResponse("Un lien de reinitialisation a ete envoye a votre adresse e-mail.");
+            String resetLink = buildResetLink(rawToken);
+            LOGGER.info(
+                    "Token de reinitialisation cree pour l'utilisateur id={} (expiration : {})",
+                    user.getId(),
+                    expiresAt);
+
+            try {
+                passwordResetNotificationService.sendResetPasswordEmail(
+                        user.getEmail(),
+                        user.getNom(),
+                        resetLink,
+                        expiresAt);
+            } catch (BusinessException exception) {
+                LOGGER.warn(
+                        "Echec de notification pour la reinitialisation (utilisateur id={}) : {}",
+                        user.getId(),
+                        exception.getMessage());
+                throw exception;
+            }
+        } else {
+            LOGGER.info(
+                    "Aucun compte associe a {} — reponse generique renvoyee",
+                    normalizedEmail);
+        }
+
+        return new MessageResponse(
+                "Si un compte existe pour cette adresse, un lien de reinitialisation a ete envoye.");
     }
 
     @Transactional(readOnly = true)
@@ -187,7 +246,7 @@ public class AuthServiceImpl implements AuthService {
         PasswordResetToken resetToken = resolveActiveResetToken(token);
         Utilisateur user = resetToken.getUtilisateur();
 
-        if (matchesPassword(newPassword, user.getMotDePasse())) {
+        if (passwordMatches(newPassword, user.getMotDePasse())) {
             throw new BusinessException("Le nouveau mot de passe doit etre different de l'ancien.");
         }
 
@@ -218,11 +277,56 @@ public class AuthServiceImpl implements AuthService {
         return toUserPreferencesResponse(utilisateurRepository.save(utilisateur));
     }
 
+    @Override
+    public UpdateProfileResponse updateProfile(String currentEmail, UpdateProfileRequest request) {
+        Utilisateur user = utilisateurRepository.findByEmailIgnoreCase(currentEmail)
+            .orElseThrow(() -> new BusinessException("Utilisateur introuvable"));
+        if (request.getNom() != null && !request.getNom().isBlank())
+            user.setNom(request.getNom().trim());
+        if (request.getEmail() != null && !request.getEmail().isBlank())
+            user.setEmail(request.getEmail().toLowerCase().trim());
+        if (request.getTelephone() != null)
+            user.setTelephone(request.getTelephone().trim());
+        if (request.getPoste() != null)
+            user.setPoste(request.getPoste().trim());
+        if (request.getDepartement() != null)
+            user.setDepartement(request.getDepartement().trim());
+        utilisateurRepository.save(user);
+        return UpdateProfileResponse.builder()
+            .id(user.getId()).nom(user.getNom())
+            .email(user.getEmail()).role(user.getRole())
+            .build();
+    }
+
+    @Override
+    public MessageResponse changePassword(String currentEmail, ChangePasswordRequest request) {
+        Utilisateur user = utilisateurRepository.findByEmailIgnoreCase(currentEmail)
+            .orElseThrow(() -> new BusinessException("Utilisateur introuvable"));
+        if (!matchesAndUpgradePassword(user, request.getMotDePasseActuel()))
+            throw new BusinessException("Mot de passe actuel incorrect");
+        if (!request.getNouveauMotDePasse().equals(request.getConfirmationMotDePasse()))
+            throw new BusinessException("La confirmation ne correspond pas");
+        if (passwordEncoder.matches(request.getNouveauMotDePasse(), user.getMotDePasse()))
+            throw new BusinessException("Le nouveau mot de passe doit etre different");
+        validateStrongPassword(request.getNouveauMotDePasse());
+        user.setMotDePasse(passwordEncoder.encode(request.getNouveauMotDePasse()));
+        utilisateurRepository.save(user);
+        return new MessageResponse("Mot de passe modifie avec succes");
+    }
+
+    private boolean matchesAndUpgradePassword(Utilisateur user, String rawPassword) {
+        boolean matches = passwordMatches(rawPassword, user.getMotDePasse());
+        if (matches) {
+            upgradeLegacyPasswordIfNeeded(user, rawPassword);
+        }
+        return matches;
+    }
+
     public void initAdminSiAbsent() {
         ensureUtilisateurRoleConstraint();
-        syncDemoUser("Admin Principal", "admin@smartassign.tn", "admin123", "ADMIN");
-        syncDemoUser("Manager SmartAssign", "manager@smartassign.tn", "manager123", "MANAGER");
-        syncDemoUser("Collaborateur Demo", "collab@smartassign.tn", "collab123", "COLLAB");
+        syncDemoUser("Admin Principal", "admin@smartassign.tn", "Admin123", "ADMIN");
+        syncDemoUser("Manager SmartAssign", "manager@smartassign.tn", "Manager123", "MANAGER");
+        syncDemoUser("Collaborateur Demo", "collab@smartassign.tn", "Collab123", "COLLAB");
         syncDemoCollaborateur("Demo", "Collaborateur", "collab@smartassign.tn", 4, true);
         syncDemoPlanningData("collab@smartassign.tn");
     }
@@ -250,39 +354,45 @@ public class AuthServiceImpl implements AuthService {
     }
 
     private void syncDemoUser(String nom, String email, String motDePasse, String role) {
-        Utilisateur user = utilisateurRepository.findByEmail(email)
-                .orElseGet(() -> Utilisateur.builder().email(email).build());
+        String normalizedEmail = email.trim().toLowerCase();
+        String normalizedRole = RoleNormalizer.normalize(role);
+
+        Utilisateur user = utilisateurRepository.findByEmailIgnoreCase(normalizedEmail)
+                .orElseGet(() -> Utilisateur.builder().email(normalizedEmail).build());
 
         boolean isNew = user.getId() == null;
         String storedPassword = user.getMotDePasse();
 
-        // Re-encode if missing, not bcrypt, or if the stored hash no longer matches the demo password
-        boolean shouldSetPassword = isNew
-            || storedPassword == null
-            || storedPassword.isBlank()
-            || !isPasswordEncoded(storedPassword)
-            || !passwordEncoder.matches(motDePasse, storedPassword);
+        // Ne jamais ecraser un mot de passe BCrypt existant (permet les comptes reels en base)
+        boolean shouldSetDemoPassword = isNew
+                || storedPassword == null
+                || storedPassword.isBlank();
+
+        boolean shouldUpgradePlainDemoPassword = !shouldSetDemoPassword
+                && !PasswordHashUtils.isBcryptEncoded(storedPassword)
+                && Objects.equals(storedPassword, motDePasse);
 
         boolean hasChanged = isNew
                 || !nom.equals(user.getNom())
-                || !email.equalsIgnoreCase(user.getEmail())
-                || !role.equals(user.getRole())
-                || shouldSetPassword;
+                || !normalizedEmail.equalsIgnoreCase(user.getEmail())
+                || !normalizedRole.equals(RoleNormalizer.normalize(user.getRole()))
+                || shouldSetDemoPassword
+                || shouldUpgradePlainDemoPassword;
 
         if (!hasChanged) {
             return;
         }
 
         user.setNom(nom);
-        user.setEmail(email);
-        if (shouldSetPassword) {
+        user.setEmail(normalizedEmail);
+        user.setRole(normalizedRole);
+
+        if (shouldSetDemoPassword || shouldUpgradePlainDemoPassword) {
             user.setMotDePasse(passwordEncoder.encode(motDePasse));
         }
-        user.setRole(role);
 
         utilisateurRepository.save(user);
-        String action = isNew ? "Compte cree : " : "Compte mis a jour : ";
-        System.out.println(action + email + " (" + role + ")");
+        LOGGER.info("{} compte demo {} ({})", isNew ? "Creation" : "Mise a jour", normalizedEmail, normalizedRole);
     }
 
     private String normalizeNamePart(String value) {
@@ -326,41 +436,53 @@ public class AuthServiceImpl implements AuthService {
         }
     }
 
-    private boolean matchesAndUpgradePassword(Utilisateur user, String rawPassword) {
+    private void upgradeLegacyPasswordIfNeeded(Utilisateur user, String rawPassword) {
         String storedPassword = user.getMotDePasse();
 
         if (storedPassword == null || storedPassword.isBlank()) {
-            return false;
+            return;
         }
 
-        if (isPasswordEncoded(storedPassword)) {
-            return passwordEncoder.matches(rawPassword, storedPassword);
+        if (PasswordHashUtils.isBcryptEncoded(storedPassword)) {
+            return;
         }
 
         if (!Objects.equals(storedPassword, rawPassword)) {
-            return false;
+            return;
         }
 
         user.setMotDePasse(passwordEncoder.encode(rawPassword));
         utilisateurRepository.save(user);
-        return true;
+        LOGGER.info("Mot de passe legacy migre vers BCrypt pour {}", user.getEmail());
     }
 
-    private boolean matchesPassword(String rawPassword, String storedPassword) {
+    private void authenticateCredentials(String normalizedEmail, String rawPassword) {
+        try {
+            authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(normalizedEmail, rawPassword));
+        } catch (BadCredentialsException exception) {
+            LOGGER.warn("Connexion echouee — mot de passe invalide pour {}", normalizedEmail);
+            throw new BusinessException("Email ou mot de passe incorrect");
+        }
+    }
+
+    private String normalizeRawPassword(String password) {
+        if (password == null) {
+            throw new BusinessException("Le mot de passe est obligatoire");
+        }
+        return password;
+    }
+
+    private boolean passwordMatches(String rawPassword, String storedPassword) {
         if (storedPassword == null || storedPassword.isBlank()) {
             return false;
         }
 
-        if (isPasswordEncoded(storedPassword)) {
+        if (PasswordHashUtils.isBcryptEncoded(storedPassword)) {
             return passwordEncoder.matches(rawPassword, storedPassword);
         }
 
-        return Objects.equals(rawPassword, storedPassword);
-    }
-
-    private boolean isPasswordEncoded(String password) {
-        return password != null
-                && (password.startsWith("$2a$") || password.startsWith("$2b$") || password.startsWith("$2y$"));
+        return Objects.equals(storedPassword, rawPassword);
     }
 
     private String generateResetToken() {

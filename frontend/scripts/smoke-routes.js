@@ -22,8 +22,8 @@ const ROLE_CONFIGS = [
       { path: '/admin/profil' },
       { path: '/admin/projets' },
       { path: '/admin/collaborateurs' },
-      { path: '/admin/affectation' },
-      { path: '/admin/affectations', expectedFinalPath: '/admin/affectation' }
+      { path: '/admin/affectation', expectedFinalPath: '/manager/affectations-en-cours' },
+      { path: '/admin/affectations', expectedFinalPath: '/manager/affectations-en-cours' }
     ]
   },
   {

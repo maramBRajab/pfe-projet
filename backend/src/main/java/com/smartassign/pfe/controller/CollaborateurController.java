@@ -10,7 +10,10 @@ import org.springframework.web.bind.annotation.*;
 import com.smartassign.pfe.dto.CollaborateurRequest;
 import com.smartassign.pfe.dto.CollaborateurResponse;
 import com.smartassign.pfe.service.CollaborateurService;
+import com.smartassign.pfe.service.AuditLogService;
+import jakarta.servlet.http.HttpServletRequest;
 
+import org.springframework.security.core.Authentication;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
@@ -20,6 +23,8 @@ import lombok.RequiredArgsConstructor;
 public class CollaborateurController {
 
     private final CollaborateurService service;
+    private final AuditLogService auditLogService;
+    private final HttpServletRequest httpRequest;
 
     @GetMapping
     public ResponseEntity<List<CollaborateurResponse>> getAll() {
@@ -43,22 +48,31 @@ public class CollaborateurController {
 
     @PostMapping
     public ResponseEntity<CollaborateurResponse> create(
-            @Valid @RequestBody CollaborateurRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(service.create(request));
+            @Valid @RequestBody CollaborateurRequest request,
+            Authentication authentication) {
+        CollaborateurResponse created = service.create(request);
+        auditLogService.log(authentication.getName(), "ADMIN", "CREATE_USER", "Création du collaborateur " + created.getNom(), httpRequest.getRemoteAddr(), "SUCCESS", null, created.getEmail());
+        return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<CollaborateurResponse> update(
             @PathVariable Long id,
-            @Valid @RequestBody CollaborateurRequest request) {
-        return ResponseEntity.ok(service.update(id, request));
+            @Valid @RequestBody CollaborateurRequest request,
+            Authentication authentication) {
+        CollaborateurResponse updated = service.update(id, request);
+        auditLogService.log(authentication.getName(), "ADMIN", "UPDATE_USER", "Mise à jour du collaborateur " + updated.getNom(), httpRequest.getRemoteAddr(), "SUCCESS", null, updated.getEmail());
+        return ResponseEntity.ok(updated);
     }
 
     @PatchMapping("/{id}/role")
     public ResponseEntity<CollaborateurResponse> updateRole(
             @PathVariable Long id,
-            @RequestBody Map<String, String> payload) {
-        return ResponseEntity.ok(service.updateRole(id, payload.get("role")));
+            @RequestBody Map<String, String> payload,
+            Authentication authentication) {
+        CollaborateurResponse updated = service.updateRole(id, payload.get("role"));
+        auditLogService.log(authentication.getName(), "ADMIN", "ROLE_CHANGE", "Changement de rôle → " + payload.get("role") + " pour " + updated.getNom(), httpRequest.getRemoteAddr(), "SUCCESS", null, updated.getEmail());
+        return ResponseEntity.ok(updated);
     }
 
     @PatchMapping("/{id}/disponibilite")
@@ -67,8 +81,10 @@ public class CollaborateurController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
+    public ResponseEntity<Void> delete(@PathVariable Long id, Authentication authentication) {
+        CollaborateurResponse collab = service.getById(id);
         service.delete(id);
+        auditLogService.log(authentication.getName(), "ADMIN", "DELETE_USER", "Suppression du collaborateur " + collab.getNom(), httpRequest.getRemoteAddr(), "SUCCESS", null, collab.getEmail());
         return ResponseEntity.noContent().build();
     }
 }

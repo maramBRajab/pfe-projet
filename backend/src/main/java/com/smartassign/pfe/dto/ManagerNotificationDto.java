@@ -11,12 +11,13 @@ public class ManagerNotificationDto {
     private String icon;        // ti-* icon name (without "ti " prefix)
     private String iconBg;      // icon-green | icon-blue | icon-amber | icon-red
     private String badgeClass;  // badge-ia | badge-affectation | badge-vigilance | badge-info | badge-critique
+    private String notificationKey; // Clé unique pour blacklist
 
     public ManagerNotificationDto() {}
 
     public ManagerNotificationDto(Long id, String titre, String description, String temps,
                                   String type, boolean lu,
-                                  String icon, String iconBg, String badgeClass) {
+                                  String icon, String iconBg, String badgeClass, String notificationKey) {
         this.id = id;
         this.titre = titre;
         this.description = description;
@@ -26,6 +27,7 @@ public class ManagerNotificationDto {
         this.icon = icon;
         this.iconBg = iconBg;
         this.badgeClass = badgeClass;
+        this.notificationKey = notificationKey;
     }
 
     public Long getId() { return id; }
@@ -46,4 +48,6 @@ public class ManagerNotificationDto {
     public void setIconBg(String iconBg) { this.iconBg = iconBg; }
     public String getBadgeClass() { return badgeClass; }
     public void setBadgeClass(String badgeClass) { this.badgeClass = badgeClass; }
+    public String getNotificationKey() { return notificationKey; }
+    public void setNotificationKey(String notificationKey) { this.notificationKey = notificationKey; }
 }

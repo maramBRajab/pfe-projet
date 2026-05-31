@@ -42,6 +42,7 @@ export class AdminAuditComponent implements OnInit {
   allLogs: AuditLog[] = [];
   loading = false;
   error = '';
+  adminPhoto: string | null = null;
 
   constructor(private auditService: AdminAuditService) {}
 
@@ -61,7 +62,7 @@ export class AdminAuditComponent implements OnInit {
   timelineLimit = 5;
 
   get hasMoreTimeline(): boolean {
-    return (this.todayLogs.length + this.yesterdayLogs.length) > this.timelineLimit;
+    return (this.todayLogs.length + this.yesterdayLogs.length + this.recentLogs.length) > this.timelineLimit;
   }
 
   loadMoreTimeline(): void {
@@ -97,6 +98,7 @@ export class AdminAuditComponent implements OnInit {
     PARAMETRES:     'Paramètres système',
   };
 
+
   readonly actionGroups: { label: string; actions: AuditAction[] }[] = [
     { label: 'Authentification', actions: ['LOGIN', 'LOGOUT', 'LOGIN_FAILED'] },
     { label: 'Utilisateurs',     actions: ['CREATE_USER', 'UPDATE_USER', 'DELETE_USER', 'ROLE_CHANGE'] },
@@ -106,7 +108,22 @@ export class AdminAuditComponent implements OnInit {
   ];
 
   ngOnInit(): void {
-    this.fetchAuditLogs();
+    this.adminPhoto = localStorage.getItem('smartassign_admin_photo');
+    this.loading = true;
+    this.auditService.getAuditLogs().subscribe({
+      next: (logs) => {
+        this.allLogs = logs.map(l => ({
+          ...l,
+          date: new Date(l.date)
+        }));
+        this.loading = false;
+      },
+      error: (err) => {
+        this.error = 'Impossible de charger les logs.';
+        this.loading = false;
+        console.error(err);
+      }
+    });
   }
 
   fetchAuditLogs(): void {
@@ -202,6 +219,32 @@ export class AdminAuditComponent implements OnInit {
       l.date.getMonth() === yesterday.getMonth() &&
       l.date.getDate() === yesterday.getDate()
     );
+  }
+
+  get recentLogs(): AuditLog[] {
+    const now = new Date();
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+    // Retourner tous les logs des 7 derniers jours excluant today et yesterday
+    return this.filteredLogs.filter(l => {
+      // Vérifier si le log est dans les 7 derniers jours
+      if (l.date < sevenDaysAgo) return false;
+      
+      // Exclure today
+      if (l.date.getFullYear() === now.getFullYear() &&
+          l.date.getMonth() === now.getMonth() &&
+          l.date.getDate() === now.getDate()) return false;
+      
+      // Exclure yesterday
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      if (l.date.getFullYear() === yesterday.getFullYear() &&
+          l.date.getMonth() === yesterday.getMonth() &&
+          l.date.getDate() === yesterday.getDate()) return false;
+      
+      return true;
+    });
   }
 
   filterByStatus(status: AuditStatus): void {

@@ -21,14 +21,19 @@ public class Utilisateur {
 
     @NotBlank(message = "L'email est obligatoire")
     @Email(message = "L'email est invalide")
-    @Column(unique = true)
+    @Column(name = "email", unique = true, nullable = false)
     private String email;
 
     @NotBlank(message = "Le mot de passe est obligatoire")
+    @Column(name = "mot_de_passe", nullable = false)
     private String motDePasse;
 
     @Builder.Default
-    private String role = "ADMIN";
+    private String role = "COLLAB";
+
+    private String telephone;
+    private String poste;
+    private String departement;
 
     @Builder.Default
     private String uiTheme = "dark";

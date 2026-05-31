@@ -1,9 +1,8 @@
-﻿<section class="sp-root">
+<section class="sp-root">
   <app-admin-sidebar></app-admin-sidebar>
 
   <div class="sp-main">
 
-    <!-- ══ TOPBAR ════════════════════════════════════════════ -->
     <header class="sp-topbar">
       <div class="sp-topbar__left">
         <nav class="sp-topbar__breadcrumb">
@@ -35,24 +34,40 @@
           </svg>
           Export PDF
         </button>
-        <div class="sp-av-sm" routerLink="/admin/profil" style="cursor:pointer" title="Mon profil">AP</div>
+        <div class="sp-av-sm" routerLink="/admin/profil" style="cursor:pointer;overflow:hidden" title="Mon profil">
+          <img *ngIf="adminPhoto" [src]="adminPhoto"
+               style="width:100%;height:100%;object-fit:cover;border-radius:50%;" alt="">
+          <span *ngIf="!adminPhoto">AP</span>
+        </div>
       </div>
     </header>
 
-    <!-- ══ BODY ══════════════════════════════════════════════ -->
     <div class="sp-body">
 
       <!-- ACTION ROW -->
       <div class="sp-action-row">
-        <button type="button" class="sp-btn sp-btn--ghost sp-btn--sm" (click)="markAllRead()">
-          <i class="ti ti-check"></i>
-          Tout marquer lu
-        </button>
+        <div class="sp-search">
+          <i class="ti ti-search sp-search__icon"></i>
+          <input
+            type="text"
+            class="sp-search__input"
+            placeholder="Rechercher une notification..."
+            [(ngModel)]="searchQuery"
+          />
+          <button *ngIf="searchQuery" type="button" class="sp-search__clear" (click)="clearSearch()">
+            <i class="ti ti-x"></i>
+          </button>
+        </div>
+        <div class="sp-action-row__btns">
+          <button type="button" class="sp-btn sp-btn--ghost sp-btn--sm" (click)="markAllRead()">
+            <i class="ti ti-check"></i>
+            Tout marquer lu
+          </button>
+        </div>
       </div>
 
       <!-- KPI CARDS -->
       <div class="sp-kpi-grid">
-
         <div class="sp-kcard">
           <div class="sp-kcard__bar" style="background:#3b82f6"></div>
           <span class="sp-kcard__badge sp-kcard__badge--neutral">Flux global</span>
@@ -60,7 +75,6 @@
           <div class="sp-kcard__val" style="color:#3b82f6">{{ notifications.length }}</div>
           <div class="sp-kcard__sub">Centre unifié</div>
         </div>
-
         <div class="sp-kcard">
           <div class="sp-kcard__bar" style="background:#10b981"></div>
           <span class="sp-kcard__badge sp-kcard__badge--neutral">stable</span>
@@ -68,7 +82,6 @@
           <div class="sp-kcard__val" style="color:#10b981">{{ infoCount }}</div>
           <div class="sp-kcard__sub">Messages généraux</div>
         </div>
-
         <div class="sp-kcard">
           <div class="sp-kcard__bar" style="background:#f59e0b"></div>
           <span class="sp-kcard__badge sp-kcard__badge--warn">Vigilance</span>
@@ -76,7 +89,6 @@
           <div class="sp-kcard__val" style="color:#f59e0b">{{ warningCount }}</div>
           <div class="sp-kcard__sub">Éléments à surveiller</div>
         </div>
-
         <div class="sp-kcard">
           <div class="sp-kcard__bar" style="background:#ef4444"></div>
           <span class="sp-kcard__badge sp-kcard__badge--danger">Priorité</span>
@@ -84,14 +96,19 @@
           <div class="sp-kcard__val">{{ dangerCount }}</div>
           <div class="sp-kcard__sub">{{ dangerCount === 0 ? 'Aucune alerte critique' : dangerCount + ' alerte(s)' }}</div>
         </div>
-
       </div>
 
-      <!-- NOTIFICATION PANEL (tabs + cards) -->
+      <!-- Résultats recherche -->
+      <div class="sp-search-info" *ngIf="searchQuery">
+        <i class="ti ti-filter"></i>
+        {{ filteredNotifications.length }} résultat(s) pour "{{ searchQuery }}"
+        <button type="button" class="sp-search-info__clear" (click)="clearSearch()">Effacer</button>
+      </div>
+
+      <!-- NOTIFICATION PANEL -->
       <div class="sp-notifs">
         <div class="sp-notifs__panel">
 
-          <!-- TABS HEADER -->
           <div class="sp-notifs__tabs">
             <button type="button" class="sp-tab" [class.sp-tab--active]="activeFilter === 'all'" (click)="setFilter('all')">
               Tous ({{ notifications.length }})
@@ -116,53 +133,82 @@
                  [class.sp-ncard--info]="notificationTone(n) === 'info'"
                  [class.sp-ncard--read]="isRead(n)">
 
-          <div class="sp-ncard__icon"
-               [class.sp-ncard__icon--danger]="notificationTone(n) === 'danger'"
-               [class.sp-ncard__icon--warn]="notificationTone(n) === 'warning'"
-               [class.sp-ncard__icon--info]="notificationTone(n) === 'info'">
-            <i class="ti"
-               [class.ti-alert-circle]="notificationTone(n) === 'danger'"
-               [class.ti-alert-triangle]="notificationTone(n) === 'warning'"
-               [class.ti-info-circle]="notificationTone(n) === 'info'"></i>
-          </div>
-
-          <div class="sp-ncard__body">
-            <div class="sp-ncard__hd">
-              <span class="sp-ncard__title">{{ n.titre }}</span>
-              <div class="sp-ncard__meta">
-                <span class="sp-ncard__date">{{ n.dateCreation | date:'dd/MM/yyyy' }}</span>
-                <span class="sp-ncard__badge"
-                      [class.sp-ncard__badge--danger]="notificationTone(n) === 'danger'"
-                      [class.sp-ncard__badge--warn]="notificationTone(n) === 'warning'"
-                      [class.sp-ncard__badge--info]="notificationTone(n) === 'info'">
-                  {{ notificationTone(n) === 'danger' ? 'CRITIQUE' : notificationTone(n) === 'warning' ? 'VIGILANCE' : 'INFO' }}
-                </span>
+              <div class="sp-ncard__icon"
+                   [class.sp-ncard__icon--danger]="notificationTone(n) === 'danger'"
+                   [class.sp-ncard__icon--warn]="notificationTone(n) === 'warning'"
+                   [class.sp-ncard__icon--info]="notificationTone(n) === 'info'">
+                <i class="ti"
+                   [class.ti-alert-circle]="notificationTone(n) === 'danger'"
+                   [class.ti-alert-triangle]="notificationTone(n) === 'warning'"
+                   [class.ti-info-circle]="notificationTone(n) === 'info'"></i>
               </div>
-            </div>
-            <p class="sp-ncard__msg">{{ n.message }}</p>
-            <div class="sp-ncard__actions">
-              <button type="button" class="sp-btn sp-btn--ghost sp-btn--sm" (click)="voirDetails(n)">
-                <i class="ti" [class.ti-eye]="notificationTone(n) === 'danger'" [class.ti-users]="notificationTone(n) !== 'danger'"></i>
-                {{ notificationTone(n) === 'danger' ? 'Voir détails' : 'Voir utilisateurs' }}
-              </button>
-              <button type="button" class="sp-btn sp-btn--ghost sp-btn--sm" (click)="markRead(n)">
-                <i class="ti ti-check"></i>
-                Marquer lu
-              </button>
-            </div>
-          </div>
 
+              <div class="sp-ncard__body">
+                <div class="sp-ncard__hd">
+                  <div class="sp-ncard__title-row">
+                    <span class="sp-ncard__title">{{ n.titre }}</span>
+                    <span class="sp-ncard__unread-dot" *ngIf="!isRead(n)"></span>
+                  </div>
+                  <div class="sp-ncard__meta">
+                    <span class="sp-ncard__date">{{ n.dateCreation | date:'dd/MM/yyyy' }}</span>
+                    <span class="sp-ncard__badge"
+                          [class.sp-ncard__badge--danger]="notificationTone(n) === 'danger'"
+                          [class.sp-ncard__badge--warn]="notificationTone(n) === 'warning'"
+                          [class.sp-ncard__badge--info]="notificationTone(n) === 'info'">
+                      {{ notificationTone(n) === 'danger' ? 'CRITIQUE' : notificationTone(n) === 'warning' ? 'VIGILANCE' : 'INFO' }}
+                    </span>
+                  </div>
+                </div>
+                <p class="sp-ncard__msg">{{ n.message }}</p>
+
+                <div class="sp-ncard__actions">
+                  <button type="button" class="sp-btn sp-btn--ghost sp-btn--sm" (click)="voirDetails(n)">
+                    <i class="ti" [class.ti-eye]="notificationTone(n) === 'danger'" [class.ti-users]="notificationTone(n) !== 'danger'"></i>
+                    {{ notificationTone(n) === 'danger' ? 'Voir détails' : 'Voir utilisateurs' }}
+                  </button>
+                  <button type="button" class="sp-btn sp-btn--ghost sp-btn--sm" (click)="markRead(n)" *ngIf="!isRead(n)">
+                    <i class="ti ti-check"></i>
+                    Marquer lu
+                  </button>
+                  <span class="sp-ncard__read-label" *ngIf="isRead(n)">
+                    <i class="ti ti-checks"></i> Lu
+                  </span>
+
+                  <!-- Bouton supprimer -->
+                  <button *ngIf="confirmDeleteId !== notifId(n)"
+                          type="button"
+                          class="sp-btn sp-btn--danger-ghost sp-btn--sm sp-ncard__delete"
+                          (click)="askDelete(n)">
+                    <i class="ti ti-trash"></i>
+                    Supprimer
+                  </button>
+
+                  <!-- Confirmation inline -->
+                  <div *ngIf="confirmDeleteId === notifId(n)" class="sp-ncard__confirm">
+                    <span>Supprimer cette notification ?</span>
+                    <button type="button" class="sp-btn sp-btn--danger sp-btn--sm" (click)="confirmDelete(n)">
+                      Supprimer
+                    </button>
+                    <button type="button" class="sp-btn sp-btn--ghost sp-btn--sm" (click)="cancelDelete()">
+                      Annuler
+                    </button>
+                  </div>
+
+                </div>
+              </div>
+
+            </div>
+
+            <!-- Empty state -->
+            <div class="sp-empty" *ngIf="filteredNotifications.length === 0">
+              <i class="ti ti-bell-off"></i>
+              <span *ngIf="searchQuery">Aucun résultat pour "{{ searchQuery }}"</span>
+              <span *ngIf="!searchQuery">Aucune notification dans cette catégorie</span>
+            </div>
+
+          </div>
         </div>
-
-          <!-- Empty state -->
-          <div class="sp-empty" *ngIf="filteredNotifications.length === 0">
-            <i class="ti ti-bell-off"></i>
-            <span>Aucune notification dans cette catégorie</span>
-          </div>
-
-          </div><!-- /.sp-notifs__list -->
-        </div><!-- /.sp-notifs__panel -->
-      </div><!-- /.sp-notifs -->
+      </div>
 
     </div>
   </div>

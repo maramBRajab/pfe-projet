@@ -191,7 +191,7 @@ export class CollaborateurDashboardComponent implements OnInit {
 
   // 🔥 DOUBLE CLICK NAVIGATION
   goToDashboard(): void {
-    this.router.navigate(['/collaborateurs/collaborateurs/dashboard']);
+    this.router.navigate(['/collaborateurs/dashboard']);
   }
 
   private consumeData(data: DashboardDataBundle): void {

@@ -206,6 +206,7 @@ export class AdminRolesComponent implements OnInit {
 
   currentDate = new Date();
   activeTab: 'predefined' | 'custom' = 'predefined';
+  adminPhoto: string | null = null;
 
   predefinedRoles = PREDEFINED_ROLES;
   customRoles     = CUSTOM_ROLES;
@@ -268,6 +269,7 @@ export class AdminRolesComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    this.adminPhoto = localStorage.getItem('smartassign_admin_photo');
     // initialise all permission checkboxes to false
     this.resetNewRolePerms();
   }

@@ -16,6 +16,7 @@ public class CollaborateurRequest {
     @NotBlank(message = "Le prénom est obligatoire")
     private String prenom;
 
+    @NotBlank(message = "L'email est obligatoire")
     @Email(message = "Email invalide")
     private String email;
 

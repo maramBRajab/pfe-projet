@@ -91,7 +91,7 @@ export interface HistoriqueAffectation {
   templateUrl: './dashboard.component.html',
   styleUrls:   ['./dashboard.component.scss'],
   standalone:  true,
-  imports:     [CommonModule, DatePipe, RouterLink, ManagerShellComponent],
+  imports:     [CommonModule, DatePipe, RouterLink],
 })
 export class ManagerDashboardComponent implements OnInit, OnDestroy {
 
@@ -325,7 +325,7 @@ export class ManagerDashboardComponent implements OnInit, OnDestroy {
 
   viewCollaboratorProfile(c: Collaborateur): void { this.router.navigate(['/manager/collaborateurs', c.id]); }
   assignToProject(c: Collaborateur): void         { this.router.navigate(['/manager/affectations/new'], { queryParams: { collaborateur: c.id } }); }
-  viewFullAnalysis(): void                        { this.router.navigate(['/manager/charge-de-travail']); }
+  viewFullAnalysis(): void                        { this.router.navigate(['/manager/charge-travail']); }
 
   openRecommendations(): void                      { this.router.navigate(['/manager/recommandations']); }
   applyRecommendation(r: Recommandation): void    { this.router.navigate(['/manager/affectations/new'], { queryParams: { collaborateur: r.collaborateurId, project: r.projetId } }); }
@@ -335,7 +335,7 @@ export class ManagerDashboardComponent implements OnInit, OnDestroy {
   dismissAlerte(a: Alerte): void    { this.alertes = this.alertes.filter(x => x.id !== a.id); this.updateKpiCards(); }
 
   setHistoryFilter(f: 'all' | 'month' | 'modified'): void { this.historyFilter = f; }
-  openHistoryPage(): void                                   { this.router.navigate(['/manager/affectations/historique']); }
+  openHistoryPage(): void                                   { this.router.navigate(['/manager/historique-affectations']); }
   editAffectation(e: HistoriqueAffectation): void          { this.router.navigate(['/manager/affectations', e.id, 'edit']); }
   cancelAffectation(e: HistoriqueAffectation): void {
     if (confirm(`Annuler l'affectation de ${e.collaborateurNom} sur ${e.projet} ?`)) {

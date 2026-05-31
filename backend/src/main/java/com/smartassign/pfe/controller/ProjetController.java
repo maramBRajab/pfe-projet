@@ -10,7 +10,10 @@ import org.springframework.web.bind.annotation.*;
 import com.smartassign.pfe.dto.ProjetRequest;
 import com.smartassign.pfe.dto.ProjetResponse;
 import com.smartassign.pfe.service.ProjetService;
+import com.smartassign.pfe.service.AuditLogService;
+import jakarta.servlet.http.HttpServletRequest;
 
+import org.springframework.security.core.Authentication;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
@@ -20,6 +23,8 @@ import lombok.RequiredArgsConstructor;
 public class ProjetController {
 
     private final ProjetService service;
+    private final AuditLogService auditLogService;
+    private final HttpServletRequest httpRequest;
 
     @GetMapping
     public ResponseEntity<List<ProjetResponse>> getAll() {
@@ -38,27 +43,38 @@ public class ProjetController {
 
     @PostMapping
     public ResponseEntity<ProjetResponse> create(
-            @Valid @RequestBody ProjetRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(service.create(request));
+            @Valid @RequestBody ProjetRequest request,
+            Authentication authentication) {
+        ProjetResponse created = service.create(request);
+        auditLogService.log(authentication.getName(), "ADMIN", "CREATE_PROJET", "Création du projet \"" + created.getNom() + "\"", httpRequest.getRemoteAddr(), "SUCCESS", null, created.getNom());
+        return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<ProjetResponse> update(
             @PathVariable Long id,
-            @Valid @RequestBody ProjetRequest request) {
-        return ResponseEntity.ok(service.update(id, request));
+            @Valid @RequestBody ProjetRequest request,
+            Authentication authentication) {
+        ProjetResponse updated = service.update(id, request);
+        auditLogService.log(authentication.getName(), "ADMIN", "UPDATE_PROJET", "Mise à jour du projet \"" + updated.getNom() + "\"", httpRequest.getRemoteAddr(), "SUCCESS", null, updated.getNom());
+        return ResponseEntity.ok(updated);
     }
 
     @PatchMapping("/{id}/statut")
     public ResponseEntity<ProjetResponse> updateStatut(
             @PathVariable Long id,
-            @RequestBody Map<String, String> payload) {
-        return ResponseEntity.ok(service.updateStatut(id, payload.get("statut")));
+            @RequestBody Map<String, String> payload,
+            Authentication authentication) {
+        ProjetResponse updated = service.updateStatut(id, payload.get("statut"));
+        auditLogService.log(authentication.getName(), "ADMIN", "UPDATE_PROJET", "Statut du projet \"" + updated.getNom() + "\" → " + payload.get("statut"), httpRequest.getRemoteAddr(), "SUCCESS", null, updated.getNom());
+        return ResponseEntity.ok(updated);
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
+    public ResponseEntity<Void> delete(@PathVariable Long id, Authentication authentication) {
+        ProjetResponse projet = service.getById(id);
         service.delete(id);
+        auditLogService.log(authentication.getName(), "ADMIN", "DELETE_PROJET", "Suppression du projet \"" + projet.getNom() + "\"", httpRequest.getRemoteAddr(), "SUCCESS", null, projet.getNom());
         return ResponseEntity.noContent().build();
     }
 }

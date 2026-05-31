@@ -2,7 +2,7 @@ import { Component, OnInit, ChangeDetectorRef, ElementRef, HostListener } from '
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { AuthService } from '../../../../services/auth';
 import { AdminProjetService, Projet } from '../../../../services/admin';
 import { AdminSidebarComponent } from '../../shared/admin-sidebar.component';
@@ -37,6 +37,7 @@ export class ListeProjetsComponent implements OnInit {
   deleteTargetName = '';
   isDeleting = false;
   toastMessage = '';
+  adminPhoto: string | null = null;
   private toastTimer?: ReturnType<typeof setTimeout>;
 
   constructor(
@@ -44,6 +45,7 @@ export class ListeProjetsComponent implements OnInit {
     private readonly adminProjetService: AdminProjetService,
     private readonly cdr: ChangeDetectorRef,
     private readonly router: Router,
+    private readonly route: ActivatedRoute,
     private readonly elRef: ElementRef
   ) {}
 
@@ -66,7 +68,22 @@ export class ListeProjetsComponent implements OnInit {
     void this.router.navigate(['/login']);
   }
 
-  ngOnInit(): void { this.charger(); }
+  ngOnInit(): void {
+    this.adminPhoto = localStorage.getItem('smartassign_admin_photo');
+    this.applyStatutFromRoute(this.route.snapshot.queryParamMap.get('statut'));
+    this.route.queryParamMap.subscribe((params) => {
+      this.applyStatutFromRoute(params.get('statut'));
+      this.currentPage = 1;
+    });
+    this.charger();
+  }
+
+  private applyStatutFromRoute(statut: string | null): void {
+    const allowed = new Set(['all', 'en_cours', 'en_attente', 'termine', 'en_retard']);
+    if (statut && allowed.has(statut)) {
+      this.statutFilter = statut;
+    }
+  }
 
   charger(): void {
     this.isLoading    = true;
@@ -203,7 +220,9 @@ export class ListeProjetsComponent implements OnInit {
   get filteredProjets(): Projet[] {
     return this.projets.filter(p => {
       const matchSearch = p.nom.toLowerCase().includes(this.searchTerm.toLowerCase());
-      const matchStatut = this.statutFilter === 'all' || p.statut === this.statutFilter;
+      const matchStatut = this.statutFilter === 'all'
+        || p.statut === this.statutFilter
+        || p.statut === this.statutFilter.toUpperCase();
       return matchSearch && matchStatut;
     });
   }
@@ -212,6 +231,7 @@ export class ListeProjetsComponent implements OnInit {
     const map: Record<string, string> = {
       en_attente: 'En attente', EN_ATTENTE: 'En attente',
       en_cours:   'En cours',   EN_COURS:   'En cours',
+      en_retard:  'En retard',  EN_RETARD:  'En retard',
       termine:    'Terminé',    TERMINE:    'Terminé',
     };
     return map[statut] ?? statut;
@@ -236,6 +256,7 @@ export class ListeProjetsComponent implements OnInit {
     const s = (statut ?? '').toLowerCase();
     if (s === 'en_cours')   return 'badge-blue';
     if (s === 'termine')    return 'badge-green';
+    if (s === 'en_retard')  return 'badge-red';
     return 'badge-amber';
   }
 

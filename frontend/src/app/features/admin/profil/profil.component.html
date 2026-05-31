@@ -3,7 +3,6 @@
 
   <div class="sp-main">
 
-    <!-- ══ TOPBAR ════════════════════════════════════════════ -->
     <header class="sp-topbar">
       <div class="sp-topbar__left">
         <nav class="sp-topbar__breadcrumb">
@@ -20,38 +19,36 @@
           <span class="sp-status-dot"></span>
           Système opérationnel
         </div>
-        <div class="sp-av-sm" style="cursor:default" title="Mon profil">AP</div>
+        <div class="sp-av-sm" style="cursor:default;overflow:hidden">
+          <img *ngIf="adminPhoto" [src]="adminPhoto" 
+               style="width:100%;height:100%;object-fit:cover;border-radius:50%;" alt="">
+          <span *ngIf="!adminPhoto">AP</span>
+        </div>
       </div>
     </header>
 
-    <!-- ══ BODY ══════════════════════════════════════════════ -->
     <div class="sp-body">
 
-      <!-- ── Profile Header Card ────────────────────────────── -->
-      <div class="pf-header">
-        <div class="pf-header__av">{{ currentInitials }}</div>
-        <div class="pf-header__info">
-          <div class="pf-header__name">{{ currentFullName }}</div>
-          <div class="pf-header__role">Administrateur plateforme</div>
-          <div class="pf-header__email">{{ profileEmail }}</div>
-          <div class="pf-header__badges">
-            <span class="pf-badge pf-badge--green">
-              <i class="ti ti-check"></i>Administrateur
-            </span>
-            <span class="pf-badge pf-badge--blue">
-              <i class="ti ti-shield"></i>{{ permissionSummary }}
-            </span>
-            <span class="pf-badge pf-badge--gray">
-              <i class="ti ti-circle-check pf-badge__check-icon"></i>Compte protégé
-            </span>
-          </div>
+      <!-- ── Photo header ─────────────────────────────────── -->
+      <div class="pf-photo-header">
+        <div class="pf-photo-wrapper">
+          <img *ngIf="photoUrl" [src]="photoUrl" class="pf-photo-img" alt="Photo de profil">
+          <div *ngIf="!photoUrl" class="pf-photo-initials">{{ currentInitials }}</div>
+          <label class="pf-photo-overlay" title="Changer la photo">
+            <i class="ti ti-camera"></i>
+            <input type="file" accept="image/*" (change)="onPhotoChange($event)" hidden>
+          </label>
+        </div>
+        <div class="pf-photo-info">
+          <div class="pf-photo-name">{{ currentFullName }}</div>
+          <div class="pf-photo-role">Administrateur plateforme</div>
+          <div class="pf-photo-email">{{ profileEmail }}</div>
         </div>
       </div>
 
       <!-- ── Two columns ───────────────────────────────────── -->
       <div class="pf-two-col">
 
-        <!-- Left: Informations -->
         <div class="pf-card">
           <div class="pf-card__lbl">Édition</div>
           <div class="pf-card__title">Informations personnelles</div>
@@ -105,66 +102,43 @@
           </form>
         </div>
 
-        <!-- Right: Password + Permissions stacked -->
-        <div class="pf-right-col">
+        <div class="pf-card">
+          <div class="pf-card__lbl">Sécurité</div>
+          <div class="pf-card__title">Modifier le mot de passe</div>
 
-          <!-- Password card -->
-          <div class="pf-card">
-            <div class="pf-card__lbl">Sécurité</div>
-            <div class="pf-card__title">Modifier le mot de passe</div>
-
-            <form [formGroup]="passwordForm" (ngSubmit)="onPasswordSave()">
-              <div class="pf-fg">
-                <label class="pf-fl">Mot de passe actuel</label>
-                <input type="password" class="pf-fi" formControlName="currentPassword"
-                       autocomplete="current-password" placeholder="••••••••">
-              </div>
-              <div class="pf-row">
-                <div class="pf-fg">
-                  <label class="pf-fl">Nouveau</label>
-                  <input type="password" class="pf-fi" formControlName="newPassword"
-                         autocomplete="new-password" placeholder="••••••••">
-                </div>
-                <div class="pf-fg">
-                  <label class="pf-fl">Confirmation</label>
-                  <input type="password" class="pf-fi" formControlName="confirmPassword"
-                         autocomplete="new-password" placeholder="••••••••">
-                </div>
-              </div>
-              <div class="pf-btn-row">
-                <button type="submit" class="pf-btn pf-btn--primary">
-                  <i class="ti ti-lock"></i>Valider
-                </button>
-              </div>
-              @if (passwordFeedbackMessage && passwordFeedbackTone === 'success') {
-                <p class="pf-feedback pf-feedback--success">{{ passwordFeedbackMessage }}</p>
-              }
-              @if (passwordFeedbackMessage && passwordFeedbackTone === 'error') {
-                <p class="pf-feedback pf-feedback--error">{{ passwordFeedbackMessage }}</p>
-              }
-            </form>
-          </div>
-
-          <!-- Permissions card -->
-          <div class="pf-card">
-            <div class="pf-card__lbl">Permissions</div>
-            <div class="pf-card__title">Capacités du rôle admin</div>
-            <span class="pf-perm-badge">
-              <i class="ti ti-check"></i>6/6 actives
-            </span>
-            <div class="pf-perm-grid">
-              @for (p of permissionsWithIcons; track p.label) {
-                <div class="pf-perm">
-                  <div class="pf-perm__name"><i class="ti" [class]="'ti ' + p.icon"></i>{{ p.label }}</div>
-                  <div class="pf-perm__status">{{ p.allowed ? 'Autorisé' : 'Restreint' }}</div>
-                </div>
-              }
+          <form [formGroup]="passwordForm" (ngSubmit)="onPasswordSave()">
+            <div class="pf-fg">
+              <label class="pf-fl">Mot de passe actuel</label>
+              <input type="password" class="pf-fi" formControlName="currentPassword"
+                     autocomplete="current-password" placeholder="••••••••">
             </div>
-          </div>
+            <div class="pf-row">
+              <div class="pf-fg">
+                <label class="pf-fl">Nouveau</label>
+                <input type="password" class="pf-fi" formControlName="newPassword"
+                       autocomplete="new-password" placeholder="••••••••">
+              </div>
+              <div class="pf-fg">
+                <label class="pf-fl">Confirmation</label>
+                <input type="password" class="pf-fi" formControlName="confirmPassword"
+                       autocomplete="new-password" placeholder="••••••••">
+              </div>
+            </div>
+            <div class="pf-btn-row">
+              <button type="submit" class="pf-btn pf-btn--primary">
+                <i class="ti ti-lock"></i>Valider
+              </button>
+            </div>
+            @if (passwordFeedbackMessage && passwordFeedbackTone === 'success') {
+              <p class="pf-feedback pf-feedback--success">{{ passwordFeedbackMessage }}</p>
+            }
+            @if (passwordFeedbackMessage && passwordFeedbackTone === 'error') {
+              <p class="pf-feedback pf-feedback--error">{{ passwordFeedbackMessage }}</p>
+            }
+          </form>
+        </div>
 
-        </div><!-- /pf-right-col -->
-      </div><!-- /pf-two-col -->
-
-    </div><!-- /sp-body -->
-  </div><!-- /sp-main -->
+      </div>
+    </div>
+  </div>
 </section>

@@ -267,7 +267,7 @@ export class ManagerDashboardComponent implements OnInit, OnDestroy {
       message:   'azzeer suit une cadence conforme',
       sub:       'azzeer - Suivi opérationnel',
       type:      'info',
-      actionUrl: '/manager/projects/proj-3',
+      actionUrl: '/manager/projets/proj-3',
     },
   ];
 
@@ -392,15 +392,15 @@ export class ManagerDashboardComponent implements OnInit, OnDestroy {
   }
 
   openNewProject(): void {
-    this.router.navigate(['/manager/projects/new']);
+    this.router.navigate(['/manager/projets/nouveau']);
   }
 
   viewAllProjects(): void {
-    this.router.navigate(['/manager/projects']);
+    this.router.navigate(['/manager/projets']);
   }
 
   editProject(project: Project): void {
-    this.router.navigate(['/manager/projects', project.id, 'edit']);
+    this.router.navigate(['/manager/projets', project.id, 'edit']);
   }
 
   viewAffectations(project: Project): void {

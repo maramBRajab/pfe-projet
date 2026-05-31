@@ -1,5 +1,6 @@
 import { CommonModule, DatePipe } from '@angular/common';
 import { Component, OnDestroy, OnInit } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 
@@ -7,12 +8,12 @@ import { Notification } from '../../../shared/models/notification.model';
 import { NotificationService } from '../../../services/manager';
 import { AdminSidebarComponent } from '../shared/admin-sidebar.component';
 import { AdminNotificationsPanelService } from '../shared/admin-notifications-panel.service';
-
+import { ManagerNotificationApiService } from '../../../services/manager';
 
 @Component({
   selector: 'app-admin-notifications-page',
   standalone: true,
-  imports: [CommonModule, DatePipe, AdminSidebarComponent],
+  imports: [CommonModule, DatePipe, FormsModule, AdminSidebarComponent],
   templateUrl: './notifications-page.component.html',
   styleUrl: './notifications-page.component.scss'
 })
@@ -22,31 +23,42 @@ export class AdminNotificationsPageComponent implements OnInit, OnDestroy {
   notifications: Notification[] = [];
   activeFilter: 'all' | 'danger' | 'warning' | 'info' = 'all';
   readIds = new Set<string>();
+  adminPhoto: string | null = null;
+  searchQuery = '';
+  confirmDeleteId: string | null = null;
 
   private subscription?: Subscription;
 
   constructor(
     private readonly notificationService: NotificationService,
     private readonly notificationsPanel: AdminNotificationsPanelService,
-    private readonly router: Router
+    private readonly router: Router,
+    private readonly api: ManagerNotificationApiService
   ) {}
 
   ngOnInit(): void {
-    // Ensure the side-panel drawer is closed when this full page is active
+    this.adminPhoto = localStorage.getItem('smartassign_admin_photo');
     this.notificationsPanel.close();
-
     this.refreshNotifications();
     this.subscription = this.notificationService.notifications$.subscribe((notification) => {
-      this.notifications = [notification, ...this.notifications];
-      this.lastUpdated = new Date();
+      const n: Notification = {
+        titre: (notification as any).titre ?? '',
+        message: (notification as any).description ?? (notification as any).message ?? '',
+        type: (notification as any).type ?? '',
+        niveau: this.mapTypeToNiveau((notification as any).type),
+        dateCreation: (notification as any).temps ?? new Date().toISOString()
+      };
+      const exists = this.notifications.some(x => x.titre === n.titre && x.dateCreation === n.dateCreation);
+      if (!exists) {
+        this.notifications = [n, ...this.notifications];
+        this.lastUpdated = new Date();
+      }
     });
   }
 
   ngOnDestroy(): void {
     this.subscription?.unsubscribe();
   }
-
-  // ── Computed counts ────────────────────────────────────────
 
   get infoCount(): number {
     return this.notifications.filter(n => this.notificationTone(n) === 'info').length;
@@ -58,6 +70,10 @@ export class AdminNotificationsPageComponent implements OnInit, OnDestroy {
 
   get dangerCount(): number {
     return this.notifications.filter(n => this.notificationTone(n) === 'danger').length;
+  }
+
+  get unreadCount(): number {
+    return this.notifications.filter(n => !this.isRead(n)).length;
   }
 
   get todayCount(): number {
@@ -77,9 +93,7 @@ export class AdminNotificationsPageComponent implements OnInit, OnDestroy {
 
   get activeTypesCount(): number {
     return new Set(
-      this.notifications
-        .map(n => n.type?.trim())
-        .filter((t): t is string => !!t)
+      this.notifications.map(n => n.type?.trim()).filter((t): t is string => !!t)
     ).size;
   }
 
@@ -90,29 +104,56 @@ export class AdminNotificationsPageComponent implements OnInit, OnDestroy {
   }
 
   get filteredNotifications(): Notification[] {
-    if (this.activeFilter === 'all') return this.notifications;
-    return this.notifications.filter(n => this.notificationTone(n) === this.activeFilter);
+    let list = this.notifications;
+    if (this.activeFilter !== 'all') {
+      list = list.filter(n => this.notificationTone(n) === this.activeFilter);
+    }
+    const q = this.searchQuery.trim().toLowerCase();
+    if (q) {
+      list = list.filter(n =>
+        (n.titre ?? '').toLowerCase().includes(q) ||
+        (n.message ?? '').toLowerCase().includes(q) ||
+        (n.type ?? '').toLowerCase().includes(q)
+      );
+    }
+    return list;
   }
 
-  // ── Actions ────────────────────────────────────────────────
-
   refreshNotifications(): void {
-    const snapshot = this.notificationService.getSnapshot();
-    this.notifications = [...snapshot];
-    this.lastUpdated = new Date();
+    this.api.list().subscribe({
+      next: (data) => {
+        this.notifications = (data ?? []).map(item => ({
+          titre: item.titre ?? '',
+          message: item.description ?? '',
+          type: item.type ?? '',
+          niveau: this.mapTypeToNiveau(item.type),
+          dateCreation: item.temps ?? new Date().toISOString()
+        } as Notification));
+        this.lastUpdated = new Date();
+      },
+      error: (err) => console.error('Erreur:', err)
+    });
   }
 
   setFilter(f: 'all' | 'danger' | 'warning' | 'info'): void {
     this.activeFilter = f;
   }
 
-  voirDetails(n: Notification): void {
-    const type = (n.type ?? '').toUpperCase();
-    if (type === 'SECURITE')                        this.router.navigate(['/admin/audit']);
-    else if (type === 'UTILISATEUR')                this.router.navigate(['/admin/collaborateurs']);
-    else if (type === 'AFFECTATION' || type === 'PROJET') this.router.navigate(['/admin/rapports']);
-    else if (type === 'SYSTEME')                    this.router.navigate(['/admin/parametres']);
-    else                                            this.router.navigate(['/admin/dashboard']);
+  clearSearch(): void {
+    this.searchQuery = '';
+  }
+
+  askDelete(n: Notification): void {
+    this.confirmDeleteId = this.notifId(n);
+  }
+
+  confirmDelete(n: Notification): void {
+    this.notifications = this.notifications.filter(x => this.notifId(x) !== this.notifId(n));
+    this.confirmDeleteId = null;
+  }
+
+  cancelDelete(): void {
+    this.confirmDeleteId = null;
   }
 
   markAllRead(): void {
@@ -127,8 +168,13 @@ export class AdminNotificationsPageComponent implements OnInit, OnDestroy {
     return this.readIds.has(this.notifId(n));
   }
 
-  private notifId(n: Notification): string {
-    return `${n.type}-${n.dateCreation}`;
+  voirDetails(n: Notification): void {
+    const type = (n.type ?? '').toUpperCase();
+    if (type === 'SECURITE')                               this.router.navigate(['/admin/audit']);
+    else if (type === 'UTILISATEUR')                       this.router.navigate(['/admin/collaborateurs']);
+    else if (type === 'AFFECTATION' || type === 'PROJET')  this.router.navigate(['/admin/rapports']);
+    else if (type === 'SYSTEME')                           this.router.navigate(['/admin/parametres']);
+    else                                                   this.router.navigate(['/admin/dashboard']);
   }
 
   exporterCSV(): void {
@@ -147,16 +193,20 @@ export class AdminNotificationsPageComponent implements OnInit, OnDestroy {
     URL.revokeObjectURL(url);
   }
 
-  exporterPDF(): void {
-    window.print();
+  exporterPDF(): void { window.print(); }
+
+  private mapTypeToNiveau(type: string): string {
+    switch (type) {
+      case 'CRITIQUE': return 'danger';
+      case 'VIGILANCE': return 'warning';
+      default: return 'info';
+    }
   }
 
-  // ── Helpers ────────────────────────────────────────────────
-
   notificationTone(n: Notification): 'info' | 'warning' | 'danger' {
-    const niv = n.niveau.toLowerCase();
-    if (niv.includes('danger') || niv.includes('error') || niv.includes('crit')) return 'danger';
-    if (niv.includes('warn') || niv.includes('attention')) return 'warning';
+    const niv = (n.niveau ?? '').toLowerCase();
+    if (niv.includes('danger') || niv.includes('crit')) return 'danger';
+    if (niv.includes('warn') || niv.includes('warning') || niv.includes('attention')) return 'warning';
     return 'info';
   }
 
@@ -170,6 +220,10 @@ export class AdminNotificationsPageComponent implements OnInit, OnDestroy {
 
   trackByNotification(index: number, n: Notification): string {
     return `${n.type}-${n.dateCreation}-${index}`;
+  }
+
+  notifId(n: Notification): string {
+    return `${n.type}-${n.dateCreation}`;
   }
 
   private getLatestNotification(): Notification | null {

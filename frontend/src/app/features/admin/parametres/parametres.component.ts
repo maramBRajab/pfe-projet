@@ -1,9 +1,9 @@
-﻿import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule, NgForm } from '@angular/forms';
+import { FormsModule } from '@angular/forms';
 import { AdminSidebarComponent } from '../shared/admin-sidebar.component';
 
-export type ParamTab = 'general' | 'affectations' | 'notifications' | 'securite' | 'api' | 'sante' | 'export';
+export type ParamTab = 'general' | 'affectations' | 'api' | 'sante' | 'export';
 
 export interface GeneralSettings {
   nomPlateforme:    string;
@@ -28,34 +28,6 @@ export interface AffectationSettings {
   poidsCompetences:   number;
   poidsDisponibilite: number;
   poidsExperience:    number;
-}
-
-export interface NotifSettings {
-  alertesCritiques:   boolean;
-  alertesVigilance:   boolean;
-  alertesInfo:        boolean;
-  notifEmail:         boolean;
-  notifInApp:         boolean;
-  emailDest:          string;
-  heureResume:        string;
-  frequenceResume:    string;
-  notifNouvelUser:    boolean;
-  notifAffectation:   boolean;
-  notifEcheance:      boolean;
-  joursAvantEcheance: number;
-}
-
-export interface SecuriteSettings {
-  doubleAuth:          boolean;
-  dureeSession:        number;
-  tentativesMax:       number;
-  dureeVerrouillage:   number;
-  complexiteMdp:       boolean;
-  longueurMinMdp:      number;
-  expirMdp:            number;
-  journalConnexion:    boolean;
-  whitelistIp:         boolean;
-  ipAutorisees:        string;
 }
 
 export interface ApiSettings {
@@ -119,34 +91,6 @@ const DEFAULT_AFFECT: AffectationSettings = {
   poidsExperience:    20,
 };
 
-const DEFAULT_NOTIF: NotifSettings = {
-  alertesCritiques:   true,
-  alertesVigilance:   true,
-  alertesInfo:        false,
-  notifEmail:         false,
-  notifInApp:         true,
-  emailDest:          'admin@smartassign.tn',
-  heureResume:        '08:00',
-  frequenceResume:    'quotidien',
-  notifNouvelUser:    true,
-  notifAffectation:   true,
-  notifEcheance:      true,
-  joursAvantEcheance: 5,
-};
-
-const DEFAULT_SECU: SecuriteSettings = {
-  doubleAuth:          false,
-  dureeSession:        60,
-  tentativesMax:       3,
-  dureeVerrouillage:   30,
-  complexiteMdp:       true,
-  longueurMinMdp:      8,
-  expirMdp:            90,
-  journalConnexion:    true,
-  whitelistIp:         false,
-  ipAutorisees:        '',
-};
-
 const DEFAULT_API: ApiSettings = {
   apiActive:     true,
   cleApi:        'sk-sa-••••••••••••••••••••••••••••••••',
@@ -198,8 +142,6 @@ export class AdminParametresComponent implements OnInit {
   tabs: { id: ParamTab; label: string; icon: string }[] = [
     { id: 'general',       label: 'Général',       icon: 'gear'   },
     { id: 'affectations',  label: 'Affectations',  icon: 'assign' },
-    { id: 'notifications', label: 'Notifications', icon: 'bell'   },
-    { id: 'securite',      label: 'Sécurité',      icon: 'shield' },
     { id: 'api',           label: 'API & Intégr.', icon: 'api'    },
     { id: 'sante',         label: 'Santé système', icon: 'health' },
     { id: 'export',        label: 'Export',        icon: 'export' },
@@ -207,8 +149,6 @@ export class AdminParametresComponent implements OnInit {
 
   general:      GeneralSettings       = { ...DEFAULT_GENERAL };
   affectations: AffectationSettings   = { ...DEFAULT_AFFECT  };
-  notif:        NotifSettings         = { ...DEFAULT_NOTIF   };
-  securite:     SecuriteSettings      = { ...DEFAULT_SECU    };
   api:          ApiSettings           = { ...DEFAULT_API     };
   sante:        SanteSettings         = { ...DEFAULT_SANTE   };
   exportCfg:    ExportSettings        = { ...DEFAULT_EXPORT  };
@@ -224,24 +164,24 @@ export class AdminParametresComponent implements OnInit {
 
   // Unsaved changes tracking
   unsaved: Record<ParamTab, boolean> = {
-    general: false, affectations: false, notifications: false,
-    securite: false, api: false, sante: false, export: false,
+    general: false, affectations: false, api: false, sante: false, export: false,
   };
 
   // Validation errors
   errors: Record<string, string> = {};
 
+  adminPhoto: string | null = null;
+
   constructor(private readonly cdr: ChangeDetectorRef) {}
 
   ngOnInit(): void {
+    this.adminPhoto = localStorage.getItem('smartassign_admin_photo');
     const saved = localStorage.getItem('smartassign_settings_v2');
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
         if (parsed.general)      this.general      = { ...DEFAULT_GENERAL, ...parsed.general };
         if (parsed.affectations) this.affectations = { ...DEFAULT_AFFECT,  ...parsed.affectations };
-        if (parsed.notif)        this.notif        = { ...DEFAULT_NOTIF,   ...parsed.notif };
-        if (parsed.securite)     this.securite     = { ...DEFAULT_SECU,    ...parsed.securite };
         if (parsed.api)          this.api          = { ...DEFAULT_API,     ...parsed.api };
         if (parsed.sante)        this.sante        = { ...DEFAULT_SANTE,   ...parsed.sante };
         if (parsed.exportCfg)    this.exportCfg    = { ...DEFAULT_EXPORT,  ...parsed.exportCfg };
@@ -282,24 +222,6 @@ export class AdminParametresComponent implements OnInit {
         this.errors['poids'] = `La somme des poids doit être 100 (actuellement ${total}).`;
     }
 
-    if (t === 'notifications') {
-      if (this.notif.notifEmail && !this.notif.emailDest.trim())
-        this.errors['emailDest'] = 'Email destinataire requis si les notifications email sont activées.';
-      if (this.notif.emailDest && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(this.notif.emailDest))
-        this.errors['emailDest'] = 'Adresse email invalide.';
-      if (this.notif.joursAvantEcheance < 1 || this.notif.joursAvantEcheance > 30)
-        this.errors['joursAvantEcheance'] = 'Valeur entre 1 et 30 jours.';
-    }
-
-    if (t === 'securite') {
-      if (this.securite.dureeSession < 5 || this.securite.dureeSession > 480)
-        this.errors['dureeSession'] = 'Durée entre 5 et 480 minutes.';
-      if (this.securite.longueurMinMdp < 6 || this.securite.longueurMinMdp > 32)
-        this.errors['longueurMinMdp'] = 'Longueur entre 6 et 32 caractères.';
-      if (this.securite.whitelistIp && !this.securite.ipAutorisees.trim())
-        this.errors['ipAutorisees'] = 'Entrez au moins une adresse IP autorisée.';
-    }
-
     if (t === 'api') {
       if (this.api.webhookUrl && !/^https?:\/\/.+/.test(this.api.webhookUrl))
         this.errors['webhookUrl'] = 'URL webhook invalide.';
@@ -333,8 +255,6 @@ export class AdminParametresComponent implements OnInit {
     const data = {
       general: this.general,
       affectations: this.affectations,
-      notif: this.notif,
-      securite: this.securite,
       api: this.api,
       sante: this.sante,
       exportCfg: this.exportCfg,
@@ -357,8 +277,6 @@ export class AdminParametresComponent implements OnInit {
     const map: Record<ParamTab, () => void> = {
       general:       () => { this.general      = { ...DEFAULT_GENERAL }; },
       affectations:  () => { this.affectations = { ...DEFAULT_AFFECT  }; },
-      notifications: () => { this.notif        = { ...DEFAULT_NOTIF   }; },
-      securite:      () => { this.securite     = { ...DEFAULT_SECU    }; },
       api:           () => { this.api          = { ...DEFAULT_API     }; },
       sante:         () => { this.sante        = { ...DEFAULT_SANTE   }; },
       export:        () => { this.exportCfg    = { ...DEFAULT_EXPORT  }; },
@@ -429,8 +347,9 @@ export class AdminParametresComponent implements OnInit {
   reinitialiserTout(): void {
     this.general      = { ...DEFAULT_GENERAL };
     this.affectations = { ...DEFAULT_AFFECT  };
-    this.notif        = { ...DEFAULT_NOTIF   };
-    this.securite     = { ...DEFAULT_SECU    };
+    this.api          = { ...DEFAULT_API     };
+    this.sante        = { ...DEFAULT_SANTE   };
+    this.exportCfg    = { ...DEFAULT_EXPORT  };
     this.errors = {};
     Object.keys(this.unsaved).forEach(k => (this.unsaved[k as ParamTab] = false));
     this.showToast('success', 'Tous les paramètres réinitialisés aux valeurs par défaut.');
@@ -444,11 +363,6 @@ export class AdminParametresComponent implements OnInit {
       ['Matching automatique', this.affectations.matchingAuto ? 'Oui' : 'Non'],
       ['Nom plateforme', this.general.nomPlateforme],
       ['Mode maintenance', this.general.modeMaintenance ? 'Activé' : 'Désactivé'],
-      ['Durée session (min)', String(this.securite.dureeSession)],
-      ['Double auth (2FA)', this.securite.doubleAuth ? 'Activé' : 'Désactivé'],
-      ['Alertes critiques', this.notif.alertesCritiques ? 'Oui' : 'Non'],
-      ['Alertes vigilance', this.notif.alertesVigilance ? 'Oui' : 'Non'],
-      ['Notifications email', this.notif.notifEmail ? 'Oui' : 'Non'],
     ];
     const csv = rows.map(r => r.map(v => `"${v}"`).join(';')).join('\r\n');
     const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });

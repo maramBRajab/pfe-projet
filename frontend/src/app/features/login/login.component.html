@@ -1,72 +1,4 @@
 <div class="sl-page">
-
-  <!-- ══════════════════════════ LEFT PANEL ══════════════════════════ -->
-  <aside class="sl-left">
-    <div class="sl-deco sl-deco--lg"></div>
-    <div class="sl-deco sl-deco--sm"></div>
-
-    <!-- Logo -->
-    <div class="sl-logo" style="background:none!important;box-shadow:none!important;border-radius:0!important;padding:0!important;">
-      <img src="assets/logo sopra.png" alt="Sopra HR" class="app-logo" style="width:36px;height:36px;object-fit:contain;background:none!important;border-radius:0!important;display:block;box-shadow:none!important;padding:0!important;z-index:2;position:relative;" />
-      <div class="sl-logo__text">
-        <span class="sl-logo__name">Sopra HR</span>
-        <span class="sl-logo__tagline">Sopra HR Software</span>
-      </div>
-    </div>
-
-    <!-- Tag pill -->
-    <div class="sl-tag">
-      <i class="ti ti-cpu"></i>
-      <span>PLATEFORME RH INTELLIGENTE</span>
-    </div>
-
-    <!-- H1 -->
-    <h1 class="sl-hero">
-      <span>Bienvenue sur</span>
-      <span class="sl-hero__blue">SmartAssign</span>
-    </h1>
-
-    <!-- Description -->
-    <p class="sl-desc">Connectez-vous pour acc&#233;der &#224; votre espace personnel. L'IA analyse les comp&#233;tences et recommande les meilleurs profils en quelques secondes.</p>
-
-    <!-- Role cards (display only) -->
-    <div class="sl-roles">
-      <div class="sl-role-card">
-        <div class="sl-role-card__left">
-          <div class="sl-role-card__icon sl-role-card__icon--blue"><i class="ti ti-crown"></i></div>
-          <div class="sl-role-card__info">
-            <div class="sl-role-card__title">Administrateur</div>
-            <div class="sl-role-card__sub">Gestion &amp; supervision de la plateforme</div>
-          </div>
-        </div>
-        <span class="sl-role-card__badge sl-role-card__badge--blue">Acc&#232;s total</span>
-      </div>
-
-      <div class="sl-role-card">
-        <div class="sl-role-card__left">
-          <div class="sl-role-card__icon sl-role-card__icon--green"><i class="ti ti-briefcase"></i></div>
-          <div class="sl-role-card__info">
-            <div class="sl-role-card__title">Manager</div>
-            <div class="sl-role-card__sub">Projets &amp; affectations intelligentes</div>
-          </div>
-        </div>
-        <span class="sl-role-card__badge sl-role-card__badge--green">Gestion projets</span>
-      </div>
-
-      <div class="sl-role-card">
-        <div class="sl-role-card__left">
-          <div class="sl-role-card__icon sl-role-card__icon--purple"><i class="ti ti-user"></i></div>
-          <div class="sl-role-card__info">
-            <div class="sl-role-card__title">Collaborateur</div>
-            <div class="sl-role-card__sub">Missions &amp; planning personnel</div>
-          </div>
-        </div>
-        <span class="sl-role-card__badge sl-role-card__badge--purple">Mon espace</span>
-      </div>
-    </div>
-  </aside>
-
-  <!-- ══════════════════════════ RIGHT PANEL ══════════════════════════ -->
   <div class="sl-right">
     <div class="sl-card">
 
@@ -75,32 +7,6 @@
         <img src="assets/logo sopra.png" alt="Sopra HR" class="app-logo sl-card__logo" style="width:36px;height:36px;object-fit:contain;background:none!important;border-radius:0!important;display:block;box-shadow:none!important;padding:0!important;z-index:2;position:relative;" />
         <h2 class="sl-card__title">Connexion</h2>
         <p class="sl-card__sub">Connectez-vous &#224; votre espace SmartAssign</p>
-      </div>
-
-      <!-- Role selector -->
-      <div class="sl-role-sel">
-        <div class="sl-role-sel__label">ACC&#200;S RAPIDE PAR R&#212;LE</div>
-        <div class="sl-role-sel__grid">
-          <button type="button" class="sl-role-btn" [class.sl-role-btn--active]="selectedRole === 'admin'" (click)="selectRole('admin')">
-            <i class="ti ti-crown" style="color:#3b82f6;font-size:16px"></i>
-            <span>Admin</span>
-          </button>
-          <button type="button" class="sl-role-btn" [class.sl-role-btn--active]="selectedRole === 'manager'" (click)="selectRole('manager')">
-            <i class="ti ti-briefcase" style="color:#10b981;font-size:16px"></i>
-            <span>Manager</span>
-          </button>
-          <button type="button" class="sl-role-btn" [class.sl-role-btn--active]="selectedRole === 'collab'" (click)="selectRole('collab')">
-            <i class="ti ti-user" style="color:#8b5cf6;font-size:16px"></i>
-            <span>Collab</span>
-          </button>
-        </div>
-      </div>
-
-      <!-- Divider -->
-      <div class="sl-divider">
-        <span class="sl-divider__line"></span>
-        <span class="sl-divider__text">ou entrez vos identifiants</span>
-        <span class="sl-divider__line"></span>
       </div>
 
       <!-- Form -->

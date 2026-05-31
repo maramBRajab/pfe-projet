@@ -108,7 +108,7 @@ const insightsStub = {
       title: 'Reaffecter rapidement des ressources',
       detail: 'Une ressource disponible peut soulager le projet prioritaire.',
       actionLabel: 'Ouvrir les affectations',
-      link: '/admin/affectation',
+      link: '/manager/affectations-en-cours',
       tone: 'risk'
     }
   ]

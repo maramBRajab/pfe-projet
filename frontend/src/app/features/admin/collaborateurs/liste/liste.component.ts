@@ -49,7 +49,9 @@ export class ListeCollaborateursComponent implements OnInit {
   csvDragging  = false;
   toastMessage = '';
   private toastTimer?: ReturnType<typeof setTimeout>;
-
+  // ── Created account modal ────────────────────────────────
+  createdAccount: { name: string; email: string } | null = null;
+  adminPhoto: string | null = null;
   constructor(
     private adminCollaborateurService: AdminCollaborateurService,
     private cdr: ChangeDetectorRef,
@@ -59,6 +61,7 @@ export class ListeCollaborateursComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    this.adminPhoto = localStorage.getItem('smartassign_admin_photo');
     this.charger();
   }
 
@@ -260,6 +263,10 @@ export class ListeCollaborateursComponent implements OnInit {
     }, 3000);
   }
 
+  closeCreatedAccountModal(): void {
+    this.createdAccount = null;
+  }
+
   toggleDisponibilite(collaborateur: Collaborateur): void {
     if (typeof collaborateur.id !== 'number') return;
 
@@ -293,6 +300,10 @@ export class ListeCollaborateursComponent implements OnInit {
 
   min(a: number, b: number): number { return Math.min(a, b); }
 
+  private isValidEmail(email: string): boolean {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  }
+
   openCreateModal(): void {
     this.errorMessage     = '';
     this.createFormError  = '';
@@ -311,6 +322,10 @@ export class ListeCollaborateursComponent implements OnInit {
       this.createFormError = 'Veuillez remplir tous les champs obligatoires.';
       return;
     }
+    if (!this.isValidEmail(email.trim())) {
+      this.createFormError = 'Veuillez saisir un email valide.';
+      return;
+    }
     this.createFormError = '';
     const payload = {
       prenom: prenom.trim(),
@@ -322,10 +337,13 @@ export class ListeCollaborateursComponent implements OnInit {
       competenceIds: [] as number[]
     };
     this.adminCollaborateurService.create(payload).subscribe({
-      next: () => {
+      next: (created) => {
         this.closeCreateModal();
+        this.createdAccount = { 
+          name: `${prenom.trim()} ${nom.trim()}`, 
+          email: created.email
+        };
         this.charger();
-        this.showToast('Utilisateur créé avec succès');
       },
       error: (err: HttpErrorResponse) => {
         this.createFormError = err.status === 409

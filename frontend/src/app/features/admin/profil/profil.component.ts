@@ -31,6 +31,8 @@ export class AdminProfilComponent implements OnInit {
   passwordFeedbackMessage = '';
   passwordFeedbackTone: ProfileFeedbackTone = 'neutral';
   isSaving = false;
+  photoUrl: string | null = null;
+  adminPhoto: string | null = null;
 
   readonly profileForm = new FormGroup({
     firstName: new FormControl('', { nonNullable: true }),
@@ -154,7 +156,10 @@ export class AdminProfilComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    this.adminPhoto = localStorage.getItem('smartassign_admin_photo');
     this.reloadProfile();
+    const saved = localStorage.getItem('smartassign_admin_photo');
+    if (saved) this.photoUrl = saved;
   }
 
   logout(): void {
@@ -212,52 +217,66 @@ export class AdminProfilComponent implements OnInit {
     this.passwordFeedbackTone = 'neutral';
   }
 
+  onPhotoChange(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      this.photoUrl = reader.result as string;
+      localStorage.setItem('smartassign_admin_photo', this.photoUrl);
+    };
+    reader.readAsDataURL(file);
+  }
+
   focusForm(): void {
     setTimeout(() => this.firstNameField?.nativeElement.focus());
   }
 
   onSave(): void {
-    this.isSaving = true;
     this.saveProfile({
       role: 'admin',
       ...this.profileForm.getRawValue()
     });
-    this.isSaving = false;
   }
 
   onPasswordSave(): void {
     const { currentPassword, newPassword, confirmPassword } = this.passwordForm.getRawValue();
-
     this.passwordFeedbackMessage = '';
     this.passwordFeedbackTone = 'neutral';
 
     if (!currentPassword || !newPassword || !confirmPassword) {
-      this.passwordFeedbackMessage = 'Renseignez le mot de passe actuel, le nouveau mot de passe et sa confirmation.';
-      this.passwordFeedbackTone = 'error';
-      return;
+      this.passwordFeedbackMessage = 'Tous les champs sont obligatoires.';
+      this.passwordFeedbackTone = 'error'; return;
     }
-
     if (newPassword.length < 8) {
-      this.passwordFeedbackMessage = 'Le nouveau mot de passe doit contenir au moins 8 caracteres.';
-      this.passwordFeedbackTone = 'error';
-      return;
+      this.passwordFeedbackMessage = 'Minimum 8 caractères.';
+      this.passwordFeedbackTone = 'error'; return;
     }
-
     if (newPassword !== confirmPassword) {
-      this.passwordFeedbackMessage = 'La confirmation du nouveau mot de passe ne correspond pas.';
-      this.passwordFeedbackTone = 'error';
-      return;
+      this.passwordFeedbackMessage = 'La confirmation ne correspond pas.';
+      this.passwordFeedbackTone = 'error'; return;
     }
-
     if (currentPassword === newPassword) {
-      this.passwordFeedbackMessage = 'Le nouveau mot de passe doit etre different du mot de passe actuel.';
-      this.passwordFeedbackTone = 'error';
-      return;
+      this.passwordFeedbackMessage = "Le nouveau mot de passe doit être différent de l'actuel.";
+      this.passwordFeedbackTone = 'error'; return;
     }
 
-    this.passwordFeedbackMessage = 'Formulaire valide. Le branchement API du changement de mot de passe reste a connecter cote backend.';
-    this.passwordFeedbackTone = 'success';
-    this.passwordForm.reset();
+    this.authService.changePassword({
+      motDePasseActuel: currentPassword,
+      nouveauMotDePasse: newPassword,
+      confirmationMotDePasse: confirmPassword
+    }).subscribe({
+      next: () => {
+        this.passwordFeedbackMessage = 'Mot de passe modifié avec succès.';
+        this.passwordFeedbackTone = 'success';
+        this.passwordForm.reset();
+      },
+      error: (err: { error?: { message?: string } }) => {
+        this.passwordFeedbackMessage = err?.error?.message ?? 'Erreur.';
+        this.passwordFeedbackTone = 'error';
+      }
+    });
   }
 
   kpiTone(index: number): 'green' | 'cyan' | 'amber' | 'default' {
@@ -279,25 +298,31 @@ export class AdminProfilComponent implements OnInit {
   }
 
   saveProfile(value: ProfileSaveValue): void {
-    const fullName = `${value.firstName} ${value.lastName}`.trim();
-    this.authService.updateStoredUser(fullName, value.email.trim());
-    this.persistLocalExtras(value.email, {
-      phone: value.phone.trim(),
-      position: value.position.trim(),
-      roleSpecificField: value.roleSpecificField.trim()
-    });
-    this.profileData = {
-      ...this.profileData,
-      firstName: value.firstName.trim(),
-      lastName: value.lastName.trim(),
+    this.isSaving = true;
+    this.authService.updateProfile({
+      nom: `${value.firstName.trim()} ${value.lastName.trim()}`.trim(),
       email: value.email.trim(),
-      phone: value.phone.trim(),
-      position: value.position.trim(),
-      roleSpecificField: value.roleSpecificField.trim()
-    };
-    this.feedbackMessage = 'Informations administrateur mises a jour.';
-    this.feedbackTone = 'success';
-    this.syncProfileForm();
+      telephone: value.phone.trim(),
+      poste: value.position.trim(),
+      departement: value.roleSpecificField.trim()
+    }).subscribe({
+      next: () => {
+        this.profileData = { ...this.profileData,
+          firstName: value.firstName.trim(), lastName: value.lastName.trim(),
+          email: value.email.trim(), phone: value.phone.trim(),
+          position: value.position.trim(), roleSpecificField: value.roleSpecificField.trim()
+        };
+        this.feedbackMessage = 'Informations mises à jour avec succès.';
+        this.feedbackTone = 'success';
+        this.isSaving = false;
+        this.syncProfileForm();
+      },
+      error: (err: { error?: { message?: string } }) => {
+        this.feedbackMessage = err?.error?.message ?? 'Erreur lors de la sauvegarde.';
+        this.feedbackTone = 'error';
+        this.isSaving = false;
+      }
+    });
   }
 
   private buildProfileData(): Partial<ProfileData> {
@@ -310,9 +335,9 @@ export class AdminProfilComponent implements OnInit {
       firstName,
       lastName,
       email,
-      phone: extras.phone || '+216 20 111 222',
-      position: extras.position || 'Administrateur plateforme',
-      roleSpecificField: extras.roleSpecificField || 'Direction des operations',
+      phone: session?.telephone || extras.phone || '+216 20 111 222',
+      position: session?.poste || extras.position || 'Administrateur plateforme',
+      roleSpecificField: session?.departement || extras.roleSpecificField || 'Direction des operations',
       stats: this.stats,
       permissions: this.permissions
     };

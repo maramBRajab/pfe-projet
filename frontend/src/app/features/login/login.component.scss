@@ -26,224 +26,28 @@
   font-family: 'DM Sans', sans-serif;
 }
 
-// ── Page split layout ──────────────────────────────────────────
+// ── Page full-screen centered layout ────────────────────────────
 .sl-page {
-  display: flex;
-  height: 100vh;
-  margin: 0;
-  padding: 0;
-  font-family: 'DM Sans', sans-serif;
-}
-
-// ═══════════════════════════════════════════════════════════════
-// LEFT PANEL
-// ═══════════════════════════════════════════════════════════════
-.sl-left {
-  width: 48vw;
-  height: 100vh;
-  background: #0f1c3a;
-  display: flex;
-  flex-direction: column;
-  padding: 36px 44px;
-  position: relative;
-  overflow-y: auto;
-  overflow-x: hidden;
-}
-
-// Decorative circles
-.sl-deco {
-  position: absolute;
-  border-radius: 50%;
-  pointer-events: none;
-
-  &--lg {
-    right: -100px;
-    bottom: -100px;
-    width: 300px;
-    height: 300px;
-    background: rgba(59,130,246,0.05);
-  }
-
-  &--sm {
-    right: 60px;
-    top: 200px;
-    width: 120px;
-    height: 120px;
-    background: rgba(16,185,129,0.05);
-  }
-}
-
-// Logo
-.sl-logo {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 28px;
-
-  &__badge {
-    width: 36px;
-    height: 36px;
-    border-radius: 8px;
-    background: #3b82f6;
-    color: #fff;
-    font-size: 13px;
-    font-weight: 700;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-  }
-
-  &__text {
-    display: flex;
-    flex-direction: column;
-  }
-
-  &__name {
-    color: #fff;
-    font-size: 15px;
-    font-weight: 700;
-    line-height: 1.2;
-  }
-
-  &__tagline {
-    color: rgba(255,255,255,0.4);
-    font-size: 11px;
-    line-height: 1.2;
-  }
-}
-
-// Tag pill
-.sl-tag {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  border: 1px solid rgba(255,255,255,0.15);
-  border-radius: 20px;
-  padding: 5px 14px;
-  width: fit-content;
-  margin-bottom: 22px;
-
-  i {
-    color: #60a5fa;
-    font-size: 12px;
-  }
-
-  span {
-    font-size: 10px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    color: rgba(255,255,255,0.7);
-  }
-}
-
-// H1
-.sl-hero {
-  display: flex;
-  flex-direction: column;
-  font-size: 32px;
-  font-weight: 800;
-  color: #fff;
-  line-height: 1.1;
-  margin: 0 0 14px;
-
-  &__blue {
-    color: #3b82f6;
-  }
-}
-
-// Description
-.sl-desc {
-  font-size: 13px;
-  color: rgba(255,255,255,0.6);
-  line-height: 1.65;
-  max-width: 320px;
-  margin: 0 0 28px;
-}
-
-// Role cards (display only - left panel)
-.sl-roles {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.sl-role-card {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 11px 14px;
-  border-radius: 10px;
-  background: rgba(255,255,255,0.07);
-  cursor: default;
-  transition: background 0.15s;
-
-  &:hover { background: rgba(255,255,255,0.12); }
-
-  &__left {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-
-  &__icon {
-    width: 30px;
-    height: 30px;
-    border-radius: 7px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-
-    i { font-size: 13px; }
-
-    &--blue   { background: rgba(96,165,250,0.2);  i { color: #60a5fa; } }
-    &--green  { background: rgba(16,185,129,0.2);  i { color: #10b981; } }
-    &--purple { background: rgba(139,92,246,0.2);  i { color: #8b5cf6; } }
-  }
-
-  &__info {
-    display: flex;
-    flex-direction: column;
-  }
-
-  &__title {
-    font-size: 12.5px;
-    font-weight: 600;
-    color: #fff;
-  }
-
-  &__sub {
-    font-size: 11px;
-    color: rgba(255,255,255,0.5);
-    margin-top: 1px;
-  }
-
-  &__badge {
-    font-size: 10px;
-    font-weight: 600;
-    padding: 3px 10px;
-    border-radius: 20px;
-    color: #fff;
-    white-space: nowrap;
-
-    &--blue   { background: #3b82f6; }
-    &--green  { background: #10b981; }
-    &--purple { background: #8b5cf6; }
-  }
-}
-
-// ═══════════════════════════════════════════════════════════════
-// RIGHT PANEL
-// ═══════════════════════════════════════════════════════════════
-.sl-right {
-  flex: 1;
-  height: 100vh;
-  background: #f4f6fa;
   display: flex;
   align-items: center;
   justify-content: center;
+  height: 100vh;
+  width: 100vw;
+  margin: 0;
+  padding: 0;
+  font-family: 'DM Sans', sans-serif;
+  background: linear-gradient(135deg, #f4f6fa 0%, #f1f5f9 100%);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// RIGHT PANEL (Now the only panel - centered)
+// ═══════════════════════════════════════════════════════════════
+.sl-right {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
   padding: 24px;
   overflow-y: auto;
 }
@@ -286,76 +90,6 @@
     font-size: 12.5px;
     color: #94a3b8;
     margin: 0;
-  }
-}
-
-// ── Role selector (right panel - interactive) ──────────────────
-.sl-role-sel {
-  margin-bottom: 16px;
-
-  &__label {
-    font-size: 9.5px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    color: #94a3b8;
-    margin-bottom: 8px;
-  }
-
-  &__grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 7px;
-  }
-}
-
-.sl-role-btn {
-  border: 1.5px solid #e2e8f0;
-  border-radius: 8px;
-  padding: 9px 6px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 5px;
-  cursor: pointer;
-  background: #fff;
-  transition: border-color 0.15s, background 0.15s;
-  font-family: 'DM Sans', sans-serif;
-
-  span {
-    font-size: 11.5px;
-    font-weight: 500;
-    color: #1e293b;
-  }
-
-  &:hover {
-    border-color: #3b82f6;
-    background: #eff6ff;
-  }
-
-  &--active {
-    border-color: #3b82f6;
-    background: #eff6ff;
-  }
-}
-
-// ── Divider ────────────────────────────────────────────────────
-.sl-divider {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin: 14px 0;
-
-  &__line {
-    flex: 1;
-    height: 1px;
-    background: #e2e8f0;
-  }
-
-  &__text {
-    font-size: 11px;
-    color: #94a3b8;
-    white-space: nowrap;
   }
 }
 
@@ -599,9 +333,7 @@
 
 // ── Responsive ─────────────────────────────────────────────────
 @media (max-width: 768px) {
-  .sl-left  { display: none; }
-  .sl-right { flex: 1; padding: 24px 16px; }
-  .sl-card  { padding: 28px 20px; width: 100%; }
+  .sl-card  { padding: 24px 16px; width: 100%; }
 }
 
 .sl-logo {

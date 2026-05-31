@@ -1,4 +1,4 @@
-﻿<section class="sp-root">
+<section class="sp-root">
   <app-admin-sidebar></app-admin-sidebar>
 
   <div class="sp-main">
@@ -35,7 +35,11 @@
           </svg>
           Export PDF
         </button>
-        <div class="sp-av-sm" routerLink="/admin/profil" style="cursor:pointer" title="Mon profil">AP</div>
+        <div class="sp-av-sm" routerLink="/admin/profil" style="cursor:pointer;overflow:hidden" title="Mon profil">
+          <img *ngIf="adminPhoto" [src]="adminPhoto" 
+               style="width:100%;height:100%;object-fit:cover;border-radius:50%;" alt="">
+          <span *ngIf="!adminPhoto">AP</span>
+        </div>
       </div>
     </header>
 
@@ -255,7 +259,7 @@
 
 <!-- Create -->
 <div class="cm-overlay" *ngIf="isCreateModalOpen" (click)="closeCreateModal()" (keydown.escape)="closeCreateModal()">
-  <div class="cm-box" (click)="$event.stopPropagation()">
+  <div class="cm-box" (click)="$event.stopPropagation()" autocomplete="off">
 
     <!-- Header -->
     <div class="cm-header">
@@ -269,22 +273,33 @@
       <button class="cm-error__close" type="button" (click)="createFormError = ''">×</button>
     </div>
 
+    <!-- Honeypot fields: trompe l'autocomplétion du navigateur -->
+    <input type="text"     name="username_fake"  style="opacity:0;position:absolute;height:0;width:0;" tabindex="-1" aria-hidden="true" />
+    <input type="password" name="password_fake"  style="opacity:0;position:absolute;height:0;width:0;" tabindex="-1" aria-hidden="true" />
+    <input type="email"    name="email_fake"     style="opacity:0;position:absolute;height:0;width:0;" tabindex="-1" aria-hidden="true" />
+
     <!-- Row 1: Prénom + Nom -->
     <div class="cm-row cm-row--2">
       <div class="cm-field">
         <label class="cm-label">Prénom</label>
-        <input type="text" class="cm-input" placeholder="Prénom" [(ngModel)]="createForm.prenom" />
+        <input type="text" class="cm-input" placeholder="Prénom" autocomplete="off" [(ngModel)]="createForm.prenom" />
       </div>
       <div class="cm-field">
         <label class="cm-label">Nom</label>
-        <input type="text" class="cm-input" placeholder="Nom" [(ngModel)]="createForm.nom" />
+        <input type="text" class="cm-input" placeholder="Nom" autocomplete="off" [(ngModel)]="createForm.nom" />
       </div>
     </div>
 
     <!-- Row 2: Email -->
     <div class="cm-field">
-      <label class="cm-label">Email</label>
-      <input type="email" class="cm-input" placeholder="email@smartassign.tn" [(ngModel)]="createForm.email" />
+      <label class="cm-label">Email personnel</label>
+      <input
+        type="text"
+        inputmode="email"
+        class="cm-input"
+        placeholder="Email personnel (ex: m.ali@gmail.com)"
+        autocomplete="off"
+        [(ngModel)]="createForm.email" />
     </div>
 
     <!-- Row 3: Rôle -->
@@ -427,6 +442,47 @@
       <button class="sp-btn sp-btn--danger" (click)="confirmerSuppression()" [disabled]="isDeleting">
         {{ isDeleting ? 'Suppression…' : 'Supprimer' }}
       </button>
+    </div>
+  </div>
+</div>
+
+<!-- Created Account Success Modal -->
+<!-- Created Account Confirmation -->
+<div class="cm-overlay" *ngIf="createdAccount" (click)="closeCreatedAccountModal()">
+  <div class="cm-box cm-success-info" (click)="$event.stopPropagation()">
+    <!-- Header -->
+    <div class="cm-header">
+      <svg class="cm-header__ico" viewBox="0 0 24 24" fill="none">
+        <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+        <polyline points="8,12 11,15 16,8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span class="cm-header__title">Compte créé avec succès</span>
+    </div>
+
+    <!-- Body -->
+    <div class="cm-success-body">
+      <p class="cm-success-name">{{ createdAccount.name }}</p>
+
+      <!-- Email -->
+      <div class="cm-field">
+        <label class="cm-label cm-label--blue">Adresse email</label>
+        <div class="cm-email-display">
+          <span>{{ createdAccount.email }}</span>
+        </div>
+      </div>
+
+      <!-- Confirmation Message -->
+      <div class="cm-field">
+        <p class="cm-field__hint cm-field__hint--info">
+          Un email contenant les identifiants de connexion a été envoyé à <strong>{{ createdAccount.email }}</strong>. 
+          L'utilisateur trouvera le mot de passe temporaire dans ce message et sera invité à le changer lors de sa première connexion.
+        </p>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="cm-footer">
+      <button type="button" class="cm-btn cm-btn--submit" (click)="closeCreatedAccountModal()">Fermer</button>
     </div>
   </div>
 </div>

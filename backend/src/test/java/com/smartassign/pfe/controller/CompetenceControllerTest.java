@@ -21,7 +21,6 @@ import org.springframework.test.web.servlet.MockMvc;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.smartassign.pfe.config.SecurityConfig;
 import com.smartassign.pfe.dto.CompetenceResponse;
-import com.smartassign.pfe.exception.BusinessException;
 import com.smartassign.pfe.exception.GlobalExceptionHandler;
 import com.smartassign.pfe.service.CompetenceService;
 
@@ -32,9 +31,6 @@ class CompetenceControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
-
-    @Autowired
-    private ObjectMapper objectMapper;
 
     @MockBean
     private CompetenceService competenceService;

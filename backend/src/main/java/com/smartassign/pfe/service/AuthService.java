@@ -12,6 +12,10 @@ import com.smartassign.pfe.dto.UserPreferencesRequest;
 import com.smartassign.pfe.dto.UserPreferencesResponse;
 import com.smartassign.pfe.dto.UtilisateurResponse;
 
+import com.smartassign.pfe.dto.UpdateProfileRequest;
+import com.smartassign.pfe.dto.UpdateProfileResponse;
+import com.smartassign.pfe.dto.ChangePasswordRequest;
+
 public interface AuthService {
 
     List<UtilisateurResponse> getUsers();
@@ -29,6 +33,10 @@ public interface AuthService {
     UserPreferencesResponse getCurrentUserPreferences(String email);
 
     UserPreferencesResponse updateCurrentUserPreferences(String email, UserPreferencesRequest request);
+
+    UpdateProfileResponse updateProfile(String email, UpdateProfileRequest request);
+
+    MessageResponse changePassword(String email, ChangePasswordRequest request);
 
     void initAdminSiAbsent();
 }

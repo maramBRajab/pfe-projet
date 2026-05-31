@@ -123,7 +123,7 @@
 // ── KPI grid ───────────────────────────────────────────────────
 .sp-kpi-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 14px;
 }
 
@@ -173,7 +173,7 @@
 // ── Main 2-col grid ────────────────────────────────────────────
 .sp-main-grid {
   display: grid;
-  grid-template-columns: 1fr 420px;
+  grid-template-columns: minmax(0, 640px);
   gap: 20px;
   align-items: start;
 }
@@ -312,118 +312,6 @@
     background: var(--accent);
     &::after { left: 18px; }
   }
-}
-
-// ── Info note (green) ──────────────────────────────────────────
-.sp-info-note {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  background: #f0fdf4;
-  border: 1px solid #bbf7d0;
-  border-radius: 8px;
-  padding: 8px 12px;
-  margin-top: 10px;
-
-  i {
-    color: #10b981;
-    font-size: 14px;
-    margin-top: 1px;
-    flex-shrink: 0;
-  }
-
-  span {
-    font-size: 12px;
-    color: #166534;
-    line-height: 1.5;
-  }
-}
-
-// ── Sub section label ──────────────────────────────────────────
-.sp-section-lbl {
-  font-size: 10px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--text3);
-
-  &--mt {
-    margin-top: 20px;
-    margin-bottom: 8px;
-    display: block;
-  }
-}
-
-// ── Session item ───────────────────────────────────────────────
-.sp-session {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 10px 0;
-
-  &--sep { border-top: 1px solid #f1f5f9; }
-
-  &__av {
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 12px;
-    font-weight: 600;
-    color: #fff;
-    flex-shrink: 0;
-  }
-
-  &__info { flex: 1; min-width: 0; }
-
-  &__title {
-    font-size: 13px;
-    font-weight: 500;
-    color: var(--text);
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 6px;
-  }
-
-  &__badge {
-    display: inline-flex;
-    align-items: center;
-    background: #dcfce7;
-    color: #166534;
-    font-size: 11px;
-    font-weight: 500;
-    padding: 2px 8px;
-    border-radius: 6px;
-  }
-
-  &__sub {
-    font-size: 12px;
-    color: var(--text3);
-    margin-top: 2px;
-  }
-}
-
-// ── Disconnect button ──────────────────────────────────────────
-.sp-btn-disconnect {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  border: 1px solid #fecaca;
-  border-radius: 8px;
-  padding: 5px 12px;
-  font-size: 12px;
-  color: var(--red);
-  background: transparent;
-  cursor: pointer;
-  font-family: 'DM Sans', sans-serif;
-  flex-shrink: 0;
-  transition: background 0.15s;
-
-  &:hover { background: #fef2f2; }
-  i { font-size: 13px; }
 }
 
 // ── Responsive ─────────────────────────────────────────────────

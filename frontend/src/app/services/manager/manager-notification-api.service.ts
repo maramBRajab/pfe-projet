@@ -14,6 +14,7 @@ export interface ManagerNotification {
   icon: string;
   iconBg: string;
   badgeClass: string;
+  notificationKey: string;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -25,5 +26,9 @@ export class ManagerNotificationApiService {
 
   list(): Observable<ManagerNotification[]> {
     return this.http.get<ManagerNotification[]>(this.baseUrl);
+  }
+
+  delete(key: string): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/${key}`);
   }
 }

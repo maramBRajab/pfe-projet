@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, HostListener, Input } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../../services/auth';
+import { environment } from '../../../../environments/environment';
 import { ManagerNotificationsPanelComponent } from '../notifications/notifications-panel.component';
 import { ManagerNotificationsPanelService } from './manager-notifications-panel.service';
 

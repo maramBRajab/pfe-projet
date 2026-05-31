@@ -16,6 +16,7 @@ import { AffectationService, Affectation } from '../../../services/manager';
 export class AdminRapportsComponent implements OnInit {
   currentDate = new Date();
   loading = true;
+  adminPhoto: string | null = null;
 
   projets: Projet[] = [];
   affectations: Affectation[] = [];
@@ -26,6 +27,7 @@ export class AdminRapportsComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    this.adminPhoto = localStorage.getItem('smartassign_admin_photo');
     forkJoin({
       projets:      this.projetService.getAll().pipe(catchError(() => of([]))),
       affectations: this.affectationService.getAll().pipe(catchError(() => of([])))

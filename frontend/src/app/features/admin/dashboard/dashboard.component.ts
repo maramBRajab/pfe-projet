@@ -3,6 +3,13 @@ import { Component, ElementRef, HostListener, OnDestroy, OnInit } from '@angular
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { catchError, forkJoin, of } from 'rxjs';
+import {
+  ADMIN_NAV,
+  adminCollaborateurTarget,
+  adminProjetTarget,
+  adminProjetsTarget,
+  AdminNavigationTarget,
+} from '../admin-navigation';
 import { AdminSidebarComponent } from '../shared/admin-sidebar.component';
 import { AdminNotificationsPanelService } from '../shared/admin-notifications-panel.service';
 import { AuthService } from '../../../services/auth';
@@ -111,6 +118,13 @@ interface TimelineGroup {
   styleUrls: ['./dashboard.component.scss']
 })
 export class AdminDashboardComponent implements OnInit, OnDestroy {
+  readonly adminNav = {
+    projetsActifs: adminProjetsTarget('en_cours'),
+    projetsEnRetard: adminProjetsTarget('en_retard'),
+    collaborateurs: { path: ADMIN_NAV.collaborateurs } satisfies AdminNavigationTarget,
+    affectations: { path: ADMIN_NAV.affectations } satisfies AdminNavigationTarget,
+  };
+
   currentDate = new Date();
   lastUpdated = new Date();
   loading = true;
@@ -119,6 +133,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   searchResultsState: SearchResultItem[] = [];
   autoRefreshEnabled = false;
   darkMode = false;
+  adminPhoto: string | null = null;
 
   stats: DashboardStats = this.buildFallbackStats();
 
@@ -220,6 +235,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    this.adminPhoto = localStorage.getItem('smartassign_admin_photo');
     this.loadStats();
   }
 
@@ -643,7 +659,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
         title: 'Réallouer des ressources immédiatement',
         detail: `${this.availableResourcesCount} ressource(s) disponible(s) peuvent renforcer ${urgentProjects[0].nom}.`,
         actionLabel: 'Préparer une affectation',
-        link: '/admin/affectation',
+        link: ADMIN_NAV.affectations,
         tone: 'risk'
       });
     }
@@ -653,7 +669,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
         title: 'Rééquilibrer la charge collaborateurs',
         detail: `${this.overloadedCollaboratorsCount} collaborateur(s) dépassent la zone de charge recommandée.`,
         actionLabel: 'Voir les collaborateurs',
-        link: '/admin/collaborateurs',
+        link: ADMIN_NAV.collaborateurs,
         tone: 'watch'
       });
     }
@@ -663,7 +679,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
         title: 'Lancer une revue deadlines à 7 jours',
         detail: `${upcomingRisks.length} échéance(s) approchent et demandent une revue planning.`,
         actionLabel: 'Ouvrir les projets',
-        link: '/admin/projets',
+        link: adminProjetsTarget('en_retard').path,
         tone: 'watch'
       });
     }
@@ -673,7 +689,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
         title: 'Cadencer un point de pilotage hebdomadaire',
         detail: 'Le score global suggère une synchronisation plus courte entre staffing, délais et portefeuille.',
         actionLabel: 'Consulter le portefeuille',
-        link: '/admin/dashboard',
+        link: ADMIN_NAV.dashboard,
         tone: 'risk'
       });
     }
@@ -683,7 +699,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
         title: 'Maintenir le rythme actuel',
         detail: 'Les indicateurs sont maîtrisés. Le meilleur levier reste une revue quotidienne des deadlines et de la capacité.',
         actionLabel: 'Voir les projets',
-        link: '/admin/projets',
+        link: ADMIN_NAV.projets,
         tone: 'good'
       });
     }
@@ -897,11 +913,11 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   }
 
   private resolveProjectLink(projectId?: number): string {
-    return typeof projectId === 'number' ? `/admin/projets/edit/${projectId}` : '/admin/projets';
+    return adminProjetTarget(projectId).path;
   }
 
   private resolveCollaboratorLink(collaboratorId?: number): string {
-    return typeof collaboratorId === 'number' ? `/admin/collaborateurs/edit/${collaboratorId}` : '/admin/collaborateurs';
+    return adminCollaborateurTarget(collaboratorId).path;
   }
 
   private riskWeight(tone: RiskTone): number {
@@ -1158,7 +1174,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
           title: 'Réallouer des ressources sur CRM 360',
           detail: '2 ressources disponibles peuvent renforcer le projet le plus critique avant la deadline.',
           actionLabel: 'Ouvrir les affectations',
-          link: '/admin/affectation',
+          link: ADMIN_NAV.affectations,
           tone: 'risk'
         },
         {
@@ -1179,7 +1195,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
           title: 'Activer Rania Slimi sur un projet en attente',
           detail: 'Manager disponible (30% de charge) — idéal pour absorber un nouveau projet ou renforcer le portefeuille.',
           actionLabel: 'Créer une affectation',
-          link: '/admin/affectation',
+          link: ADMIN_NAV.affectations,
           tone: 'good'
         }
       ]
