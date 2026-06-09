@@ -7,6 +7,7 @@ import com.smartassign.pfe.dto.AuthResponse;
 import com.smartassign.pfe.dto.ForgotPasswordRequest;
 import com.smartassign.pfe.dto.MessageResponse;
 import com.smartassign.pfe.dto.RegisterRequest;
+import com.smartassign.pfe.dto.ResendCredentialsRequest;
 import com.smartassign.pfe.dto.ResetPasswordRequest;
 import com.smartassign.pfe.dto.UserPreferencesRequest;
 import com.smartassign.pfe.dto.UserPreferencesResponse;
@@ -26,13 +27,19 @@ public interface AuthService {
 
     MessageResponse requestPasswordReset(ForgotPasswordRequest request);
 
+    MessageResponse resendCredentials(ResendCredentialsRequest request);
+
     MessageResponse validatePasswordResetToken(String token);
+
+    MessageResponse verifyEmail(String token);
 
     MessageResponse resetPassword(ResetPasswordRequest request);
 
     UserPreferencesResponse getCurrentUserPreferences(String email);
 
     UserPreferencesResponse updateCurrentUserPreferences(String email, UserPreferencesRequest request);
+
+    UpdateProfileResponse getProfile(String email);
 
     UpdateProfileResponse updateProfile(String email, UpdateProfileRequest request);
 

@@ -1,4 +1,4 @@
-﻿// ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════
 // SMARTASSIGN — Rapports système SCSS — Design System 2026
 // ═══════════════════════════════════════════════════════════════
 
@@ -102,6 +102,55 @@
   &::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 }
 
+.sp-page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+
+  &__copy {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  &__title {
+    margin: 0;
+    font-size: 22px;
+    line-height: 1.2;
+    font-weight: 600;
+    color: #111827;
+  }
+
+  &__subtitle {
+    margin: 0;
+    font-size: 14px;
+    color: #64748b;
+  }
+}
+
+.sp-topbar-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.sp-platform-health {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.sp-health-dot {
+  color: #22c55e;
+  font-size: 10px;
+  line-height: 1;
+}
+
 // ── Info banner ────────────────────────────────────────────────
 .sp-info-banner {
   display: flex;
@@ -138,47 +187,49 @@
   gap: 14px;
 }
 
-.sp-kcard {
-  position: relative;
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 16px 20px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
-  overflow: hidden;
+// KPI pattern aligned with manager dashboard cards
+.sa-kpi {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+  padding: 10px 12px;
+}
 
-  &__bar {
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 3px;
-    border-radius: 12px 12px 0 0;
-  }
+.sa-kpi-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
 
-  &__badge {
-    position: absolute;
-    top: 14px; right: 14px;
-    font-size: 11px; font-weight: 500;
-    padding: 3px 8px; border-radius: 10px;
+.sa-kpi-label {
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 10px;
+  font-weight: 700;
+}
 
-    &--neutral { background: #f1f5f9; color: var(--text2); }
-    &--green   { background: #dcfce7; color: #166534; }
-    &--warn    { background: #fef9c3; color: #854d0e; }
-  }
+.sa-kpi-value {
+  font-size: 28px;
+  font-weight: 800;
+  line-height: 1;
+}
 
-  &__label {
-    font-size: 11px; font-weight: 500; color: var(--text2);
-    text-transform: uppercase; letter-spacing: 0.06em;
-    margin-top: 14px; margin-bottom: 6px;
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-  }
+.sa-kpi-sub {
+  margin-top: 5px;
+  color: #64748b;
+  font-size: 12px;
+}
 
-  &__val {
-    font-size: 26px; font-weight: 600; line-height: 1; color: var(--text);
-  }
-
-  &__sub {
-    font-size: 11.5px; color: var(--text3); margin-top: 5px;
-  }
+.sa-pill {
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-size: 10px;
+  font-weight: 700;
+  white-space: nowrap;
 }
 
 // ── Main 2-col grid ────────────────────────────────────────────
@@ -375,4 +426,313 @@
     font-weight: 600;
     text-align: right;
   }
+}
+
+// ── Skeleton loader ────────────────────────────────────────────
+.sp-skeleton {
+  background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+  background-size: 200% 100%;
+  animation: skeletonShimmer 1.4s ease infinite;
+  border-radius: 12px;
+  min-height: 80px;
+  border: none !important;
+}
+
+@keyframes skeletonShimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+// ── Error state ───────────────────────────────────────────────
+.sp-error-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 60px 20px;
+  text-align: center;
+  color: var(--text2);
+
+  p { margin: 0; font-size: 14px; line-height: 1.6; }
+}
+
+// ── Empty dept state ──────────────────────────────────────────
+.sp-empty-dept {
+  font-size: 13px;
+  color: var(--text3);
+  padding: 12px 0;
+}
+
+
+// ═══════════════════════════════════════════════════════════════
+// PIXEL-PERFECT OVERRIDES — Rapports système
+// ═══════════════════════════════════════════════════════════════
+$sa-red: #E53935;
+$sa-blue: #1565C0;
+$sa-green: #2E7D32;
+$sa-orange: #F57C00;
+
+.sp-topbar__title { font-size: 28px !important; font-weight: 700 !important; }
+
+.sp-status-pill {
+  border: none !important;
+  background: transparent !important;
+  color: #166534 !important;
+  font-size: 14px;
+  font-weight: 500;
+  padding: 5px 8px;
+  .sp-status-dot { background: #22C55E; }
+}
+
+.sp-btn--danger {
+  background: $sa-red !important;
+  border-color: $sa-red !important;
+  color: #fff !important;
+  &:hover { background: #C62828 !important; border-color: #C62828 !important; }
+}
+
+// ── KPI cards ─────────────────────────────────────────────────
+.sp-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  @media (max-width: 1100px) { grid-template-columns: repeat(2, 1fr); }
+  @media (max-width: 640px)  { grid-template-columns: 1fr; }
+}
+.sp-kcard {
+  position: relative;
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid #E2E4EA;
+  box-shadow: none;
+  padding: 18px 20px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: 152px;
+
+  &__bar {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    display: none;
+  }
+  &__badge {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1;
+    background: transparent;
+    color: #111827;
+
+    &--neutral { background: transparent; color: #111827; }
+    &--blue    { background: transparent; color: #111827; }
+    &--green   { background: transparent; color: #111827; }
+    &--warn    { background: transparent; color: #111827; }
+    &--catalogue { background: transparent; color: #111827; }
+  }
+  &__label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #9CA0AE;
+    margin-bottom: 8px;
+  }
+  &__val {
+    font-size: 32px;
+    font-weight: 700;
+    line-height: 1;
+    margin-bottom: 0;
+  }
+  &__sub {
+    font-size: 13px;
+    color: #9CA0AE;
+    margin-top: 4px;
+    margin-bottom: 0;
+  }
+  &__trend {
+    font-size: 12px;
+    font-weight: 600;
+    color: $sa-green;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    .sp-trend-arrow { font-size: 10px; }
+    &--down { color: $sa-red; }
+  }
+}
+
+// ── 2-col main grid ───────────────────────────────────────────
+.sp-main-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-top: 20px;
+  @media (max-width: 1100px) { grid-template-columns: 1fr; }
+}
+
+.sp-chart-card,
+.sp-health-card,
+.sp-dept-card {
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid #F0F0F0;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  padding: 20px 22px;
+}
+
+.sp-chart-card__hd {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+  h3 { font-size: 15px; font-weight: 600; color: #111827; margin: 0; }
+}
+
+.sp-bar-chart svg { display: block; }
+
+.sp-chart-stats {
+  display: flex;
+  gap: 28px;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid #F1F5F9;
+}
+.sp-chart-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  &__lbl {
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: #6B7280;
+  }
+  &__val {
+    font-size: 18px;
+    font-weight: 700;
+    color: #111827;
+    &--green { color: $sa-green; }
+    &--red   { color: $sa-red; }
+  }
+}
+
+// ── Health card ───────────────────────────────────────────────
+.sp-health-card__title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #111827;
+  margin: 0 0 14px;
+}
+.sp-health-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.sp-health-row {
+  &__labels {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 6px;
+    span:first-child {
+      font-size: 13px;
+      color: #374151;
+    }
+  }
+  &__val {
+    font-size: 13px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+}
+.sp-progress {
+  width: 100%;
+  height: 8px;
+  background: #F0F0F0;
+  border-radius: 4px;
+  overflow: hidden;
+  &__fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width .4s ease;
+  }
+}
+
+.sp-health-note {
+  margin-top: 16px;
+  background: #EFF6FF;
+  border-left: 3px solid $sa-blue;
+  padding: 10px 12px;
+  border-radius: 4px;
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  font-size: 12.5px;
+  color: $sa-blue;
+
+  &__ico {
+    width: 14px; height: 14px;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+}
+
+// ── Department repartition ────────────────────────────────────
+.sp-dept-card { margin-top: 20px; }
+.sp-dept-card__title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #111827;
+  margin: 0 0 14px;
+}
+.sp-dept-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.sp-dept-row {
+  display: grid;
+  grid-template-columns: 140px 1fr 40px;
+  align-items: center;
+  gap: 14px;
+
+  &__name {
+    font-size: 13px;
+    font-weight: 500;
+    color: #374151;
+  }
+  &__bar-wrap {
+    width: 100%;
+    height: 12px;
+    background: #F0F0F0;
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  &__bar {
+    height: 100%;
+    border-radius: 6px;
+    transition: width .4s ease;
+  }
+  &__count {
+    text-align: right;
+    font-size: 14px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+}
+.sp-empty-dept {
+  text-align: center;
+  padding: 24px 16px;
+  color: #9CA3AF;
+  font-size: 13px;
 }

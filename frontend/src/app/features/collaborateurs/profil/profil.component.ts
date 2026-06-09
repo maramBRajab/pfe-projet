@@ -1,29 +1,34 @@
 import { CommonModule } from '@angular/common';
 import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
-import { forkJoin, of, switchMap } from 'rxjs';
+import { Router } from '@angular/router';
+import { catchError, forkJoin, map, of, switchMap } from 'rxjs';
 
 import { Affectation, AffectationService, Collaborateur, CollaborateurRequest, CollaborateurService, Competence, CompetenceService } from '../../../services/collaborateur';
 import { AuthService } from '../../../services/auth';
 import { CollaborateurShellComponent } from '../shared/collaborateur-shell.component';
-
-interface LocalProfileExtras { telephone: string; departement: string; poste: string; }
+import { CollabTopbarComponent } from '../shared/collab-topbar.component';
 
 @Component({
   selector: 'app-collaborateur-profil',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, CollaborateurShellComponent],
+  imports: [CommonModule, FormsModule, CollaborateurShellComponent, CollabTopbarComponent],
   templateUrl: './profil.component.html',
   styleUrl: './profil.component.scss'
 })
 export class CollaborateurProfilComponent implements OnInit {
   isLoading = true;
   isSaving = false;
+  isUpdatingDisponibilite = false;
   loadError = '';
   errorMessage = '';
   successMessage = '';
+  disponibiliteMessage = '';
+  disponibiliteError = '';
   collaborateurId: number | null = null;
+  photoUrl: string | null = null;
+  pendingPhotoUrl: string | null = null;
+  private photoVersion = Date.now();
 
   // Form fields
   firstName = '';
@@ -32,12 +37,16 @@ export class CollaborateurProfilComponent implements OnInit {
   telephone = '';
   poste = 'Collaborateur';
   departement = '';
-  newCompetenceName = '';
+  competences: string[] = ['Angular', 'Java', 'SQL'];
+  showSkillInput = false;
+  newSkill = '';
+  competencesModifiees = false;
 
   // Password fields
-  currentPassword = '';
-  newPassword = '';
-  confirmPassword = '';
+  motDePasseActuel = '';
+  nouveauMotDePasse = '';
+  confirmationMotDePasse = '';
+  isChangingPassword = false;
   passwordError = '';
   passwordSuccess = '';
 
@@ -79,6 +88,21 @@ export class CollaborateurProfilComponent implements OnInit {
     return `${this.firstName} ${this.lastName}`.trim() || 'Collaborateur Demo';
   }
 
+  get displayPhotoUrl(): string | null {
+    const currentPhoto = this.pendingPhotoUrl || this.photoUrl;
+
+    if (!currentPhoto) {
+      return null;
+    }
+
+    if (currentPhoto.startsWith('data:')) {
+      return currentPhoto;
+    }
+
+    const separator = currentPhoto.includes('?') ? '&' : '?';
+    return `${currentPhoto}${separator}v=${this.photoVersion}`;
+  }
+
   get allowedCount(): number {
     return this.permissions.filter(p => p.allowed).length;
   }
@@ -86,7 +110,7 @@ export class CollaborateurProfilComponent implements OnInit {
   get completionRate(): number {
     const fields = [
       this.firstName, this.lastName, this.email, this.telephone, this.poste,
-      this.selectedCompetences.length ? 'ok' : ''
+      this.competences.length ? 'ok' : ''
     ];
     const filled = fields.filter(f => !!f).length;
     return Math.round((filled / fields.length) * 100);
@@ -94,10 +118,14 @@ export class CollaborateurProfilComponent implements OnInit {
 
   get missingFields(): string {
     const missing: string[] = [];
-    if (!this.selectedCompetences.length) missing.push('Compétences');
+    if (!this.competences.length) missing.push('Compétences');
     if (!this.telephone) missing.push('Téléphone');
     missing.push('Photo de profil');
     return missing.join(', ');
+  }
+
+  trackByIndex(index: number): number {
+    return index;
   }
 
   get chargePercent(): number {
@@ -142,21 +170,66 @@ export class CollaborateurProfilComponent implements OnInit {
     this.loadProfile();
   }
 
-  addCompetence(): void {
-    const name = this.newCompetenceName.trim();
-    if (!name) return;
-    const existing = this.availableCompetences.find(c => c.nom.toLowerCase() === name.toLowerCase());
-    if (existing && !this.selectedCompetences.find(c => c.id === existing.id)) {
-      this.selectedCompetences = [...this.selectedCompetences, existing];
-    } else if (!existing) {
-      // Add as pseudo-competence for display
-      this.selectedCompetences = [...this.selectedCompetences, { id: Date.now(), nom: name } as Competence];
+  removeCompetence(index: number): void {
+    if (index < 0 || index >= this.competences.length) {
+      return;
     }
-    this.newCompetenceName = '';
+
+    this.competencesModifiees = true;
+    this.competences = this.competences.filter((_, i) => i !== index);
+    this.syncSelectedCompetencesFromNames();
   }
 
-  removeCompetence(comp: Competence): void {
-    this.selectedCompetences = this.selectedCompetences.filter(c => c.id !== comp.id);
+  showAddSkillInput(): void {
+    this.showSkillInput = true;
+    setTimeout(() => {
+      const input = document.getElementById('skill-input') as HTMLInputElement | null;
+      if (input) {
+        input.focus();
+      }
+    }, 50);
+  }
+
+  addCompetence(): void {
+    const skill = this.newSkill.trim();
+    if (skill) {
+      const exists = this.competences.some((existingSkill) => existingSkill.toLowerCase() === skill.toLowerCase());
+      if (!exists) {
+        this.competencesModifiees = true;
+        this.competences = [...this.competences, skill];
+      }
+    }
+
+    this.newSkill = '';
+    this.showSkillInput = false;
+    this.syncSelectedCompetencesFromNames();
+  }
+
+  onSkillKeyDown(event: KeyboardEvent): void {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      this.addCompetence();
+      return;
+    }
+
+    if (event.key === 'Escape') {
+      this.newSkill = '';
+      this.showSkillInput = false;
+    }
+  }
+
+  onPhotoChange(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      this.pendingPhotoUrl = reader.result as string;
+      this.photoVersion = Date.now();
+      this.cdr.detectChanges();
+    };
+    reader.readAsDataURL(file);
   }
 
   saveProfile(): void {
@@ -169,20 +242,41 @@ export class CollaborateurProfilComponent implements OnInit {
     this.errorMessage = '';
     this.successMessage = '';
 
-    const payload: CollaborateurRequest = {
-      prenom: this.firstName.trim(),
-      nom: this.lastName.trim(),
-      email: this.email.trim(),
-      experienceAnnees: this.experienceAnnees,
-      disponible: this.isDisponible,
-      competenceIds: this.selectedCompetences.map(c => c.id).filter((id): id is number => typeof id === 'number')
-    };
+    this.ensureCompetencesExist().pipe(
+      switchMap(() => {
+        const payload: CollaborateurRequest = {
+          prenom: this.firstName.trim(),
+          nom: this.lastName.trim(),
+          email: this.email.trim(),
+          telephone: this.telephone.trim(),
+          photoUrl: this.pendingPhotoUrl || this.photoUrl || null,
+          departement: this.departement.trim() || undefined,
+          experienceAnnees: this.experienceAnnees,
+          disponible: this.isDisponible,
+          competenceIds: this.resolveCompetenceIds()
+        };
 
-    this.collaborateurService.update(this.collaborateurId, payload).subscribe({
-      next: (updated) => {
+        return this.collaborateurService.update(this.collaborateurId!, payload).pipe(
+          switchMap((updated) =>
+            this.authService.updateProfile({
+              nom: `${payload.prenom} ${payload.nom}`.trim(),
+              email: payload.email,
+              telephone: payload.telephone,
+              poste: this.poste.trim(),
+              departement: payload.departement,
+              photoUrl: payload.photoUrl
+            }).pipe(map(() => ({ updated, payload })))
+          )
+        );
+      })
+    ).subscribe({
+      next: ({ updated, payload }) => {
         this.selectedCompetences = updated.competences ?? this.selectedCompetences;
-        this.authService.updateStoredUser(`${payload.prenom} ${payload.nom}`.trim(), payload.email);
-        this.persistLocalExtras(payload.email);
+        this.syncCompetenceNamesFromSelected();
+        this.competencesModifiees = false;
+        this.photoUrl = updated.photoUrl ?? this.pendingPhotoUrl ?? this.photoUrl;
+        this.pendingPhotoUrl = null;
+        this.photoVersion = Date.now();
         this.successMessage = 'Profil collaborateur mis à jour.';
         this.isSaving = false;
         this.cdr.detectChanges();
@@ -195,22 +289,98 @@ export class CollaborateurProfilComponent implements OnInit {
     });
   }
 
-  savePassword(): void {
+  changerMotDePasse(): void {
+    if (this.isChangingPassword) {
+      return;
+    }
+
     this.passwordError = '';
     this.passwordSuccess = '';
-    if (!this.currentPassword || !this.newPassword || !this.confirmPassword) {
-      this.passwordError = 'Tous les champs sont requis.';
+
+    if (!this.motDePasseActuel || !this.nouveauMotDePasse || !this.confirmationMotDePasse) {
+      this.passwordError = 'Veuillez remplir tous les champs.';
       return;
     }
-    if (this.newPassword !== this.confirmPassword) {
-      this.passwordError = 'Les mots de passe ne correspondent pas.';
+
+    if (this.nouveauMotDePasse.length < 8) {
+      this.passwordError = 'Le nouveau mot de passe doit contenir au moins 8 caractères.';
       return;
     }
-    // Simulate success (no real endpoint)
-    this.passwordSuccess = 'Mot de passe mis à jour.';
-    this.currentPassword = '';
-    this.newPassword = '';
-    this.confirmPassword = '';
+
+    if (this.nouveauMotDePasse !== this.confirmationMotDePasse) {
+      this.passwordError = 'Le nouveau mot de passe et la confirmation ne correspondent pas.';
+      return;
+    }
+
+    if (this.nouveauMotDePasse === this.motDePasseActuel) {
+      this.passwordError = 'Le nouveau mot de passe doit être différent de l\'actuel.';
+      return;
+    }
+
+    this.isChangingPassword = true;
+
+    this.authService.changePassword({
+      motDePasseActuel: this.motDePasseActuel,
+      nouveauMotDePasse: this.nouveauMotDePasse,
+      confirmationMotDePasse: this.confirmationMotDePasse
+    }).subscribe({
+      next: () => {
+        this.passwordSuccess = 'Mot de passe modifié avec succès.';
+        this.motDePasseActuel = '';
+        this.nouveauMotDePasse = '';
+        this.confirmationMotDePasse = '';
+        this.isChangingPassword = false;
+        this.cdr.detectChanges();
+      },
+      error: (err: { status?: number; error?: { message?: string } }) => {
+        if (err?.status === 401 || err?.status === 400) {
+          this.passwordError = err?.error?.message ?? 'Mot de passe actuel incorrect.';
+        } else {
+          this.passwordError = 'Une erreur est survenue. Veuillez réessayer.';
+        }
+        this.isChangingPassword = false;
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  onDisponibiliteToggle(nextValue: boolean): void {
+    if (this.collaborateurId === null || this.isUpdatingDisponibilite) {
+      return;
+    }
+
+    const previousValue = this.isDisponible;
+    this.isDisponible = nextValue;
+    this.disponibiliteMessage = '';
+    this.disponibiliteError = '';
+    this.isUpdatingDisponibilite = true;
+
+    const payload: CollaborateurRequest = {
+      prenom: this.firstName.trim(),
+      nom: this.lastName.trim(),
+      email: this.email.trim(),
+      telephone: this.telephone.trim(),
+      departement: this.departement.trim() || undefined,
+      experienceAnnees: this.experienceAnnees,
+      disponible: this.isDisponible,
+      competenceIds: this.resolveCompetenceIds()
+    };
+
+    this.collaborateurService.update(this.collaborateurId, payload).subscribe({
+      next: () => {
+        this.disponibiliteMessage = this.isDisponible
+          ? 'Disponibilité mise à jour : Disponible.'
+          : 'Disponibilité mise à jour : En congé.';
+        this.isUpdatingDisponibilite = false;
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.isDisponible = previousValue;
+        this.disponibiliteError = 'Impossible de mettre à jour la disponibilité.';
+        this.isUpdatingDisponibilite = false;
+        this.cdr.detectChanges();
+      }
+    });
   }
 
   // ── Loading ──────────────────────────────────────────────────
@@ -229,10 +399,23 @@ export class CollaborateurProfilComponent implements OnInit {
     }
 
     forkJoin({
-      collaborateur: this.collaborateurService.getByEmail(normalizedEmail),
-      competences: this.competenceService.getAll()
+      profile: this.authService.getCurrentProfile().pipe(
+        catchError(() => of(null))
+      ),
+      collaborateur: this.collaborateurService.getByEmail(normalizedEmail).pipe(
+        catchError(() => {
+          console.warn('Impossible de charger le collaborateur par email');
+          return of(null);
+        })
+      ),
+      competences: this.competenceService.getAll().pipe(
+        catchError(() => {
+          console.warn('Impossible de charger les compétences disponibles');
+          return of([]);
+        })
+      )
     }).pipe(
-      switchMap(({ collaborateur, competences }) => {
+      switchMap(({ profile, collaborateur, competences }) => {
         this.availableCompetences = competences;
         if (!collaborateur?.id) {
           this.loadError = 'Collaborateur introuvable pour ce compte.';
@@ -240,13 +423,24 @@ export class CollaborateurProfilComponent implements OnInit {
         }
         this.collaborateurId = collaborateur.id;
         this.selectedCompetences = collaborateur.competences ?? [];
+        this.syncCompetenceNamesFromSelected();
+        this.competencesModifiees = false;
+        this.photoUrl = collaborateur.photoUrl ?? null;
+        this.pendingPhotoUrl = null;
+        this.photoVersion = Date.now();
         this.experienceAnnees = collaborateur.experienceAnnees;
         this.isDisponible = collaborateur.disponible;
         this.firstName = collaborateur.prenom;
         this.lastName = collaborateur.nom;
         this.email = collaborateur.email;
-        this.restoreLocalExtras(collaborateur.email);
+        this.telephone = collaborateur.telephone ?? '';
+        this.departement = collaborateur.departement ?? '';
+        this.poste = profile?.poste ?? '';
         return this.affectationService.getByCollaborateur(collaborateur.id).pipe(
+          catchError(() => {
+            console.warn('Impossible de charger les affectations, continuant sans...');
+            return of([]);
+          }),
           switchMap((affectations) => of({ collaborateur, affectations }))
         );
       })
@@ -265,23 +459,83 @@ export class CollaborateurProfilComponent implements OnInit {
     });
   }
 
-  private restoreLocalExtras(email: string): void {
-    try {
-      const raw = localStorage.getItem(this.getStorageKey(email));
-      if (!raw) return;
-      const extras = JSON.parse(raw) as Partial<LocalProfileExtras>;
-      this.telephone  = extras.telephone  ?? '';
-      this.departement = extras.departement ?? '';
-      this.poste      = extras.poste      ?? 'Collaborateur';
-    } catch { localStorage.removeItem(this.getStorageKey(email)); }
+  private syncCompetenceNamesFromSelected(): void {
+    const names = this.selectedCompetences
+      .map((competence) => (competence.nom ?? '').trim())
+      .filter((name) => !!name);
+
+    this.competences = names.length ? [...new Set(names)] : ['Angular', 'Java', 'SQL'];
   }
 
-  private persistLocalExtras(email: string): void {
-    const extras: LocalProfileExtras = { telephone: this.telephone.trim(), departement: this.departement.trim(), poste: this.poste.trim() };
-    localStorage.setItem(this.getStorageKey(email), JSON.stringify(extras));
+  private syncSelectedCompetencesFromNames(): void {
+    const byName = new Map(
+      this.availableCompetences.map((competence) => [competence.nom.toLowerCase(), competence] as const)
+    );
+
+    this.selectedCompetences = this.competences.map((name, index) => {
+      const existing = byName.get(name.toLowerCase());
+      if (existing) {
+        return existing;
+      }
+
+      return {
+        id: -(index + 1),
+        nom: name
+      } as Competence;
+    });
   }
 
-  private getStorageKey(email: string): string {
-    return `smartassign_collab_profile_${email.toLowerCase()}`;
+  private resolveCompetenceIds(): number[] {
+    const byName = new Map(
+      this.availableCompetences.map((competence) => [competence.nom.toLowerCase(), competence.id] as const)
+    );
+
+    return this.competences
+      .map((name) => byName.get(name.toLowerCase()))
+      .filter((id): id is number => typeof id === 'number');
+  }
+
+  private ensureCompetencesExist() {
+    const normalized = this.competences
+      .map((name) => name.trim())
+      .filter((name) => !!name);
+
+    const existingByName = new Set(this.availableCompetences.map((competence) => competence.nom.toLowerCase()));
+    const missingNames = [...new Set(normalized.filter((name) => !existingByName.has(name.toLowerCase())))];
+
+    if (!missingNames.length) {
+      return of(this.availableCompetences);
+    }
+
+    const creations = missingNames.map((name) =>
+      this.competenceService.create(name).pipe(
+        catchError(() =>
+          this.competenceService.getAll().pipe(
+            map((allCompetences) => {
+              const existing = allCompetences.find((competence) => competence.nom.toLowerCase() === name.toLowerCase());
+              if (!existing) {
+                throw new Error(`Impossible de créer la compétence: ${name}`);
+              }
+
+              return existing;
+            })
+          )
+        )
+      )
+    );
+
+    return forkJoin(creations).pipe(
+      map((createdCompetences) => {
+        const merged = [...this.availableCompetences];
+        createdCompetences.forEach((created) => {
+          if (!merged.some((competence) => competence.id === created.id)) {
+            merged.push(created);
+          }
+        });
+        this.availableCompetences = merged;
+        this.syncSelectedCompetencesFromNames();
+        return merged;
+      })
+    );
   }
 }

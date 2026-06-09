@@ -40,17 +40,6 @@ export class LoginComponent {
     this.errorMessage = '';
     this.emailError = '';
     this.passwordError = '';
-
-    if (role === 'admin') {
-      this.email = 'admin@smartassign.tn';
-      this.password = 'Admin123';
-    } else if (role === 'manager') {
-      this.email = 'manager@smartassign.tn';
-      this.password = 'Manager123';
-    } else {
-      this.email = 'collab@smartassign.tn';
-      this.password = 'Collab123';
-    }
   }
 
   onCredentialsChange(field: 'email' | 'password'): void {

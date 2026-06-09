@@ -33,7 +33,9 @@ import com.smartassign.pfe.entity.Affectation;
 import com.smartassign.pfe.entity.Collaborateur;
 import com.smartassign.pfe.entity.Projet;
 import com.smartassign.pfe.entity.Utilisateur;
+import com.smartassign.pfe.model.AuditLog;
 import com.smartassign.pfe.repository.AffectationRepository;
+import com.smartassign.pfe.repository.AuditLogRepository;
 import com.smartassign.pfe.repository.CollaborateurRepository;
 import com.smartassign.pfe.repository.ProjetRepository;
 import com.smartassign.pfe.repository.UtilisateurRepository;
@@ -51,6 +53,7 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
     private final CollaborateurRepository collaborateurRepository;
     private final UtilisateurRepository utilisateurRepository;
     private final AffectationRepository affectationRepository;
+    private final AuditLogRepository auditLogRepository;
 
     public DashboardStats getStats() {
         List<Projet> projets = projetRepository.findAll();
@@ -71,7 +74,7 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
         DashboardStats stats = computeStats(projets, collaborateurs, utilisateurs, affectations, today);
         List<CollaboratorLoad> collaboratorLoad = buildCollaboratorLoad(collaborateurs, affectations);
         List<CriticalProject> criticalProjects = buildCriticalProjects(projets, affectations, today);
-        List<UpcomingDeadline> upcomingDeadlines = buildUpcomingDeadlines(projets, today);
+        List<UpcomingDeadline> upcomingDeadlines = buildUpcomingDeadlines(projets, utilisateurs, today);
         PlatformHealth platformHealth = buildPlatformHealth(stats, criticalProjects, upcomingDeadlines, collaboratorLoad);
         List<Suggestion> suggestions = buildSuggestions(stats, criticalProjects, upcomingDeadlines, collaboratorLoad, platformHealth);
 
@@ -137,6 +140,7 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
         long projetsActifs = projets.stream()
             .filter(this::isProjetActif)
             .count();
+        long totalProjets = projets.size();
         long totalCollaborateurs = collaborateurs.size();
         long totalManagers = utilisateurs.stream()
             .filter(utilisateur -> isRole(utilisateur.getRole(), "MANAGER"))
@@ -166,6 +170,7 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
 
         return new DashboardStats(
             projetsActifs,
+            totalProjets,
             totalCollaborateurs,
             tauxAffectation,
             managersActifs,
@@ -224,108 +229,424 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
         List<Projet> projets = projetRepository.findAll();
         List<Collaborateur> collaborateurs = collaborateurRepository.findAll();
         List<Affectation> affectations = affectationRepository.findAll();
+        List<AuditLog> auditLogs = auditLogRepository.findAllByOrderByDateDesc();
         LocalDate today = LocalDate.now();
-        List<Alerte> alertes = new ArrayList<>();
+        LocalDateTime now = LocalDateTime.now();
+        List<AlertEntry> entries = new ArrayList<>();
 
-        long projetsEnRetard = projets.stream()
-            .filter(projet -> isProjetEnRetard(projet, today))
-            .count();
-        if (projetsEnRetard > 0) {
-            alertes.add(new Alerte(
-                "danger",
-                "🔴",
-                projetsEnRetard + (projetsEnRetard == 1 ? " projet depasse la date limite" : " projets depassent la date limite"),
-                "aujourd'hui"
-            ));
-        }
+        Map<Long, List<Affectation>> affectationsByProjet = affectations.stream()
+            .filter(affectation -> affectation.getProjet() != null && affectation.getProjet().getId() != null)
+            .collect(java.util.stream.Collectors.groupingBy(affectation -> affectation.getProjet().getId()));
 
-        Set<Long> collaborateursAffectes = new LinkedHashSet<>();
-        for (Affectation affectation : affectations) {
-            if (affectation.getCollaborateur() != null && affectation.getCollaborateur().getId() != null) {
-                collaborateursAffectes.add(affectation.getCollaborateur().getId());
+        Map<Long, List<Affectation>> affectationsByCollaborateur = affectations.stream()
+            .filter(affectation -> affectation.getCollaborateur() != null && affectation.getCollaborateur().getId() != null)
+            .collect(java.util.stream.Collectors.groupingBy(affectation -> affectation.getCollaborateur().getId()));
+
+        for (Projet projet : projets) {
+            if (projet.getId() == null || isTermine(projet.getStatut())) {
+                continue;
+            }
+
+            List<Affectation> projetAffectations = affectationsByProjet.getOrDefault(projet.getId(), List.of());
+            String projectLink = buildProjectLink(projet.getId());
+
+            if (projet.getDateFin() != null && projet.getDateFin().isBefore(today)) {
+                entries.add(new AlertEntry(now, buildAlert(
+                    "CRITICAL",
+                    "Projet " + safeText(projet.getNom()) + " en retard",
+                    "Le projet \"" + safeText(projet.getNom()) + "\" est en retard depuis le " + projet.getDateFin() + ".",
+                    now,
+                    projectLink
+                )));
+            }
+
+            if (projet.getDateFin() != null) {
+                long daysLeft = ChronoUnit.DAYS.between(today, projet.getDateFin());
+                if (daysLeft >= 0 && daysLeft < 7) {
+                    entries.add(new AlertEntry(now, buildAlert(
+                        "WARNING",
+                        "Projet " + safeText(projet.getNom()) + " proche de l'echeance",
+                        "Le projet \"" + safeText(projet.getNom()) + "\" arrive a echeance dans " + daysLeft + " jour(s).",
+                        now,
+                        projectLink
+                    )));
+                }
+            }
+
+            if (projetAffectations.isEmpty()) {
+                entries.add(new AlertEntry(now, buildAlert(
+                    "WARNING",
+                    "Projet " + safeText(projet.getNom()) + " sans collaborateurs",
+                    "Le projet \"" + safeText(projet.getNom()) + "\" n'a aucun collaborateur affecte.",
+                    now,
+                    projectLink
+                )));
+            }
+
+            boolean hasManager = projetAffectations.stream()
+                .map(Affectation::getCollaborateur)
+                .filter(java.util.Objects::nonNull)
+                .map(Collaborateur::getRole)
+                .map(this::formatRole)
+                .anyMatch("Manager"::equals);
+
+            if (!hasManager) {
+                entries.add(new AlertEntry(now, buildAlert(
+                    "CRITICAL",
+                    "Projet " + safeText(projet.getNom()) + " sans manager responsable",
+                    "Le projet \"" + safeText(projet.getNom()) + "\" n'a aucun manager responsable affecte.",
+                    now,
+                    projectLink
+                )));
             }
         }
 
-        long nonAffectes = collaborateurs.stream()
-            .filter(collaborateur -> collaborateur.getId() != null)
-            .filter(collaborateur -> !collaborateursAffectes.contains(collaborateur.getId()))
-            .count();
-        if (nonAffectes > 0) {
-            alertes.add(new Alerte(
-                "warning",
-                "🟡",
-                nonAffectes + (nonAffectes == 1 ? " collaborateur est sans affectation" : " collaborateurs sont sans affectation"),
-                "aujourd'hui"
-            ));
+        for (Collaborateur collaborateur : collaborateurs) {
+            if (collaborateur.getId() == null) {
+                continue;
+            }
+
+            List<Affectation> collabAffectations = affectationsByCollaborateur.getOrDefault(collaborateur.getId(), List.of());
+            String collaboratorName = (safeText(collaborateur.getPrenom()) + " " + safeText(collaborateur.getNom())).trim();
+            String collaboratorLink = buildCollaborateurLink(collaborateur.getId());
+
+            LocalDateTime lastAssignmentDate = collabAffectations.stream()
+                .map(Affectation::getDateAffectation)
+                .filter(java.util.Objects::nonNull)
+                .max(LocalDateTime::compareTo)
+                .orElseGet(() -> resolveUserCreationDate(auditLogs, collaborateur.getEmail(), collaboratorName));
+
+            if (lastAssignmentDate != null && ChronoUnit.DAYS.between(lastAssignmentDate.toLocalDate(), today) > 30) {
+                entries.add(new AlertEntry(now, buildAlert(
+                    "WARNING",
+                    "Collaborateur sans affectation depuis plus de 30 jours",
+                    "" + collaboratorName + " n'a pas eu d'affectation recente depuis le " + lastAssignmentDate.toLocalDate() + ".",
+                    now,
+                    collaboratorLink
+                )));
+            }
+
+            long activeAssignments = collabAffectations.stream()
+                .map(Affectation::getProjet)
+                .filter(java.util.Objects::nonNull)
+                .filter(projet -> !isTermine(projet.getStatut()))
+                .count();
+            int loadPercent = Math.toIntExact(activeAssignments * 100);
+
+            if (loadPercent > 100) {
+                entries.add(new AlertEntry(now, buildAlert(
+                    "CRITICAL",
+                    "Collaborateur surcharge (>100%)",
+                    collaboratorName + " est a " + loadPercent + "% de capacite sur les projets actifs.",
+                    now,
+                    collaboratorLink
+                )));
+            }
         }
 
-        long indisponibles = collaborateurs.stream()
-            .filter(collaborateur -> !collaborateur.isDisponible())
-            .count();
-        if (indisponibles > 0) {
-            alertes.add(new Alerte(
-                "info",
-                "🔵",
-                indisponibles + (indisponibles == 1 ? " ressource est actuellement indisponible" : " ressources sont actuellement indisponibles"),
-                "aujourd'hui"
-            ));
-        }
+        auditLogs.stream()
+            .filter(log -> log.getDate() != null)
+            .filter(log -> isAction(log, "CREATE_PROJET") || isAction(log, "CREATE_USER") || isAction(log, "ASSIGN"))
+            .limit(10)
+            .forEach(log -> entries.add(new AlertEntry(log.getDate(), buildAlert(
+                "INFO",
+                buildAuditCreationTitle(log),
+                firstNonBlank(log.getDescription(), "Nouvelle creation enregistree dans le journal d'audit."),
+                log.getDate(),
+                resolveAuditLink(log)
+            ))));
 
-        if (alertes.isEmpty()) {
-            alertes.add(new Alerte("info", "🟢", "Aucune alerte critique pour le moment", "a l'instant"));
-        }
+        projets.stream()
+            .filter(projet -> isTermine(projet.getStatut()))
+            .sorted(Comparator.comparing(Projet::getDateFin, Comparator.nullsLast(Comparator.reverseOrder())))
+            .limit(6)
+            .forEach(projet -> {
+                LocalDateTime ts = projet.getDateFin() == null ? now : projet.getDateFin().atStartOfDay();
+                entries.add(new AlertEntry(ts, buildAlert(
+                    "INFO",
+                    "Projet termine",
+                    "Le projet \"" + safeText(projet.getNom()) + "\" est marque termine.",
+                    ts,
+                    buildProjectLink(projet.getId())
+                )));
+            });
 
-        return alertes;
+        return entries.stream()
+            .sorted(Comparator.comparing(AlertEntry::timestamp).reversed())
+            .map(AlertEntry::alert)
+            .toList();
+    }
+
+    private Alerte buildAlert(String level, String title, String description, LocalDateTime generatedAt, String link) {
+        String normalized = safeText(level).trim().toUpperCase(FRENCH);
+        String type = "INFO".equals(normalized) ? "info" : "WARNING".equals(normalized) ? "warning" : "danger";
+        String icon = "INFO".equals(normalized) ? "INFO" : "WARNING".equals(normalized) ? "WARNING" : "CRITICAL";
+        String generatedAtText = generatedAt == null ? "" : generatedAt.toString();
+
+        return new Alerte(
+            type,
+            icon,
+            title,
+            generatedAt == null ? "" : formatRelativeTime(generatedAt),
+            title,
+            description,
+            normalized,
+            generatedAtText,
+            safeText(link)
+        );
+    }
+
+    private LocalDateTime resolveUserCreationDate(List<AuditLog> logs, String email, String fullName) {
+        String normalizedEmail = safeText(email).trim().toLowerCase(FRENCH);
+        String normalizedName = safeText(fullName).trim().toLowerCase(FRENCH);
+
+        return logs.stream()
+            .filter(log -> log.getDate() != null)
+            .filter(log -> isAction(log, "CREATE_USER"))
+            .filter(log -> {
+                String target = safeText(log.getTarget()).toLowerCase(FRENCH);
+                String description = safeText(log.getDescription()).toLowerCase(FRENCH);
+                return (!normalizedEmail.isBlank() && (target.contains(normalizedEmail) || description.contains(normalizedEmail)))
+                    || (!normalizedName.isBlank() && (target.contains(normalizedName) || description.contains(normalizedName)));
+            })
+            .map(AuditLog::getDate)
+            .max(LocalDateTime::compareTo)
+            .orElse(null);
+    }
+
+    private String buildAuditCreationTitle(AuditLog log) {
+        if (isAction(log, "CREATE_PROJET")) {
+            return "Nouvelle creation de projet";
+        }
+        if (isAction(log, "CREATE_USER")) {
+            return "Nouvelle creation d'utilisateur";
+        }
+        return "Nouvelle creation d'affectation";
+    }
+
+    private String resolveAuditLink(AuditLog log) {
+        if (isAction(log, "CREATE_PROJET")) {
+            return "/admin/projets";
+        }
+        if (isAction(log, "CREATE_USER")) {
+            return "/admin/collaborateurs";
+        }
+        return "/admin/affectations";
+    }
+
+    private boolean isAction(AuditLog log, String action) {
+        return safeText(log.getAction()).trim().equalsIgnoreCase(action);
     }
 
     public List<Activite> getActiviteRecente() {
-        List<ActiviteEntry> entries = new ArrayList<>();
-
-        affectationRepository.findAllOrderByDateDesc().stream()
-            .limit(4)
-            .forEach(affectation -> entries.add(new ActiviteEntry(
-                affectation.getDateAffectation(),
-                new Activite(
-                    buildInitiales(affectation.getCollaborateur() == null ? null : affectation.getCollaborateur().getPrenom(),
-                        affectation.getCollaborateur() == null ? null : affectation.getCollaborateur().getNom()),
-                    buildAffectationAction(affectation),
-                    formatRelativeTime(affectation.getDateAffectation()),
-                    "collab"
-                )
-            )));
-
-        projetRepository.findAll().stream()
-            .filter(projet -> projet.getDateDebut() != null)
-            .sorted(Comparator.comparing(Projet::getDateDebut).reversed())
-            .limit(2)
-            .forEach(projet -> entries.add(new ActiviteEntry(
-                projet.getDateDebut().atStartOfDay(),
-                new Activite(
-                    buildInitialesFromName(projet.getNom()),
-                    "Projet \"" + projet.getNom() + "\" planifie",
-                    formatRelativeTime(projet.getDateDebut().atStartOfDay()),
-                    "projet"
-                )
-            )));
-
-        utilisateurRepository.findAll().stream()
-            .sorted(Comparator.comparing(Utilisateur::getId, Comparator.nullsLast(Comparator.reverseOrder())))
-            .limit(2)
-            .forEach(utilisateur -> entries.add(new ActiviteEntry(
-                LocalDateTime.now().minusHours(Math.max(1L, utilisateur.getId() == null ? 1L : utilisateur.getId())),
-                new Activite(
-                    buildInitialesFromName(utilisateur.getNom()),
-                    "Compte " + utilisateur.getRole() + " actif : " + utilisateur.getNom(),
-                    "recentement",
-                    "admin"
-                )
-            )));
-
-        return entries.stream()
-            .sorted(Comparator.comparing(ActiviteEntry::timestamp).reversed())
-            .map(ActiviteEntry::activite)
-            .limit(6)
+        return auditLogRepository.findAllByOrderByDateDesc().stream()
+            .filter(log -> log.getDate() != null)
+            .sorted(Comparator.comparing(AuditLog::getDate).reversed())
+            .map(this::toTimelineActivity)
+            .limit(8)
             .toList();
+    }
+
+    private Activite toTimelineActivity(AuditLog log) {
+        String level = resolveAuditLevel(log);
+        String action = buildAuditActionTitle(log);
+        String role = normalizeAuditRole(log.getUserRole());
+
+        return new Activite(
+            buildAuditInitials(log),
+            action,
+            formatRelativeTime(log.getDate()),
+            resolveAuditCategory(log, level),
+            log.getDate().toString(),
+            role,
+            level,
+            resolveTimelineType(log),
+            safeText(log.getUser()),
+            formatIpForAdmin(log.getIp())
+        );
+    }
+
+    private String resolveTimelineType(AuditLog log) {
+        String action = safeText(log.getAction()).trim().toUpperCase(FRENCH);
+
+        switch (action) {
+            case "LOGIN":
+            case "LOGOUT":
+                return "CONNEXION";
+            case "CREATE_USER":
+            case "CREATE_PROJET":
+                return "CRÉATION";
+            case "UPDATE_USER":
+            case "UPDATE_PROJET":
+            case "ASSIGN":
+            case "ROLE_CHANGE":
+                return "MODIFICATION";
+            case "DELETE_USER":
+            case "DELETE_PROJET":
+            case "UNASSIGN":
+                return "SUPPRESSION";
+            case "LOGIN_FAILED":
+                return "ERREUR";
+            case "PARAMETRES":
+                return "PARAMETRES";
+            case "RESEND_VERIFICATION":
+                return "RENVOI_EMAIL_VERIFICATION";
+            default:
+                if ("FAILED".equalsIgnoreCase(safeText(log.getStatus()))) {
+                    return "ERREUR";
+                }
+                return "CONNEXION";
+        }
+    }
+
+    private String buildAuditActionTitle(AuditLog log) {
+        String action = safeText(log.getAction()).trim().toUpperCase(FRENCH);
+        String target = safeText(log.getTarget()).trim();
+        String description = safeText(log.getDescription()).trim();
+
+        switch (action) {
+            case "LOGIN":
+                return "Connexion réussie";
+            case "LOGIN_FAILED":
+                return "Tentative de connexion échouée";
+            case "LOGOUT":
+                return "Déconnexion";
+            case "CREATE_USER":
+                return "Compte " + normalizeAuditRole(log.getUserRole()) + " créé" + buildTargetSuffix(target, description);
+            case "UPDATE_USER":
+                return "Modification d'utilisateur" + buildTargetSuffix(target, description);
+            case "DELETE_USER":
+                return "Suppression d'utilisateur" + buildTargetSuffix(target, description);
+            case "CREATE_PROJET":
+                return "Projet " + quoteTarget(target, description) + " planifié";
+            case "UPDATE_PROJET":
+                return "Projet " + quoteTarget(target, description) + " modifié";
+            case "DELETE_PROJET":
+                return "Projet " + quoteTarget(target, description) + " supprimé";
+            case "ASSIGN":
+                return "Affectation créée" + buildTargetSuffix(target, description);
+            case "UNASSIGN":
+                return "Affectation supprimée" + buildTargetSuffix(target, description);
+            case "ROLE_CHANGE":
+                return "Modification de rôle utilisateur" + buildTargetSuffix(target, description);
+            case "RESEND_VERIFICATION":
+                return "Renvoi email de vérification" + buildTargetSuffix(target, description);
+            default:
+                if (!description.isBlank()) {
+                    return description;
+                }
+                return action.isBlank() ? "Événement système" : action;
+        }
+    }
+
+    private String buildAuditInitials(AuditLog log) {
+        String target = safeText(log.getTarget()).trim();
+
+        if (target.contains("@")) {
+            String login = target.substring(0, target.indexOf('@')).replace('.', ' ').replace('_', ' ').trim();
+            return buildInitialesFromName(login);
+        }
+
+        if (!target.isBlank() && !target.startsWith("Projet #") && !target.startsWith("Affectation #")) {
+            return buildInitialesFromName(target);
+        }
+
+        return buildInitialesFromName(firstNonBlank(log.getUser(), log.getDescription(), log.getAction()));
+    }
+
+    private String resolveAuditLevel(AuditLog log) {
+        String status = safeText(log.getStatus()).trim().toUpperCase(FRENCH);
+        String action = safeText(log.getAction()).trim().toUpperCase(FRENCH);
+
+        if ("FAILED".equals(status) || "LOGIN_FAILED".equals(action)) {
+            return "Critique";
+        }
+
+        if ("WARNING".equals(status)) {
+            return "Warning";
+        }
+
+        return "Info";
+    }
+
+    private String resolveAuditCategory(AuditLog log, String level) {
+        String action = safeText(log.getAction()).trim().toUpperCase(FRENCH);
+
+        if ("LOGIN".equals(action) || "LOGIN_FAILED".equals(action) || "LOGOUT".equals(action)) {
+            return "securite";
+        }
+
+        if (action.contains("PROJET")) {
+            return "projet";
+        }
+
+        if (action.contains("ASSIGN")) {
+            return "affectation";
+        }
+
+        if (level.equals("Critique")) {
+            return "incident";
+        }
+
+        return "admin";
+    }
+
+    private String formatIpForAdmin(String ipRaw) {
+        String ip = safeText(ipRaw);
+        if (ip.isBlank()) {
+            return "-";
+        }
+
+        String normalized = ip.toLowerCase(FRENCH);
+        if ("127.0.0.1".equals(normalized)
+            || "::1".equals(normalized)
+            || "0:0:0:0:0:0:0:1".equals(normalized)
+            || normalized.startsWith("::ffff:127.")) {
+            return "Adresse locale";
+        }
+
+        return ip;
+    }
+
+    private String normalizeAuditRole(String role) {
+        String normalized = safeText(role).trim().toUpperCase(FRENCH);
+        if (normalized.contains("ADMIN")) {
+            return "ADMIN";
+        }
+        if (normalized.contains("MANAGER") || normalized.contains("CHEF")) {
+            return "MANAGER";
+        }
+        if (normalized.contains("COLLAB")) {
+            return "COLLAB";
+        }
+        return normalized.isBlank() ? "INCONNU" : normalized;
+    }
+
+    private String buildTargetSuffix(String target, String description) {
+        if (!target.isBlank()) {
+            return " : " + target;
+        }
+        if (!description.isBlank()) {
+            return " : " + description;
+        }
+        return "";
+    }
+
+    private String quoteTarget(String target, String description) {
+        String value = firstNonBlank(target, description, "inconnu");
+        if (value.startsWith("\"") && value.endsWith("\"")) {
+            return value;
+        }
+        return "\"" + value + "\"";
+    }
+
+    private String firstNonBlank(String... values) {
+        for (String value : values) {
+            if (value != null && !value.isBlank()) {
+                return value.trim();
+            }
+        }
+        return "";
     }
 
     private List<CriticalProject> buildCriticalProjects(List<Projet> projets, List<Affectation> affectations, LocalDate today) {
@@ -365,17 +686,29 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
             .toList();
     }
 
-    private List<UpcomingDeadline> buildUpcomingDeadlines(List<Projet> projets, LocalDate today) {
+    private List<UpcomingDeadline> buildUpcomingDeadlines(List<Projet> projets, List<Utilisateur> utilisateurs, LocalDate today) {
+        Map<Long, String> managerNomById = utilisateurs.stream()
+            .filter(u -> isRole(u.getRole(), "MANAGER"))
+            .filter(u -> u.getId() != null && !safeText(u.getNom()).isBlank())
+            .collect(java.util.stream.Collectors.toMap(
+                Utilisateur::getId,
+                u -> safeText(u.getNom()).trim(),
+                (a, b) -> a
+            ));
+
         return projets.stream()
             .filter(projet -> !isTermine(projet.getStatut()))
             .map(projet -> {
                 long daysLeft = daysLeft(projet.getDateFin(), today);
                 String tone = daysLeft <= 3 ? "risk" : daysLeft <= 10 ? "watch" : "good";
+                String ownerNom = projet.getManagerId() != null
+                    ? managerNomById.getOrDefault(projet.getManagerId(), "Manager à confirmer")
+                    : "Manager à confirmer";
 
                 return new UpcomingDeadline(
                     projet.getId(),
                     safeText(projet.getNom()),
-                    "Pilotage a confirmer",
+                    ownerNom,
                     formatDeadlineLabel(daysLeft),
                     daysLeft,
                     tone,
@@ -767,6 +1100,7 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
         return "COLLAB";
     }
 
+    @SuppressWarnings("unused")
     private String buildAffectationAction(Affectation affectation) {
         String collaborateurNom = affectation.getCollaborateur() == null
             ? "Collaborateur inconnu"
@@ -775,6 +1109,7 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
         return "Affectation mise a jour : " + collaborateurNom + " -> " + projetNom;
     }
 
+    @SuppressWarnings("unused")
     private String buildInitiales(String prenom, String nom) {
         String initials = (safeText(prenom).isBlank() ? "" : safeText(prenom).substring(0, 1))
             + (safeText(nom).isBlank() ? "" : safeText(nom).substring(0, 1));
@@ -835,6 +1170,7 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
         return value.substring(0, 1).toUpperCase(FRENCH) + value.substring(1);
     }
 
-    private record ActiviteEntry(LocalDateTime timestamp, Activite activite) {
+    private record AlertEntry(LocalDateTime timestamp, Alerte alert) {
     }
+
 }

@@ -3,10 +3,15 @@ const { loginViaApi, seedSession } = require('./helpers/auth');
 const { cleanupPublicTestUsers } = require('./helpers/cleanup');
 const { createPublicTestUser, fillInputByPlaceholder } = require('./helpers/public-flow');
 
+const smokeCredentials = (role) => ({
+  email: process.env[`SMOKE_${role}_EMAIL`],
+  motDePasse: process.env[`SMOKE_${role}_PASSWORD`]
+});
+
 const ROLE_CONFIGS = [
   {
     name: 'admin',
-    credentials: { email: 'admin@smartassign.tn', motDePasse: 'admin123' },
+    credentials: smokeCredentials('ADMIN'),
     routes: [
       '/admin/dashboard',
       '/admin/profil',
@@ -17,7 +22,7 @@ const ROLE_CONFIGS = [
   },
   {
     name: 'manager',
-    credentials: { email: 'manager@smartassign.tn', motDePasse: 'manager123' },
+    credentials: smokeCredentials('MANAGER'),
     routes: [
       '/manager/dashboard',
       '/manager/projets/mes-projets',
@@ -31,7 +36,7 @@ const ROLE_CONFIGS = [
   },
   {
     name: 'collaborateur',
-    credentials: { email: 'collab@smartassign.tn', motDePasse: 'collab123' },
+    credentials: smokeCredentials('COLLAB'),
     routes: [
       '/dashboard',
       '/mes-projets',

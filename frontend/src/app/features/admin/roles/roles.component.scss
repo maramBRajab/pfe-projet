@@ -145,11 +145,76 @@
   flex-shrink: 0;
 }
 
-// ── Content body ──────────────────────────────────────────────────
+// ── Page Header ───────────────────────────────────────────────────
+.sp-page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  flex-wrap: wrap;
+  padding: 0 28px;
+  margin-top: 20px;
+
+  &__copy {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+  }
+
+  &__title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    margin-bottom: 4px;
+  }
+
+  &__title {
+    margin: 0;
+    font-size: 22px;
+    line-height: 1.2;
+    font-weight: 600;
+    color: var(--text);
+    letter-spacing: 0;
+  }
+
+  &__subtitle {
+    margin: 0;
+    font-size: 14px;
+    color: var(--text2);
+  }
+}
+
+// ── Topbar actions ────────────────────────────────────────────────
+.sp-topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-left: auto;
+}
+
+.sp-platform-health {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.sp-health-dot {
+  display: inline-block;
+  color: #22c55e;
+  font-size: 12px;
+}
+
+// ── Body ───────────────────────────────────────────────────────────
 .sp-body {
   flex: 1;
   overflow-y: auto;
-  padding: 28px;
+  padding: 20px 28px 28px;
   display: flex;
   flex-direction: column;
   gap: 20px;
@@ -262,6 +327,110 @@
   grid-template-columns: repeat(3, 1fr);
   gap: 8px;
   margin-top: 16px;
+}
+
+.sp-role-members-toggle {
+  margin-top: 14px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  color: #334155;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  width: fit-content;
+
+  &:hover {
+    background: #f1f5f9;
+    border-color: #cbd5e1;
+  }
+}
+
+.sp-role-members {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.sp-role-members__list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 10px;
+}
+
+.sp-role-member {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: #fbfdff;
+}
+
+.sp-role-member__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.sp-role-member__identity {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.sp-role-member__avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: #d50032;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.sp-role-member__text {
+  min-width: 0;
+}
+
+.sp-role-member__name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.sp-role-member__email {
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--text2);
+  word-break: break-word;
+}
+
+.sp-role-member__status {
+  flex-shrink: 0;
+  border-radius: 999px;
+  padding: 3px 9px;
+  background: #f0fdf4;
+  color: #16a34a;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.sp-role-member__status--suspended {
+  background: #fffbeb;
+  color: #d97706;
+}
+
+.sp-role-members__empty {
+  font-size: 12.5px;
+  color: var(--text2);
 }
 
 // ── Permission item ───────────────────────────────────────────────
@@ -567,4 +736,282 @@
 
     &:hover { border-color: var(--accent); }
   }
+}
+
+
+// ═══════════════════════════════════════════════════════════════
+// PIXEL-PERFECT OVERRIDES — Roles & Permissions
+// ═══════════════════════════════════════════════════════════════
+$sa-red: #E53935;
+
+// ── Topbar ─────────────────────────────────────────────────────
+.sp-status-pill {
+  border: none !important;
+  background: transparent !important;
+  color: #166534 !important;
+  font-size: 14px;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 8px;
+  .sp-status-dot { background: #22C55E; }
+}
+.sp-btn--primary {
+  background: $sa-red !important;
+  border-color: $sa-red !important;
+  color: #fff !important;
+  &:hover { background: #C62828 !important; border-color: #C62828 !important; }
+}
+.sp-btn--danger {
+  background: $sa-red !important;
+  border-color: $sa-red !important;
+  color: #fff !important;
+  &:hover { background: #C62828 !important; }
+}
+
+// ── Cards de rôles ─────────────────────────────────────────────
+.sp-roles-list {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 8px 0;
+}
+.sp-role-card {
+  background: #fff;
+  border: 1px solid #F0F0F0;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  padding: 20px 22px;
+
+  &__hd {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  &__info {
+    flex: 1;
+    min-width: 0;
+    h3 {
+      font-size: 18px;
+      font-weight: 700;
+      color: #111827;
+      margin: 0 0 4px;
+    }
+    p {
+      font-size: 13px;
+      color: #6B7280;
+      margin: 0;
+      strong { color: #111827; font-weight: 600; }
+    }
+  }
+  &__actions {
+    display: flex;
+    gap: 6px;
+  }
+  &__divider {
+    height: 1px;
+    background: #F1F5F9;
+    margin: 16px 0;
+  }
+}
+
+// ── Icône ronde + emoji ───────────────────────────────────────
+.sp-role-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+
+  &__emoji {
+    font-size: 22px;
+    line-height: 1;
+  }
+
+  &--admin   { background: #FEF3C7; }
+  &--manager { background: #DBEAFE; }
+  &--collab  { background: #DCFCE7; }
+  &--lg {
+    width: 64px;
+    height: 64px;
+    .sp-role-icon__emoji { font-size: 32px; }
+  }
+}
+
+// ── Action buttons (header carte) ─────────────────────────────
+.btn-action {
+  width: 32px;
+  height: 32px;
+  border: 1px solid #E2E4EA;
+  border-radius: 8px;
+  background: #FFFFFF;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: all .15s;
+
+  i { font-size: 16px; line-height: 1; }
+
+  &.consulter {
+    i { color: #1565C0; }
+    &:hover { background: #EFF6FF; border-color: #1565C0; }
+  }
+  &.modifier {
+    i { color: #F57C00; }
+    &:hover { background: #FFF7ED; border-color: #F57C00; }
+  }
+  &.supprimer {
+    i { color: $sa-red; }
+    &:hover { background: #FFEBEE; border-color: $sa-red; }
+  }
+}
+
+// ── Grille de permissions (pills) ─────────────────────────────
+.sp-perm-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  @media (max-width: 900px) { grid-template-columns: repeat(2, 1fr); }
+  @media (max-width: 540px) { grid-template-columns: 1fr; }
+
+  &--start {
+    justify-items: stretch;
+    margin-bottom: 8px;
+  }
+}
+.sp-perm-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  border: 1px solid transparent;
+
+  svg { width: 14px; height: 14px; flex-shrink: 0; }
+
+  &--ok {
+    background: #E8F5E9 !important;
+    color: #2E7D32 !important;
+    border-color: #A5D6A7 !important;
+    font-weight: 600;
+  }
+  &--no {
+    background: #F5F5F5 !important;
+    color: #9E9E9E !important;
+    border-color: #E0E0E0 !important;
+    font-weight: 400;
+  }
+}
+
+// ── Modal View centrée ─────────────────────────────────────────
+.sp-modal--view {
+  max-width: 560px;
+  width: 100%;
+  background: #fff;
+  border-radius: 12px;
+  position: relative;
+  overflow: hidden;
+}
+.sp-view-hd-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 28px 20px 18px;
+  border-bottom: 1px solid #F3F4F6;
+  position: relative;
+
+  .sp-modal__name {
+    margin: 12px 0 6px;
+    font-size: 20px;
+    font-weight: 700;
+    color: #111827;
+  }
+}
+.sp-view-desc {
+  font-size: 13px;
+  color: #6B7280;
+  margin: 0 0 12px;
+}
+.sp-view-hd__badges {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+.sp-badge--neutral {
+  background: #F1F5F9;
+  color: #475569;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+}
+.sp-modal__close--abs {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: transparent;
+  border: none;
+  font-size: 22px;
+  color: #9CA3AF;
+  cursor: pointer;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  z-index: 2;
+  &:hover { background: #F3F4F6; color: #111827; }
+}
+.sp-view-comps__title {
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: #6B7280;
+  text-transform: uppercase;
+  font-weight: 600;
+  margin: 0 0 10px;
+
+  &--mt { margin-top: 18px; }
+}
+
+// ── Modal Confirm (Suppression) ───────────────────────────────
+.sp-modal--confirm {
+  text-align: center;
+  padding: 28px 24px;
+  max-width: 420px;
+}
+.sp-confirm-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: #FFEBEE;
+  color: $sa-red;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 14px;
+  i { font-size: 24px; }
+}
+.sp-modal__danger-title {
+  text-align: center;
+  font-size: 18px;
+  font-weight: 700;
+  color: #111827;
+  margin: 0 0 8px;
+}
+.sp-modal__danger-msg {
+  text-align: center;
+  font-size: 14px;
+  color: #6B7280;
+  margin: 0 0 20px;
+  line-height: 1.5;
+}
+.sp-modal__ft--center {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
 }

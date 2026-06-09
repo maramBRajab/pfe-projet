@@ -10,8 +10,8 @@ export const ADMIN_NAV = {
   notifications: '/admin/notifications',
   parametres: '/admin/parametres',
   profil: '/admin/profil',
-  /** Liste des affectations en cours (page manager, accessible aussi aux admins). */
-  affectations: '/manager/affectations-en-cours',
+  /** Vue portefeuille globale des affectations pour l'administration. */
+  affectations: '/admin/affectations',
   /** Outil d'analyse / recommandations d'affectation. */
   affectationAnalyse: '/manager/affectation',
 } as const;

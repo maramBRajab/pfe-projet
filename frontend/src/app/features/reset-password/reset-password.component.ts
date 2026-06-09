@@ -5,12 +5,11 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
 import { AuthService } from '../../services/auth';
 import { extractAuthErrorMessage } from '../shared/auth-error.utils';
-import { RevealOnScrollDirective } from '../shared/reveal-on-scroll.directive';
 
 @Component({
   selector: 'app-reset-password',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, RevealOnScrollDirective],
+  imports: [CommonModule, FormsModule, RouterLink],
   templateUrl: './reset-password.component.html',
   styleUrl: './reset-password.component.scss'
 })

@@ -61,7 +61,7 @@ export class ManagerFormulaireProjetComponent implements OnInit, OnChanges {
   }
 
   get title(): string {
-    return this.isEditMode ? 'Modifier le projet' : 'Créer un projet';
+    return this.isEditMode ? 'Modifier le projet' : 'Nouveau projet';
   }
 
   get descriptionText(): string {

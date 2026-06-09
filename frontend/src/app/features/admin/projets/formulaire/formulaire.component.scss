@@ -1115,6 +1115,214 @@ $sky: #eff6ff; $radius-sm: 8px;
   }
 }
 
+:host(.sp-project-edit-form) {
+  .sp-root--embedded {
+    display: block;
+    min-height: auto;
+    background: transparent;
+  }
+
+  .em-hdr {
+    padding: 24px 24px 20px 24px;
+    border-bottom: 1px solid #f0f0f0;
+    background: #ffffff;
+    position: static;
+    border-radius: 0;
+  }
+
+  .em-title {
+    font-size: 20px;
+    font-weight: 700;
+    color: #111827;
+    margin: 0;
+    letter-spacing: 0;
+  }
+
+  .em-close {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: none;
+    background: #f3f4f6;
+    color: #374151;
+
+    svg {
+      width: 14px;
+      height: 14px;
+    }
+
+    &:hover {
+      background: #e5e7eb;
+      color: #111827;
+    }
+  }
+
+  .em-body {
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    overflow-y: visible;
+  }
+
+  .em-section {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .em-section-title {
+    font-size: 11px;
+    font-weight: 600;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin: 0;
+  }
+
+  .em-row {
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 0;
+  }
+
+  .em-fg {
+    gap: 8px;
+    margin-bottom: 0;
+  }
+
+  .em-lbl {
+    font-size: 11px;
+    font-weight: 600;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .em-req {
+    color: #dc2626;
+  }
+
+  .em-input {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    font-size: 14px;
+    color: #111827;
+    background: #ffffff;
+
+    &:focus {
+      border-color: #3b82f6;
+      box-shadow: none;
+      outline: none;
+    }
+  }
+
+  .em-textarea {
+    min-height: 100px;
+    resize: vertical;
+  }
+
+  .em-select {
+    appearance: none;
+    background-color: #ffffff;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 16 16' fill='none'%3E%3Cpath d='M4 6l4 4 4-4' stroke='%236B7280' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+    padding-right: 36px;
+  }
+
+  .em-competences {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .em-comp-chip {
+    border: 1px solid #e5e7eb;
+    background: #ffffff;
+    color: #374151;
+    border-radius: 20px;
+    padding: 6px 14px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+
+    &:hover {
+      background: #f9fafb;
+      border-color: #e5e7eb;
+      color: #374151;
+    }
+
+    &.em-comp-chip--active {
+      border: 2px solid #c41e3a;
+      background: #fff5f5;
+      color: #c41e3a;
+      font-weight: 600;
+    }
+  }
+
+  .em-ftr {
+    padding: 20px 24px;
+    border-top: 1px solid #f0f0f0;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 12px;
+    background: #ffffff;
+    position: static;
+    border-radius: 0;
+  }
+
+  .em-btn {
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  .em-btn.em-btn--ghost {
+    background: transparent;
+    border: 1px solid #e5e7eb;
+    color: #374151;
+    padding: 10px 24px;
+
+    &:hover {
+      background: #f9fafb;
+      color: #374151;
+      border-color: #e5e7eb;
+    }
+  }
+
+  .em-btn.em-btn--primary {
+    background: #c41e3a;
+    color: #ffffff;
+    border: none;
+    padding: 10px 28px;
+
+    &:hover:not(:disabled) {
+      background: #a01830;
+    }
+  }
+
+  .em-empty-comps {
+    margin: 0;
+    padding: 10px 12px;
+    font-size: 13px;
+    color: #6b7280;
+    border: 1px dashed #e5e7eb;
+    border-radius: 8px;
+  }
+
+  .em-alert {
+    margin: 16px 24px 0;
+  }
+
+  .em-loading {
+    padding: 24px;
+  }
+}
+
 // ============================================
 // FORCE SUPERVISION CARD STYLE ON EDIT PAGE
 // ============================================

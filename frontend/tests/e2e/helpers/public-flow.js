@@ -1,4 +1,4 @@
-const PUBLIC_FLOW_PASSWORD = 'SmartAssign2026';
+const PUBLIC_FLOW_PASSWORD = process.env.SMOKE_PUBLIC_PASSWORD;
 
 function createPublicTestUser() {
   const uniqueId = Date.now();

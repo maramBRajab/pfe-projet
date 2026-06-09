@@ -1,0 +1,24 @@
+<ng-container *ngIf="link; else staticCard">
+  <a class="skpi-card skpi-card--link"
+     [ngClass]="'skpi-card--' + tone"
+     [routerLink]="link"
+     [queryParams]="queryParams">
+    <ng-container *ngTemplateOutlet="content"></ng-container>
+  </a>
+</ng-container>
+
+<ng-template #staticCard>
+  <article class="skpi-card" [ngClass]="'skpi-card--' + tone">
+    <ng-container *ngTemplateOutlet="content"></ng-container>
+  </article>
+</ng-template>
+
+<ng-template #content>
+  <div class="skpi-card__head">
+    <span class="skpi-card__badge" *ngIf="badge">{{ badge }}</span>
+    <span class="skpi-card__icon" *ngIf="icon" aria-hidden="true">{{ icon }}</span>
+  </div>
+  <div class="skpi-card__label">{{ label | uppercase }}</div>
+  <div class="skpi-card__value" [ngClass]="'skpi-card__value--' + resolvedValueTone">{{ value }}</div>
+  <div class="skpi-card__subtitle" *ngIf="subtitle">{{ subtitle }}</div>
+</ng-template>

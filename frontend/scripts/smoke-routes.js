@@ -10,13 +10,21 @@ const {
   normalizePathname
 } = require('./smoke-common');
 
-const PUBLIC_FLOW_PASSWORD = 'SmartAssign2026';
-const ADMIN_CREDENTIALS = { email: 'admin@smartassign.tn', motDePasse: 'admin123' };
+const PUBLIC_FLOW_PASSWORD = process.env.SMOKE_PUBLIC_PASSWORD;
+const ADMIN_CREDENTIALS = {
+  email: process.env.SMOKE_ADMIN_EMAIL,
+  motDePasse: process.env.SMOKE_ADMIN_PASSWORD
+};
+
+const smokeCredentials = (role) => ({
+  email: process.env[`SMOKE_${role}_EMAIL`],
+  motDePasse: process.env[`SMOKE_${role}_PASSWORD`]
+});
 
 const ROLE_CONFIGS = [
   {
     name: 'admin',
-    credentials: { email: 'admin@smartassign.tn', motDePasse: 'admin123' },
+    credentials: smokeCredentials('ADMIN'),
     routes: [
       { path: '/admin/dashboard' },
       { path: '/admin/profil' },
@@ -28,7 +36,7 @@ const ROLE_CONFIGS = [
   },
   {
     name: 'manager',
-    credentials: { email: 'manager@smartassign.tn', motDePasse: 'manager123' },
+    credentials: smokeCredentials('MANAGER'),
     routes: [
       { path: '/manager/dashboard' },
       { path: '/manager/projets/mes-projets' },
@@ -43,7 +51,7 @@ const ROLE_CONFIGS = [
   },
   {
     name: 'collaborateur',
-    credentials: { email: 'collab@smartassign.tn', motDePasse: 'collab123' },
+    credentials: smokeCredentials('COLLAB'),
     routes: [
       { path: '/dashboard' },
       { path: '/mes-projets' },

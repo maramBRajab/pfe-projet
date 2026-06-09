@@ -1,5 +1,7 @@
 package com.smartassign.pfe.entity;
 
+import java.time.LocalDateTime;
+
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import lombok.*;
@@ -35,6 +37,9 @@ public class Utilisateur {
     private String poste;
     private String departement;
 
+    @Column(name = "photo_url", columnDefinition = "TEXT")
+    private String photoUrl;
+
     @Builder.Default
     private String uiTheme = "dark";
 
@@ -52,6 +57,26 @@ public class Utilisateur {
 
     @Builder.Default
     private Boolean projectUpdates = true;
+
+    @Builder.Default
+    private Boolean actif = true;
+
+    @Builder.Default
+    @Column(name = "email_verifie")
+    private Boolean emailVerifie = false;
+
+    @Column(name = "email_verifie_le")
+    private LocalDateTime emailVerifieLe;
+
+    @Column(name = "created_at", updatable = false)
+    private LocalDateTime createdAt;
+
+    @PrePersist
+    private void onCreate() {
+        if (createdAt == null) {
+            createdAt = LocalDateTime.now();
+        }
+    }
 
     // valeurs : "ADMIN" | "MANAGER" | "COLLAB"
 }

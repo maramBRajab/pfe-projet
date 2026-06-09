@@ -2,16 +2,17 @@ import { Component, OnInit, ChangeDetectorRef, ElementRef, HostListener } from '
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { AuthService } from '../../../../services/auth';
 import { AdminProjetService, Projet } from '../../../../services/admin';
 import { AdminSidebarComponent } from '../../shared/admin-sidebar.component';
-import { FormulaireProjetComponent } from '../formulaire/formulaire.component';
+import { AdminTopbarComponent } from '../../shared/admin-topbar.component';
 
+import { KpiCardComponent } from '../../../../shared/kpi-card/kpi-card.component';
 @Component({
   selector: 'app-liste-projets',
   standalone: true,
-  imports: [CommonModule, FormsModule, FormulaireProjetComponent, AdminSidebarComponent],
+  imports: [CommonModule, FormsModule, RouterModule, KpiCardComponent, AdminSidebarComponent, AdminTopbarComponent],
   templateUrl: './liste.component.html',
   styleUrls: ['./liste.component.scss']
 })
@@ -27,12 +28,10 @@ export class ListeProjetsComponent implements OnInit {
   statutFilter = 'all';
   isLoading = false;
   errorMessage = '';
-  isCreateModalOpen = false;
   userMenuOpen = false;
 
   // ── Modals ──────────────────────────────────────────────────
   viewedProjet: Projet | null = null;
-  editedProjetId: number | null = null;
   deleteTargetId: number | null = null;
   deleteTargetName = '';
   isDeleting = false;
@@ -69,7 +68,7 @@ export class ListeProjetsComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.adminPhoto = localStorage.getItem('smartassign_admin_photo');
+    this.adminPhoto = this.authService.currentUser?.photoUrl ?? null;
     this.applyStatutFromRoute(this.route.snapshot.queryParamMap.get('statut'));
     this.route.queryParamMap.subscribe((params) => {
       this.applyStatutFromRoute(params.get('statut'));
@@ -80,8 +79,13 @@ export class ListeProjetsComponent implements OnInit {
 
   private applyStatutFromRoute(statut: string | null): void {
     const allowed = new Set(['all', 'en_cours', 'en_attente', 'termine', 'en_retard']);
-    if (statut && allowed.has(statut)) {
-      this.statutFilter = statut;
+    const normalized = (statut ?? '')
+      .trim()
+      .toLowerCase()
+      .replace(/-/g, '_');
+
+    if (normalized && allowed.has(normalized)) {
+      this.statutFilter = normalized;
     }
   }
 
@@ -113,23 +117,6 @@ export class ListeProjetsComponent implements OnInit {
   // ── View modal ───────────────────────────────────────────────
   openViewModal(p: Projet): void  { this.viewedProjet = p; }
   closeViewModal(): void          { this.viewedProjet = null; }
-
-  editFromViewModal(): void {
-    const id = this.viewedProjet?.id;
-    if (id == null) return;
-    this.viewedProjet  = null;
-    this.editedProjetId = id;
-  }
-
-  // ── Edit modal ───────────────────────────────────────────────
-  openEditModal(id: number): void  { this.editedProjetId = id; }
-  closeEditModal(): void           { this.editedProjetId = null; }
-
-  onEditSaved(projet: Projet): void {
-    this.closeEditModal();
-    this.charger();
-    this.showToast('Projet mis à jour avec succès.');
-  }
 
   // ── Delete modal ─────────────────────────────────────────────
   openDeleteModal(id: number, nom: string): void {
@@ -171,18 +158,8 @@ export class ListeProjetsComponent implements OnInit {
     }, 3000);
   }
 
-  // ── Create modal ─────────────────────────────────────────────
-  openCreateModal():  void { this.isCreateModalOpen = true; }
-  closeCreateModal(): void { this.isCreateModalOpen = false; }
-
-  onProjetCreated(projet: Projet): void {
-    this.closeCreateModal();
-    this.charger();
-  }
-
   // ── Helpers ──────────────────────────────────────────────────
   clearFilters(): void {
-    this.searchTerm  = 'all';
     this.statutFilter = 'all';
     this.currentPage = 1;
     this.searchTerm  = '';
@@ -201,7 +178,69 @@ export class ListeProjetsComponent implements OnInit {
   }
 
   competenceLabels(p: Projet): string[] {
-    return (p.competencesRequises ?? []).map(c => c.nom);
+    return (p.competencesRequises ?? [])
+      .map(c => c?.nom?.trim() ?? '')
+      .filter((label) => label.length > 0);
+  }
+
+  managerDisplayName(p: Projet): string {
+    const managerName = (p.managerNom ?? '').trim();
+    return managerName || 'Manager non affecté';
+  }
+
+  requiredSkillsText(p: Projet): string {
+    const labels = this.competenceLabels(p);
+    return labels.length ? labels.join(', ') : 'Aucune compétence définie';
+  }
+
+  projectProgression(p: Projet): number {
+    if (typeof p.progression === 'number' && Number.isFinite(p.progression)) {
+      return Math.max(0, Math.min(100, Math.round(p.progression)));
+    }
+    return this.coherentStatutKey(p) === 'termine' ? 100 : 0;
+  }
+
+  affectedCollaboratorsCount(p: Projet): number {
+    return typeof p.nombreCollabs === 'number' && Number.isFinite(p.nombreCollabs)
+      ? Math.max(0, Math.round(p.nombreCollabs))
+      : 0;
+  }
+
+  affectedCollaboratorsLabel(p: Projet): string {
+    const count = this.affectedCollaboratorsCount(p);
+    return `${count} collaborateur${count > 1 ? 's' : ''}`;
+  }
+
+  formatProjectDate(value: string | undefined): string {
+    if (!value) {
+      return 'Date non définie';
+    }
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) {
+      return 'Date non définie';
+    }
+    return date.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' });
+  }
+
+  projectStatusHint(p: Projet): string {
+    const declared = this.normalizeStatut(p.statut);
+    const dateBased = this.statusFromDates(p);
+    const coherent = this.coherentStatutKey(p);
+
+    if (declared === 'termine' && dateBased !== 'termine') {
+      return 'Terminé déclaré: justification métier requise';
+    }
+
+    if (declared !== coherent) {
+      return `Statut affiché selon les dates: ${this.statutLabel(coherent)}`;
+    }
+
+    return '';
+  }
+
+  managerInitiales(name: string | undefined): string {
+    const parts = (name ?? '').split(/\s+/).filter(Boolean);
+    return parts.slice(0, 2).map((part) => part[0]?.toUpperCase() ?? '').join('') || 'MG';
   }
 
   get paginatedProjets(): Projet[] {
@@ -221,8 +260,7 @@ export class ListeProjetsComponent implements OnInit {
     return this.projets.filter(p => {
       const matchSearch = p.nom.toLowerCase().includes(this.searchTerm.toLowerCase());
       const matchStatut = this.statutFilter === 'all'
-        || p.statut === this.statutFilter
-        || p.statut === this.statutFilter.toUpperCase();
+        || this.coherentStatutKey(p) === this.statutFilter.toLowerCase();
       return matchSearch && matchStatut;
     });
   }
@@ -237,27 +275,53 @@ export class ListeProjetsComponent implements OnInit {
     return map[statut] ?? statut;
   }
 
+  statutLabelProjet(projet: Projet): string {
+    return this.statutLabel(this.coherentStatutKey(projet));
+  }
+
   countStatut(s: string): number {
     return this.projets.filter(p =>
-      p.statut === s || p.statut === s.toUpperCase()
+      this.coherentStatutKey(p) === s.toLowerCase()
     ).length;
   }
 
   get terminesCount():      number { return this.countStatut('termine'); }
   get enAttenteCount():     number { return this.countStatut('en_attente'); }
   get projetsActifsCount(): number { return this.countStatut('en_cours'); }
+  get enRetardCount():      number { return this.countStatut('en_retard'); }
 
   get tauxCompletion(): number {
     if (!this.projets.length) return 0;
     return Math.round((this.terminesCount / this.projets.length) * 100);
   }
 
+  statutShare(count: number): number {
+    if (!this.projets.length) return 0;
+    return Math.round((count / this.projets.length) * 100);
+  }
+
   statutBadgeClass(statut: string): string {
-    const s = (statut ?? '').toLowerCase();
+    const s = this.normalizeStatut(statut);
     if (s === 'en_cours')   return 'badge-blue';
     if (s === 'termine')    return 'badge-green';
     if (s === 'en_retard')  return 'badge-red';
     return 'badge-amber';
+  }
+
+  statutBadgeClassProjet(projet: Projet): string {
+    return this.statutBadgeClass(this.coherentStatutKey(projet));
+  }
+
+  avatarClassProjet(statut: string): string {
+    const s = this.normalizeStatut(statut);
+    if (s === 'en_cours')   return 'avatar-blue';
+    if (s === 'termine')    return 'avatar-green';
+    if (s === 'en_retard')  return 'avatar-red';
+    return 'avatar-amber';
+  }
+
+  avatarClassProjetData(projet: Projet): string {
+    return this.avatarClassProjet(this.coherentStatutKey(projet));
   }
 
   initialesProjet(nom: string): string {
@@ -298,5 +362,89 @@ export class ListeProjetsComponent implements OnInit {
     a.download = 'projets.csv';
     a.click();
     URL.revokeObjectURL(url);
+  }
+
+  exportPdf(): void {
+    const win = window.open('', '_blank', 'width=1100,height=760');
+    if (!win) return;
+
+    const rows = this.filteredProjets.map(p => `
+      <tr>
+        <td>${p.nom}</td>
+        <td>${this.managerDisplayName(p)}</td>
+        <td>${this.formatProjectDate(p.dateDebut)}</td>
+        <td>${this.formatProjectDate(p.dateFin)}</td>
+        <td>${this.statutLabelProjet(p)}</td>
+      </tr>`).join('');
+
+    win.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8">
+      <title>Projets — SmartAssign</title>
+      <style>
+        body { font-family: 'DM Sans', Arial, sans-serif; font-size: 12px; color: #1e293b; padding: 24px; }
+        h1 { font-size: 20px; margin: 0 0 6px; }
+        p { color: #64748b; margin: 0 0 18px; }
+        table { width: 100%; border-collapse: collapse; }
+        th { background: #f8fafc; text-align: left; padding: 8px 10px; font-size: 10px; text-transform: uppercase; letter-spacing: .08em; border-bottom: 2px solid #e2e8f0; }
+        td { padding: 8px 10px; border-bottom: 1px solid #e2e8f0; }
+      </style></head><body>
+      <h1>Gestion des projets — SmartAssign</h1>
+      <p>Généré le ${new Date().toLocaleDateString('fr-FR')} · ${this.filteredProjets.length} projet(s)</p>
+      <table>
+        <thead><tr><th>Projet</th><th>Manager</th><th>Date début</th><th>Date fin</th><th>Statut</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+      </body></html>`);
+    win.document.close();
+    win.focus();
+    win.print();
+  }
+
+  private coherentStatutKey(projet: Projet): 'en_attente' | 'en_cours' | 'en_retard' | 'termine' {
+    const declared = this.normalizeStatut(projet.statut);
+    if (declared === 'termine') {
+      return 'termine';
+    }
+
+    return this.statusFromDates(projet);
+  }
+
+  private statusFromDates(projet: Projet): 'en_attente' | 'en_cours' | 'en_retard' | 'termine' {
+    const declared = this.normalizeStatut(projet.statut);
+    if (declared === 'termine') {
+      return 'termine';
+    }
+
+    const start = this.parseDateSafe(projet.dateDebut);
+    const end = this.parseDateSafe(projet.dateFin);
+    if (!start || !end) {
+      return declared === 'en_retard' ? 'en_retard' : 'en_attente';
+    }
+
+    const today = new Date();
+    const current = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const startDay = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+    const endDay = new Date(end.getFullYear(), end.getMonth(), end.getDate());
+
+    if (current < startDay) {
+      return 'en_attente';
+    }
+    if (current > endDay) {
+      return 'en_retard';
+    }
+    return 'en_cours';
+  }
+
+  private normalizeStatut(statut: string | undefined): 'en_attente' | 'en_cours' | 'en_retard' | 'termine' {
+    const raw = (statut ?? '').trim().toLowerCase().replace('-', '_').replace(' ', '_');
+    if (raw === 'en_cours') return 'en_cours';
+    if (raw === 'en_retard') return 'en_retard';
+    if (raw === 'termine' || raw === 'terminé') return 'termine';
+    return 'en_attente';
+  }
+
+  private parseDateSafe(value: string | undefined): Date | null {
+    if (!value) return null;
+    const parsed = new Date(value);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
   }
 }

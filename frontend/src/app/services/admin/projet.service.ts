@@ -30,6 +30,7 @@ export interface Projet {
   managerId?:       number;
   managerNom?:      string;
   nombreCollabs?:   number;
+  progression?:     number;
   competencesRequises?: Competence[];
 }
 

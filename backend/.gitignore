@@ -5,6 +5,8 @@ target/
 !**/src/test/**/target/
 
 # Credentials locaux
+.env
+.env.*
 application-local.properties
 *.properties.local
 

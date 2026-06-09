@@ -1,26 +1,32 @@
 ﻿import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import { catchError, forkJoin, of } from 'rxjs';
 import { AuthService } from '../../../services/auth';
 import { Affectation, AffectationService, Collaborateur, CollaborateurService, Projet, ProjetService } from '../../../services/manager';
+import { ManagerShellComponent } from '../shared/manager-shell.component';
+import { ManagerTopbarComponent } from '../shared/manager-topbar.component';
 
 @Component({
   selector: 'app-manager-profil',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [CommonModule, FormsModule, ManagerShellComponent, ManagerTopbarComponent],
   templateUrl: './profil.component.html',
   styleUrl: './profil.component.scss'
 })
 export class ManagerProfilComponent implements OnInit {
 
   // form fields
-  prenom = 'Manager';
-  nom = 'SmartAssign';
+  prenom: string | null = 'Manager';
+  nom: string | null = 'SmartAssign';
   email = 'manager@smartassign.tn';
   telephone = '+216 24 333 444';
   poste = 'Manager delivery';
+  departement = '';
+
+  // photo
+  photoUrl: string | null = null;
 
   // password fields
   currentPassword = '';
@@ -30,6 +36,7 @@ export class ManagerProfilComponent implements OnInit {
   // feedback
   feedbackMsg = '';
   feedbackTone: 'success' | 'error' | '' = '';
+  isSaving = false;
   pwdMsg = '';
   pwdTone: 'success' | 'error' | '' = '';
 
@@ -47,17 +54,7 @@ export class ManagerProfilComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    const user = this.authService.currentUser;
-    if (user?.nom) {
-      const parts = user.nom.trim().split(/\s+/);
-      this.prenom = parts[0] ?? 'Manager';
-      this.nom = parts.slice(1).join(' ') || 'SmartAssign';
-    }
-    if (user?.email) { this.email = user.email; }
-
-    const extras = this.loadExtras(this.email);
-    if (extras.telephone) { this.telephone = extras.telephone; }
-    if (extras.poste)     { this.poste = extras.poste; }
+    this.loadProfileFromApi();
 
     forkJoin({
       collaborateurs: this.collaborateurService.getAll().pipe(catchError(() => of([] as Collaborateur[]))),
@@ -70,12 +67,51 @@ export class ManagerProfilComponent implements OnInit {
     });
   }
 
+  private loadProfileFromApi(): void {
+    this.authService.getCurrentProfile().subscribe({
+      next: (user) => {
+        const parts = (user.nom || '').trim().split(/\s+/).filter(Boolean);
+        this.prenom = parts[0] ?? '';
+        this.nom = parts.slice(1).join(' ');
+        this.email = user.email ?? '';
+        this.telephone = user.telephone ?? '';
+        this.poste = user.poste ?? '';
+        this.departement = user.departement ?? '';
+        this.photoUrl = user.photoUrl ?? null;
+      },
+      error: () => {
+        this.feedbackMsg = 'Impossible de charger le profil depuis le serveur.';
+        this.feedbackTone = 'error';
+      }
+    });
+  }
+
   saveProfile(): void {
-    const fullName = `${this.prenom.trim()} ${this.nom.trim()}`.trim();
-    this.authService.updateStoredUser(fullName, this.email.trim());
-    this.saveExtras(this.email, { telephone: this.telephone, poste: this.poste });
-    this.feedbackMsg  = 'Profil mis à jour avec succès.';
-    this.feedbackTone = 'success';
+    if (this.isSaving) return;
+    this.isSaving = true;
+    this.feedbackMsg = '';
+    this.feedbackTone = '';
+
+    const nom = `${(this.prenom ?? '').trim()} ${(this.nom ?? '').trim()}`.trim();
+
+    this.authService.updateProfile({
+      nom,
+      email: this.email.trim(),
+      telephone: this.telephone.trim(),
+      poste: this.poste.trim(),
+      departement: this.departement.trim()
+    }).subscribe({
+      next: (_updatedUser) => {
+        this.isSaving = false;
+        this.feedbackMsg = 'Profil mis à jour avec succès.';
+        this.feedbackTone = 'success';
+      },
+      error: () => {
+        this.isSaving = false;
+        this.feedbackMsg = 'Erreur lors de la mise à jour du profil.';
+        this.feedbackTone = 'error';
+      }
+    });
   }
 
   cancelEdit(): void {
@@ -86,20 +122,34 @@ export class ManagerProfilComponent implements OnInit {
 
   changePassword(): void {
     if (!this.currentPassword || !this.newPassword || !this.confirmPassword) {
-      this.pwdMsg  = 'Veuillez remplir tous les champs.';
+      this.pwdMsg = 'Veuillez remplir tous les champs.';
       this.pwdTone = 'error';
       return;
     }
     if (this.newPassword !== this.confirmPassword) {
-      this.pwdMsg  = 'Les mots de passe ne correspondent pas.';
+      this.pwdMsg = 'Les mots de passe ne correspondent pas.';
       this.pwdTone = 'error';
       return;
     }
-    this.pwdMsg  = 'Mot de passe mis à jour.';
-    this.pwdTone = 'success';
-    this.currentPassword = '';
-    this.newPassword     = '';
-    this.confirmPassword = '';
+
+    this.authService.changePassword({
+      motDePasseActuel: this.currentPassword,
+      nouveauMotDePasse: this.newPassword,
+      confirmationMotDePasse: this.confirmPassword
+    }).subscribe({
+      next: () => {
+        this.pwdMsg = 'Mot de passe mis à jour avec succès.';
+        this.pwdTone = 'success';
+        this.currentPassword = '';
+        this.newPassword = '';
+        this.confirmPassword = '';
+      },
+      error: (err) => {
+        const detail = err?.error?.message || '';
+        this.pwdMsg = detail ? detail : 'Erreur lors du changement de mot de passe.';
+        this.pwdTone = 'error';
+      }
+    });
   }
 
   refresh(): void { this.ngOnInit(); }
@@ -108,18 +158,32 @@ export class ManagerProfilComponent implements OnInit {
     this.authService.logout();
     void this.router.navigate(['/login']);
   }
-
-  private loadExtras(email: string): { telephone: string; poste: string } {
-    try {
-      const raw = localStorage.getItem(`smartassign_mp_${email.toLowerCase()}`);
-      if (!raw) { return { telephone: '', poste: '' }; }
-      return JSON.parse(raw) as { telephone: string; poste: string };
-    } catch {
-      return { telephone: '', poste: '' };
-    }
-  }
-
-  private saveExtras(email: string, extras: { telephone: string; poste: string }): void {
-    localStorage.setItem(`smartassign_mp_${email.toLowerCase()}`, JSON.stringify(extras));
+  
+  onPhotoChange(event: Event): void {
+    const file = (event.target as HTMLInputElement).files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      this.photoUrl = reader.result as string;
+      this.authService.updateProfile({
+        nom: `${(this.prenom ?? '').trim()} ${(this.nom ?? '').trim()}`.trim(),
+        email: this.email.trim(),
+        telephone: this.telephone.trim(),
+        poste: this.poste.trim(),
+        departement: this.departement.trim(),
+        photoUrl: this.photoUrl
+      }).subscribe({
+        next: (updated) => {
+          this.photoUrl = updated.photoUrl ?? this.photoUrl;
+          this.feedbackMsg = 'Photo mise à jour avec succès.';
+          this.feedbackTone = 'success';
+        },
+        error: () => {
+          this.feedbackMsg = 'Erreur lors de la sauvegarde de la photo.';
+          this.feedbackTone = 'error';
+        }
+      });
+    };
+    reader.readAsDataURL(file);
   }
 }

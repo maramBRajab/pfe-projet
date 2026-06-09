@@ -2,11 +2,13 @@ import { CommonModule, DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
-import { Observable, Subscription, catchError, of, switchMap } from 'rxjs';
+import { Observable, Subscription, catchError, of, switchMap, forkJoin } from 'rxjs';
 
 import { Affectation, AffectationService, Collaborateur, Collaborateur as PlanningCollaborateur, CollaborateurPlanningDto, CollaborateurService, PlanningLeaveDto, PlanningService, PlanningTaskDto } from '../../../services/collaborateur';
 import { AuthService } from '../../../services/auth';
+import { KpiCardComponent, KpiCardTone } from '../../../shared/kpi-card/kpi-card.component';
 import { CollaborateurShellComponent } from '../shared/collaborateur-shell.component';
+import { CollabTopbarComponent } from '../shared/collab-topbar.component';
 
 type AvailabilityState = 'disponible' | 'partielle' | 'indisponible';
 
@@ -16,6 +18,7 @@ interface PlanningTask { id: string; title: string; project: string; dueDate: Da
 interface CalendarDay { date: Date; dayNumber: number; inCurrentMonth: boolean; isToday: boolean; markers: Array<'mission' | 'task' | 'leave'>; }
 interface WorkloadBar { label: string; value: number; tone: 'low' | 'mid' | 'high'; }
 interface LeaveItem { id: string; label: string; type: string; impact: 'PARTIELLE' | 'INDISPONIBLE' | 'AUTRE'; startDate: Date; endDate: Date; }
+interface LeaveForm { libelle: string; type: string; dateDebut: string; dateFin: string; impactDisponibilite: 'PARTIELLE' | 'INDISPONIBLE'; }
 
 export interface DayDetail {
   date: Date;
@@ -27,7 +30,7 @@ export interface DayDetail {
 @Component({
   selector: 'app-collaborateur-planning',
   standalone: true,
-  imports: [CommonModule, FormsModule, DatePipe, CollaborateurShellComponent],
+  imports: [CommonModule, FormsModule, DatePipe, KpiCardComponent, CollaborateurShellComponent, CollabTopbarComponent],
   templateUrl: './planning.component.html',
   styleUrl: './planning.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -50,6 +53,18 @@ export class CollaborateurPlanningComponent implements OnInit {
   workloadBars: WorkloadBar[] = [];
   leaves: LeaveItem[] = [];
   selectedDay: DayDetail | null = null;
+  currentCollaborateurId: number | null = null;
+  leaveForm: LeaveForm = {
+    libelle: '',
+    type: 'Congé',
+    dateDebut: '',
+    dateFin: '',
+    impactDisponibilite: 'INDISPONIBLE'
+  };
+  actionMessage = '';
+  actionError = '';
+  savingLeave = false;
+  updatingTaskIds = new Set<string>();
   private allAffectations: Affectation[] = [];
   private allTasks: PlanningTask[] = [];
   private allLeaves: LeaveItem[] = [];
@@ -205,9 +220,141 @@ export class CollaborateurPlanningComponent implements OnInit {
     return 'Actif';
   }
 
+  kpiBadgeClass(metric: PlanningMetric): string {
+    const tone = this.metricChipTone(metric);
+
+    if (tone === 'risk') {
+      return 'plng-kbadge--red';
+    }
+
+    if (tone === 'warn') {
+      return 'plng-kbadge--amber';
+    }
+
+    if (tone === 'neutral') {
+      return 'plng-kbadge--blue';
+    }
+
+    if (this.metricKey(metric.label) === 'projets_planifies') {
+      return 'plng-kbadge--green';
+    }
+
+    return 'plng-kbadge--slate';
+  }
+
+  kpiCardTone(metric: PlanningMetric): KpiCardTone {
+    const tone = this.metricTone(metric);
+    return tone === 'slate' ? 'neutral' : tone;
+  }
+
+  kpiValueTone(metric: PlanningMetric): KpiCardTone {
+    const key = this.metricKey(metric.label);
+
+    if (key === 'taches_visibles') {
+      return 'blue';
+    }
+
+    if (key === 'charge_moyenne') {
+      return 'green';
+    }
+
+    if (key === 'disponibilite') {
+      return this.availabilityState === 'disponible' ? 'green' : 'amber';
+    }
+
+    return 'neutral';
+  }
+
   refreshPlanning(): void {
     this.selectedDay = null;
     this.loadPlanning();
+  }
+
+  updateTaskStatus(task: PlanningTask, statut: 'EN_COURS' | 'TERMINE'): void {
+    if (!this.currentCollaborateurId || this.updatingTaskIds.has(task.id)) {
+      return;
+    }
+
+    const taskId = Number(task.id);
+    if (!Number.isFinite(taskId)) {
+      return;
+    }
+
+    this.actionMessage = '';
+    this.actionError = '';
+    this.updatingTaskIds.add(task.id);
+
+    this.planningService.updateTaskStatus(this.currentCollaborateurId, taskId, statut).subscribe({
+      next: (updated) => {
+        const nextStatus = this.normalizeTaskStatus(updated.statut);
+        this.allTasks = this.allTasks.map((item) =>
+          item.id === task.id ? { ...item, status: nextStatus } : item
+        );
+        this.actionMessage = statut === 'TERMINE' ? 'Tache marquee comme terminee.' : 'Tache marquee en cours.';
+        this.updatingTaskIds.delete(task.id);
+        this.refreshView();
+      },
+      error: () => {
+        this.actionError = 'Impossible de mettre a jour le statut de la tache.';
+        this.updatingTaskIds.delete(task.id);
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  createLeaveRequest(): void {
+    if (!this.currentCollaborateurId || this.savingLeave || !this.leaveForm.libelle.trim() || !this.leaveForm.dateDebut || !this.leaveForm.dateFin) {
+      this.actionError = 'Veuillez renseigner le motif et les dates de la demande.';
+      return;
+    }
+
+    if (this.leaveForm.dateFin < this.leaveForm.dateDebut) {
+      this.actionError = 'La date de fin doit etre apres la date de debut.';
+      return;
+    }
+
+    this.actionMessage = '';
+    this.actionError = '';
+    this.savingLeave = true;
+
+    this.planningService.createConge(this.currentCollaborateurId, {
+      libelle: this.leaveForm.libelle.trim(),
+      type: this.leaveForm.type.trim() || 'Conge',
+      dateDebut: this.leaveForm.dateDebut,
+      dateFin: this.leaveForm.dateFin,
+      impactDisponibilite: this.leaveForm.impactDisponibilite
+    }).subscribe({
+      next: (leave) => {
+        this.allLeaves = [...this.allLeaves, this.mapLeave(leave)];
+        this.leaveForm = {
+          libelle: '',
+          type: 'Congé',
+          dateDebut: '',
+          dateFin: '',
+          impactDisponibilite: 'INDISPONIBLE'
+        };
+        this.actionMessage = 'Demande de conge enregistree dans le planning.';
+        this.savingLeave = false;
+        this.refreshView();
+      },
+      error: () => {
+        this.actionError = 'Impossible d enregistrer la demande de conge.';
+        this.savingLeave = false;
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  canStartTask(task: PlanningTask): boolean {
+    return task.status !== 'En cours' && task.status !== 'Terminee';
+  }
+
+  canCompleteTask(task: PlanningTask): boolean {
+    return task.status !== 'Terminee';
+  }
+
+  isUpdatingTask(task: PlanningTask): boolean {
+    return this.updatingTaskIds.has(task.id);
   }
 
   previousMonth(): void { this.viewedMonth = new Date(this.viewedMonth.getFullYear(), this.viewedMonth.getMonth() - 1, 1); this.selectedDay = null; this.refreshView(); }
@@ -244,27 +391,53 @@ export class CollaborateurPlanningComponent implements OnInit {
     this.collaborateurService.getByEmail(email).pipe(
       switchMap((collaborateur) => {
         if (!collaborateur.id) { throw new Error('Collaborateur introuvable'); }
-        return this.planningService.getByCollaborateur(collaborateur.id).pipe(catchError(() => this.buildFallbackPlanning(collaborateur, email)));
+
+        const start = this.startOfMonth(this.viewedMonth);
+        const end = this.endOfMonth(this.viewedMonth);
+        const dateDebut = this.isoDay(start);
+        const dateFin = this.isoDay(end);
+
+        this.currentCollaborateurId = collaborateur.id;
+        return forkJoin({
+          affectations: this.affectationService.getByCollaborateur(collaborateur.id).pipe(catchError(() => of([] as Affectation[]))),
+          taches: this.planningService.getTasksByCollaborateur(collaborateur.id, dateDebut, dateFin).pipe(catchError(() => of([] as PlanningTaskDto[]))),
+          conges: this.planningService.getCongesByCollaborateur(collaborateur.id).pipe(catchError(() => of([] as PlanningLeaveDto[]))),
+          disponibilite: this.planningService.getDisponibiliteByUtilisateur(collaborateur.id).pipe(catchError(() => of({ userId: collaborateur.id!, statut: collaborateur.disponible ? 'DISPONIBLE' : 'INDISPONIBLE' })))
+        }).pipe(
+          switchMap((result) => {
+            const nc: PlanningCollaborateur = {
+              id: collaborateur.id ?? 0,
+              nom: collaborateur.nom,
+              prenom: collaborateur.prenom,
+              email: collaborateur.email,
+              experienceAnnees: collaborateur.experienceAnnees,
+              disponible: collaborateur.disponible,
+              competences: (collaborateur.competences ?? []).map((c) => ({ id: c.id ?? 0, nom: c.nom }))
+            };
+
+            const disponibiliteEtat = (result.disponibilite?.statut ?? '').trim().toLowerCase();
+
+            return of({
+              collaborateur: nc,
+              disponibiliteEtat,
+              disponibiliteMessage: '',
+              affectations: result.affectations,
+              taches: result.taches,
+              conges: result.conges
+            } as CollaborateurPlanningDto);
+          })
+        );
       })
     ).subscribe({
-      next: (planning) => { this.consumePlanning(planning, email); this.isLoading = false; this.cdr.detectChanges(); },
+      next: (planning) => { this.consumePlanning(planning); this.isLoading = false; this.cdr.detectChanges(); },
       error: () => { this.errorMessage = 'Impossible de charger la page Planning.'; this.isLoading = false; this.cdr.detectChanges(); }
     });
   }
 
-  private buildFallbackPlanning(collaborateur: Collaborateur, email: string): Observable<CollaborateurPlanningDto> {
-    const nc: PlanningCollaborateur = { id: collaborateur.id ?? 0, nom: collaborateur.nom, prenom: collaborateur.prenom, email: collaborateur.email, experienceAnnees: collaborateur.experienceAnnees, disponible: collaborateur.disponible, competences: (collaborateur.competences ?? []).map((c) => ({ id: c.id ?? 0, nom: c.nom })) };
-    if (!collaborateur.id) { return of({ collaborateur: nc, disponibiliteEtat: this.readAvailability(email, collaborateur.disponible), disponibiliteMessage: 'Mode de secours active.', affectations: [], taches: [], conges: [] }); }
-    return this.affectationService.getByCollaborateur(collaborateur.id).pipe(switchMap((affectations) => {
-      const s = this.readAvailability(email, collaborateur.disponible);
-      return of({ collaborateur: nc, disponibiliteEtat: s, disponibiliteMessage: 'Mode de secours active.', affectations, taches: this.buildFallbackTasks(affectations), conges: this.buildFallbackLeaves(s) });
-    }));
-  }
-
-  private consumePlanning(planning: CollaborateurPlanningDto, email: string): void {
+  private consumePlanning(planning: CollaborateurPlanningDto): void {
     this.userName = this.authService.currentUser?.nom ?? planning.collaborateur?.prenom ?? this.userName;
-    this.availabilityState = this.normalizeAvailabilityState(planning.disponibiliteEtat, planning.collaborateur?.disponible ?? true, email);
-    this.availabilityMessage = planning.disponibiliteMessage || 'Vision consolidee des missions, taches et conges collaborateur.';
+    this.availabilityState = this.normalizeAvailabilityState(planning.disponibiliteEtat, planning.collaborateur?.disponible ?? true);
+    this.availabilityMessage = planning.disponibiliteMessage || this.defaultAvailabilityMessage(this.availabilityState);
     this.allAffectations = planning.affectations ?? [];
     this.allTasks = (planning.taches ?? []).map((t) => this.mapTask(t));
     this.allLeaves = (planning.conges ?? []).map((l) => this.mapLeave(l));
@@ -355,11 +528,13 @@ export class CollaborateurPlanningComponent implements OnInit {
   private filterAffectations(affectations: Affectation[]): Affectation[] { const ms = this.startOfMonth(this.viewedMonth); const me = this.endOfMonth(this.viewedMonth); return affectations.filter((a) => (this.activeProjectFilter === 'all' || a.projet.nom === this.activeProjectFilter) && this.overlapsRange(new Date(a.projet.dateDebut), new Date(a.projet.dateFin), ms, me)); }
   private filterTasks(tasks: PlanningTask[]): PlanningTask[] { const ms = this.startOfMonth(this.viewedMonth); const me = this.endOfMonth(this.viewedMonth); return tasks.filter((t) => (this.activeProjectFilter === 'all' || t.project === this.activeProjectFilter) && this.isDateWithinRange(t.dueDate, ms, me)).sort((a, b) => a.dueDate.getTime() - b.dueDate.getTime()); }
   private filterLeaves(leaves: LeaveItem[]): LeaveItem[] { const ms = this.startOfMonth(this.viewedMonth); const me = this.endOfMonth(this.viewedMonth); return leaves.filter((l) => this.overlapsRange(l.startDate, l.endDate, ms, me)).sort((a, b) => a.startDate.getTime() - b.startDate.getTime()); }
-  private normalizeAvailabilityState(value: string | undefined, disponible: boolean, email: string): AvailabilityState { const n = (value ?? '').trim().toLowerCase(); if (n === 'partielle') return 'partielle'; if (n === 'indisponible') return 'indisponible'; return this.readAvailability(email, disponible); }
-  private readAvailability(email: string, disponible: boolean): AvailabilityState { try { const raw = localStorage.getItem(`smartassign_collab_profile_${email.toLowerCase()}`); if (!raw) return disponible ? 'disponible' : 'indisponible'; const p = JSON.parse(raw) as { disponibilite?: AvailabilityState }; return p.disponibilite ?? (disponible ? 'disponible' : 'indisponible'); } catch { return disponible ? 'disponible' : 'indisponible'; } }
+  private normalizeAvailabilityState(value: string | undefined, disponible: boolean): AvailabilityState { const n = (value ?? '').trim().toLowerCase(); if (n === 'partielle') return 'partielle'; if (n === 'indisponible') return 'indisponible'; return disponible ? 'disponible' : 'indisponible'; }
+  private defaultAvailabilityMessage(state: AvailabilityState): string {
+    if (state === 'partielle') return 'Disponibilite partielle enregistree.';
+    if (state === 'indisponible') return 'Indisponibilite enregistree.';
+    return 'Disponibilite complete.';
+  }
   private mapTask(task: PlanningTaskDto): PlanningTask { return { id: String(task.id), title: task.titre, project: task.projetNom?.trim() || 'Sans projet', dueDate: new Date(task.dateEcheance), status: this.normalizeTaskStatus(task.statut), priority: this.normalizeTaskPriority(task.priorite) }; }
-  private buildFallbackTasks(affectations: Affectation[]): PlanningTaskDto[] { return affectations.flatMap((a, i) => [{ id: a.id * 10 + 1, titre: 'Implementation sprint en cours', description: '', dateEcheance: this.isoDay(new Date(new Date(a.projet.dateDebut).setDate(new Date(a.projet.dateDebut).getDate() + 4 + i * 2))), statut: a.projet.statut === 'en_attente' ? 'A_FAIRE' : 'EN_COURS', priorite: a.score >= 85 ? 'HAUTE' : 'MOYENNE', projetId: a.projet.id, projetNom: a.projet.nom }, { id: a.id * 10 + 2, titre: 'Validation et revue fonctionnelle', description: '', dateEcheance: this.isoDay(new Date(new Date(a.projet.dateDebut).setDate(new Date(a.projet.dateDebut).getDate() + 9 + i * 2))), statut: a.projet.statut === 'termine' ? 'TERMINEE' : a.projet.statut === 'en_attente' ? 'BLOQUEE' : 'EN_COURS', priorite: 'MOYENNE', projetId: a.projet.id, projetNom: a.projet.nom }]).slice(0, 8); }
-  private buildFallbackLeaves(state: AvailabilityState): PlanningLeaveDto[] { const y = this.today.getFullYear(); const m = this.today.getMonth(); if (state === 'indisponible') return [{ id: 1, libelle: 'Blocage planning', type: 'Indisponibilite declaree', dateDebut: this.isoDay(new Date(y, m, 8)), dateFin: this.isoDay(new Date(y, m, 12)), impactDisponibilite: 'INDISPONIBLE' }, { id: 2, libelle: 'Conge planifie', type: 'Absence planifiee', dateDebut: this.isoDay(new Date(y, m, 22)), dateFin: this.isoDay(new Date(y, m, 24)), impactDisponibilite: 'INDISPONIBLE' }]; if (state === 'partielle') return [{ id: 1, libelle: 'Disponibilite reduite', type: 'Disponibilite partielle', dateDebut: this.isoDay(new Date(y, m, 14)), dateFin: this.isoDay(new Date(y, m, 15)), impactDisponibilite: 'PARTIELLE' }]; return [{ id: 1, libelle: 'Buffer personnel', type: 'Jour reserve', dateDebut: this.isoDay(new Date(y, m, 26)), dateFin: this.isoDay(new Date(y, m, 26)), impactDisponibilite: 'AUTRE' }]; }
   private mapLeave(leave: PlanningLeaveDto): LeaveItem { return { id: String(leave.id), label: leave.libelle, type: leave.type, impact: this.normalizeLeaveImpact(leave.impactDisponibilite), startDate: new Date(leave.dateDebut), endDate: new Date(leave.dateFin) }; }
   private normalizeTaskStatus(value: string): PlanningTask['status'] { switch ((value || '').trim().toUpperCase()) { case 'EN_COURS': return 'En cours'; case 'BLOQUEE': case 'BLOQUE': return 'Bloquee'; case 'TERMINEE': case 'TERMINE': return 'Terminee'; default: return 'A faire'; } }
   private normalizeTaskPriority(value: string): PlanningTask['priority'] { switch ((value || '').trim().toUpperCase()) { case 'HAUTE': return 'Haute'; case 'BASSE': return 'Basse'; default: return 'Moyenne'; } }

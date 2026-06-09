@@ -11,6 +11,7 @@ import com.smartassign.pfe.dto.ProjetRequest;
 import com.smartassign.pfe.dto.ProjetResponse;
 import com.smartassign.pfe.service.ProjetService;
 import com.smartassign.pfe.service.AuditLogService;
+import com.smartassign.pfe.service.NotificationGeneratorService;
 import jakarta.servlet.http.HttpServletRequest;
 
 import org.springframework.security.core.Authentication;
@@ -24,6 +25,7 @@ public class ProjetController {
 
     private final ProjetService service;
     private final AuditLogService auditLogService;
+    private final NotificationGeneratorService notificationGeneratorService;
     private final HttpServletRequest httpRequest;
 
     @GetMapping
@@ -46,6 +48,8 @@ public class ProjetController {
             @Valid @RequestBody ProjetRequest request,
             Authentication authentication) {
         ProjetResponse created = service.create(request);
+        notificationGeneratorService.createProjectCreatedNotification(created.getNom(), created.getId());
+        notificationGeneratorService.generateSystemNotifications();
         auditLogService.log(authentication.getName(), "ADMIN", "CREATE_PROJET", "Création du projet \"" + created.getNom() + "\"", httpRequest.getRemoteAddr(), "SUCCESS", null, created.getNom());
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
@@ -56,6 +60,7 @@ public class ProjetController {
             @Valid @RequestBody ProjetRequest request,
             Authentication authentication) {
         ProjetResponse updated = service.update(id, request);
+        notificationGeneratorService.generateSystemNotifications();
         auditLogService.log(authentication.getName(), "ADMIN", "UPDATE_PROJET", "Mise à jour du projet \"" + updated.getNom() + "\"", httpRequest.getRemoteAddr(), "SUCCESS", null, updated.getNom());
         return ResponseEntity.ok(updated);
     }
@@ -66,6 +71,7 @@ public class ProjetController {
             @RequestBody Map<String, String> payload,
             Authentication authentication) {
         ProjetResponse updated = service.updateStatut(id, payload.get("statut"));
+        notificationGeneratorService.generateSystemNotifications();
         auditLogService.log(authentication.getName(), "ADMIN", "UPDATE_PROJET", "Statut du projet \"" + updated.getNom() + "\" → " + payload.get("statut"), httpRequest.getRemoteAddr(), "SUCCESS", null, updated.getNom());
         return ResponseEntity.ok(updated);
     }
@@ -74,6 +80,7 @@ public class ProjetController {
     public ResponseEntity<Void> delete(@PathVariable Long id, Authentication authentication) {
         ProjetResponse projet = service.getById(id);
         service.delete(id);
+        notificationGeneratorService.createProjectDeletedNotification(projet.getNom());
         auditLogService.log(authentication.getName(), "ADMIN", "DELETE_PROJET", "Suppression du projet \"" + projet.getNom() + "\"", httpRequest.getRemoteAddr(), "SUCCESS", null, projet.getNom());
         return ResponseEntity.noContent().build();
     }

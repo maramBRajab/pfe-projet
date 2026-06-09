@@ -37,12 +37,12 @@
         </h2>
         <div class="maf-field maf-field--readonly">
           <label class="maf-label">Projet affecté</label>
-          <div class="maf-readonly-val">{{ affectation.projet?.nom ?? '—' }}</div>
+          <div class="maf-readonly-val">{{ affectation.projet.nom }}</div>
         </div>
         <div class="maf-row">
           <div class="maf-field maf-field--readonly">
             <label class="maf-label">Statut</label>
-            <div class="maf-readonly-val">{{ affectation.projet?.statut ?? '—' }}</div>
+            <div class="maf-readonly-val">{{ affectation.projet.statut }}</div>
           </div>
           <div class="maf-field maf-field--readonly">
             <label class="maf-label">Date d'affectation</label>
@@ -106,15 +106,15 @@
 
       <div class="maf-summary__block">
         <span class="maf-summary__key">Projet</span>
-        <span class="maf-summary__val">{{ affectation.projet?.nom ?? '—' }}</span>
+        <span class="maf-summary__val">{{ affectation.projet.nom }}</span>
       </div>
 
       <div class="maf-summary__block">
         <span class="maf-summary__key">Collaborateur actuel</span>
-        <span class="maf-summary__val">{{ affectation.collaborateur?.prenom }} {{ affectation.collaborateur?.nom }}</span>
+        <span class="maf-summary__val">{{ affectation.collaborateur.prenom }} {{ affectation.collaborateur.nom }}</span>
       </div>
 
-      <div class="maf-summary__block" *ngIf="selectedCollaborateur && selectedCollaborateur.id !== affectation.collaborateur?.id">
+      <div class="maf-summary__block" *ngIf="selectedCollaborateur && selectedCollaborateur.id !== affectation.collaborateur.id">
         <span class="maf-summary__key maf-summary__key--new">Nouveau collaborateur</span>
         <span class="maf-summary__val maf-summary__val--new">{{ selectedCollaborateur.prenom }} {{ selectedCollaborateur.nom }}</span>
       </div>

@@ -1,107 +1,27 @@
-﻿<section class="mp-root">
-
-  <!-- ═══ SIDEBAR ══════════════════════════════════════════════════════ -->
-  <aside class="mp-sidebar">
-
-    <div class="mp-sb-brand">
-      <div class="mp-sb-logo">SA</div>
-      <div class="mp-sb-brand-text">
-        <span class="mp-sb-name">SmartAssign</span>
-        <span class="mp-sb-tag">ESPACE MANAGER</span>
-      </div>
-    </div>
-
-    <nav class="mp-nav">
-      <p class="mp-nav__sec">Principal</p>
-      <a class="mp-nav__item" routerLink="/manager/dashboard">
-        <i class="ti ti-layout-dashboard"></i>
-        <span>Dashboard</span>
-      </a>
-
-      <p class="mp-nav__sec">Gestion</p>
-      <a class="mp-nav__item" routerLink="/manager/projets">
-        <i class="ti ti-folder"></i>
-        <span>Projets</span>
-        <span class="mp-nav__badge">3</span>
-      </a>
-      <a class="mp-nav__item" routerLink="/manager/collaborateurs">
-        <i class="ti ti-users"></i>
-        <span>Collaborateurs</span>
-        <span class="mp-nav__badge">11</span>
-      </a>
-      <a class="mp-nav__item" routerLink="/manager/charge-travail">
-        <i class="ti ti-chart-bar"></i>
-        <span>Charge de travail</span>
-      </a>
-
-      <p class="mp-nav__sec">Affectations</p>
-      <a class="mp-nav__item" routerLink="/manager/affectation">
-        <i class="ti ti-arrow-right"></i>
-        <span>Affectations IA</span>
-        <span class="mp-nav__badge mp-nav__badge--red">{{ affectationsCount }}</span>
-      </a>
-      <a class="mp-nav__item" routerLink="/manager/historique-affectations">
-        <i class="ti ti-history"></i>
-        <span>Historique</span>
-      </a>
-      <a class="mp-nav__item" routerLink="/manager/notifications" routerLinkActive="mp-nav__item--active">
-        <i class="ti ti-bell"></i>
-        <span>Notifications</span>
-        <span class="mp-nav__badge mp-nav__badge--blue">3</span>
-      </a>
-    </nav>
-
-    <div class="mp-sb-footer">
-      <div class="mp-sb-user" style="cursor:default">
-        <div class="mp-sb-av">MS</div>
-        <div class="mp-sb-user-info">
-          <div class="mp-sb-uname">Manager SmartAssign</div>
-          <div class="mp-sb-urole">Manager</div>
-        </div>
-      </div>
-      <button type="button" class="mp-nav__item mp-nav__item--logout" (click)="logout()">
-        <i class="ti ti-logout"></i>
-        <span>D&eacute;connexion</span>
-      </button>
-    </div>
-  </aside>
+﻿<app-manager-shell activeSection="profil" [projectBadge]="projetsCount" [collaboratorBadge]="collaborateursCount">
+  <app-manager-topbar
+    breadcrumb="SmartAssign › Manager › Mon Profil"
+    [notificationCount]="0">
+  </app-manager-topbar>
 
   <!-- ═══ MAIN ═════════════════════════════════════════════════════════ -->
   <div class="mp-main">
-
-    <!-- TOPBAR -->
-    <header class="mp-topbar">
-      <div class="mp-topbar__left">
-        <span class="mp-topbar__bc">SmartAssign › Manager › Profil</span>
-        <h1 class="mp-topbar__title">Mon profil</h1>
-      </div>
-      <div class="mp-topbar__right">
-        <div class="mp-status-pill">
-          <span class="mp-status-dot"></span>
-          Système opérationnel
-        </div>
-        <div class="mp-topbar__av">MS</div>
-      </div>
-    </header>
-
     <!-- CONTENT -->
     <div class="mp-content">
 
-      <!-- IDENTITY CARD -->
-      <div class="mp-identity">
-        <div class="mp-identity__avatar">MS</div>
-        <div class="mp-identity__info">
-          <div class="mp-identity__name">Manager SmartAssign</div>
-          <div class="mp-identity__role">Manager delivery</div>
-          <div class="mp-identity__email">{{ email }}</div>
-          <div class="mp-identity__badges">
-            <span class="mp-badge mp-badge--green">
-              <i class="ti ti-check"></i> Manager
-            </span>
-            <span class="mp-badge mp-badge--purple">
-              <i class="ti ti-shield-check"></i> 4/6 permissions
-            </span>
-          </div>
+      <div class="pf-photo-header">
+        <div class="pf-photo-wrapper">
+          <img *ngIf="photoUrl" [src]="photoUrl" class="pf-photo-img" alt="Photo de profil">
+          <div *ngIf="!photoUrl" class="pf-photo-initials">{{ (prenom?.charAt(0) ?? '') + (nom?.charAt(0) ?? '') }}</div>
+          <label class="pf-photo-overlay" title="Changer la photo">
+            <i class="ti ti-camera"></i>
+            <input type="file" accept="image/*" (change)="onPhotoChange($event)" hidden>
+          </label>
+        </div>
+        <div class="pf-photo-info">
+          <div class="pf-photo-name">{{ prenom }} {{ nom }}</div>
+          <div class="pf-photo-role">{{ poste }}</div>
+          <div class="pf-photo-email">{{ email }}</div>
         </div>
       </div>
 
@@ -140,9 +60,17 @@
             </div>
           </div>
 
+          <div class="mp-field">
+            <label class="mp-label">Département</label>
+            <input type="text" class="mp-input" value="Direction des opérations" readonly />
+          </div>
+
           <div class="mp-btn-row">
-            <button type="button" class="mp-btn mp-btn--primary" (click)="saveProfile()">
-              <i class="ti ti-check"></i> Enregistrer
+            <button type="button" class="mp-btn mp-btn--primary" 
+              (click)="saveProfile()" 
+              [disabled]="isSaving">
+              <i class="ti ti-check"></i> 
+              {{ isSaving ? 'Enregistrement...' : 'Enregistrer' }}
             </button>
             <button type="button" class="mp-btn mp-btn--ghost" (click)="cancelEdit()">
               Annuler
@@ -163,23 +91,23 @@
             <h2 class="mp-card__title">Modifier le mot de passe</h2>
 
             <div class="mp-field">
-              <label class="mp-label">Mot de passe actuel</label>
+              <label class="mp-label">MOT DE PASSE ACTUEL</label>
               <input type="password" class="mp-input" [(ngModel)]="currentPassword" />
             </div>
 
             <div class="mp-form-row2">
               <div class="mp-field">
-                <label class="mp-label">Nouveau</label>
+                <label class="mp-label">NOUVEAU</label>
                 <input type="password" class="mp-input" [(ngModel)]="newPassword" />
               </div>
               <div class="mp-field">
-                <label class="mp-label">Confirmation</label>
+                <label class="mp-label">CONFIRMATION</label>
                 <input type="password" class="mp-input" [(ngModel)]="confirmPassword" />
               </div>
             </div>
 
             <div style="margin-top:16px">
-              <button type="button" class="mp-btn mp-btn--primary" (click)="changePassword()">
+              <button type="button" class="mp-btn mp-btn--primary mp-btn--block" (click)="changePassword()">
                 <i class="ti ti-lock"></i> Valider
               </button>
             </div>
@@ -189,52 +117,10 @@
             </div>
           </div>
 
-          <!-- Permissions card -->
-          <div class="mp-card">
-            <div class="mp-perm-hdr">
-              <div>
-                <div class="mp-card__kicker">Permissions</div>
-                <h2 class="mp-card__title" style="margin-bottom:0">Capacités du rôle Manager</h2>
-              </div>
-              <span class="mp-perm-count">4/6 actives</span>
-            </div>
-
-            <div class="mp-perm-grid">
-              <div class="mp-perm-tile">
-                <i class="ti ti-folder mp-perm-icon"></i>
-                <div>
-                  <div class="mp-perm-name">Créer projets</div>
-                  <div class="mp-perm-status">Autorisé</div>
-                </div>
-              </div>
-              <div class="mp-perm-tile">
-                <i class="ti ti-users mp-perm-icon"></i>
-                <div>
-                  <div class="mp-perm-name">Affecter collabs</div>
-                  <div class="mp-perm-status">Autorisé</div>
-                </div>
-              </div>
-              <div class="mp-perm-tile">
-                <i class="ti ti-sparkles mp-perm-icon"></i>
-                <div>
-                  <div class="mp-perm-name">Suggestions IA</div>
-                  <div class="mp-perm-status">Autorisé</div>
-                </div>
-              </div>
-              <div class="mp-perm-tile">
-                <i class="ti ti-chart-bar mp-perm-icon"></i>
-                <div>
-                  <div class="mp-perm-name">Charge de travail</div>
-                  <div class="mp-perm-status">Autorisé</div>
-                </div>
-              </div>
-            </div>
-          </div>
-
         </div><!-- /right col -->
 
       </div><!-- /mp-grid -->
 
     </div><!-- /mp-content -->
   </div><!-- /mp-main -->
-</section>
+</app-manager-shell>

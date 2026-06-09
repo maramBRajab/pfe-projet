@@ -1,4 +1,4 @@
-<div class="notifications-panel" [class.notifications-panel--open]="open" [attr.aria-hidden]="!open">
+﻿<div class="notifications-panel" [class.notifications-panel--open]="open" [attr.aria-hidden]="!open">
   <button type="button" class="notifications-panel__overlay" [attr.tabindex]="open ? 0 : -1" [attr.aria-hidden]="!open" aria-label="Fermer le panneau des notifications" (click)="requestClose()"></button>
 
   <aside class="notifications-panel__drawer" role="dialog" aria-modal="true" aria-labelledby="collab-notifications-title">
@@ -37,11 +37,11 @@
           <div class="notification-list">
             <article class="notification-card" *ngFor="let notification of notifications; trackBy: trackByNotification">
               <div class="notification-card__head">
-                <div><span class="card-kicker">{{ notification.type }}</span><h4>{{ notification.titre }}</h4></div>
+                <div><span class="card-kicker">{{ formatNotificationType(notification.type) }}</span><h4>{{ notification.titre }}</h4></div>
                 <span class="status-chip" [ngClass]="'status-chip--' + notificationTone(notification)">{{ notificationLabel(notification) }}</span>
               </div>
               <p>{{ notification.message }}</p>
-              <div class="notification-card__meta"><span>{{ notification.dateCreation | date:'dd/MM/yyyy HH:mm' }}</span><span>{{ notification.type }}</span></div>
+              <div class="notification-card__meta"><span>{{ notification.dateCreation | date:'dd/MM/yyyy HH:mm' }}</span><span>{{ formatNotificationType(notification.type) }}</span></div>
             </article>
           </div>
         </ng-container>
@@ -53,3 +53,4 @@
     </section>
   </aside>
 </div>
+

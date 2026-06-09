@@ -1,5 +1,6 @@
 import { Injectable, OnDestroy } from '@angular/core';
-import { Subject } from 'rxjs';
+import { HttpClient } from '@angular/common/http';
+import { Observable, Subject } from 'rxjs';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 
@@ -13,8 +14,9 @@ export class NotificationService implements OnDestroy {
   private notificationHistory: Notification[] = [];
   private notificationsSubject = new Subject<Notification>();
   notifications$ = this.notificationsSubject.asObservable();
+  private readonly collabNotificationsUrl = `${environment.apiUrl}/collaborateur/notifications`;
 
-  constructor() {
+  constructor(private readonly http: HttpClient) {
     this.client = new Client({
       webSocketFactory: () => new SockJS(environment.wsUrl),
       reconnectDelay: 5000,
@@ -34,6 +36,10 @@ export class NotificationService implements OnDestroy {
 
   getSnapshot(): Notification[] {
     return [...this.notificationHistory];
+  }
+
+  listForCurrentCollaborateur(): Observable<Notification[]> {
+    return this.http.get<Notification[]>(this.collabNotificationsUrl);
   }
 
   ngOnDestroy(): void {

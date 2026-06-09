@@ -13,6 +13,7 @@ export interface Affectation {
   projet: Projet;
   collaborateur: Collaborateur;
   score: number;
+  potentiel?: string;
   dateAffectation: string;
 }
 

@@ -1,333 +1,611 @@
-﻿<section class="db-root">
+﻿<style>
+  .mg-page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+    margin-bottom: 18px;
+    flex-wrap: wrap;
+  }
 
-  <!-- ══ SIDEBAR ═════════════════════════════════════════════ -->
-  <aside class="db-sidebar">
-    <div class="db-sidebar__brand">
-      <div class="db-logo">SA</div>
-      <div>
-        <div class="db-brand-name">SmartAssign</div>
-        <div class="db-brand-tag">ESPACE MANAGER</div>
+  .mg-page-header__title {
+    margin: 0;
+    font-size: 2rem;
+    line-height: 1.1;
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  .mg-page-header__subtitle {
+    margin: 6px 0 0;
+    font-size: 0.875rem;
+    color: var(--text2);
+  }
+
+  .mg-page-header__actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .mg-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 42px;
+    border-radius: 12px;
+    padding: 10px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid transparent;
+    background: var(--card);
+    transition: all .2s ease;
+  }
+
+  .mg-btn svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  .mg-btn--ghost {
+    border-color: var(--border);
+    color: var(--text);
+  }
+
+  .mg-btn--ghost:hover {
+    border-color: #e53935;
+    color: #e53935;
+  }
+
+  .mg-btn--danger {
+    background: #e53935;
+    border-color: #e53935;
+    color: var(--card);
+  }
+
+  .mg-btn--danger:hover {
+    background: #c62828;
+    border-color: #c62828;
+  }
+
+  .skpi-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .sa-main-grid { display: grid; grid-template-columns: 64% 36%; gap: 18px; align-items: start; }
+  .sa-col { min-width: 0; display: flex; flex-direction: column; gap: 18px; }
+
+  .sa-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    box-shadow: 0 10px 26px rgba(15, 23, 42, 0.06);
+    padding: 16px;
+  }
+
+  .sa-card-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+
+  .sa-kicker {
+    margin: 0;
+    color: var(--text3);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: .1em;
+    font-weight: 700;
+  }
+
+  .sa-card-title {
+    margin: 4px 0 0;
+    color: var(--text);
+    font-size: 17px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+
+  .sa-link {
+    color: #E53935;
+    text-decoration: none;
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  .sa-link:hover { color: #b91c1c; }
+
+  .sa-project-list, .sa-collab-list { display: flex; flex-direction: column; gap: 10px; }
+  .sa-item {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 11px;
+    background: linear-gradient(180deg, var(--card) 0%, var(--bg) 100%);
+  }
+
+  .sa-card--projects { border-color: var(--border); padding: 14px; }
+  .sa-card--projects .sa-project-list { gap: 9px; }
+  .sa-card--projects .sa-item { border-color: var(--border); border-radius: 11px; padding: 10px; }
+  .sa-card--projects .sa-progress-wrap { margin-top: 6px; }
+  .sa-project-item {
+    transition: transform .2s ease, box-shadow .2s ease;
+  }
+  .sa-project-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 22px rgba(15, 23, 42, 0.12);
+  }
+
+  .sa-project-status {
+    border: 1px solid transparent;
+  }
+  .sa-project-status--active {
+    background: #dcfce7;
+    color: #166534;
+    border-color: #bbf7d0;
+  }
+  .sa-project-status--pending {
+    background: #fef3c7;
+    color: #92400e;
+    border-color: #fde68a;
+  }
+  .sa-project-status--paused {
+    background: var(--border);
+    color: var(--text2);
+    border-color: var(--border);
+  }
+
+  .sa-project-progress {
+    background: linear-gradient(90deg, #60a5fa 0%, #38bdf8 100%);
+    box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.1) inset;
+    transition: width .45s ease;
+    animation: sa-progress-flow 3.6s linear infinite;
+    background-size: 180% 100%;
+  }
+
+  .sa-card--resources { border-color: var(--border); padding: 14px; }
+  .sa-card--resources .sa-collab-list { gap: 9px; }
+  .sa-card--resources .sa-item { border-color: var(--border); border-radius: 11px; padding: 10px; }
+  .sa-card--resources .sa-collab-row { gap: 8px; }
+  .sa-card--resources .sa-collab-sub { margin-top: 2px; }
+  .sa-collab-card {
+    transition: transform .2s ease, box-shadow .2s ease;
+  }
+  .sa-collab-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 24px rgba(15, 23, 42, 0.14);
+  }
+  .sa-item-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+  .sa-left-pack { display: flex; align-items: center; gap: 9px; min-width: 0; }
+  .sa-avatar { width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--card); font-size: 11px; font-weight: 700; flex-shrink: 0; }
+  .sa-item-name { font-size: 13px; font-weight: 700; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .sa-item-desc { font-size: 11px; color: var(--text2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
+  .sa-item-meta { text-align: right; flex-shrink: 0; }
+  .sa-item-date {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
+    padding: 2px 8px;
+    background: #eff6ff;
+    color: #1d4ed8;
+    font-size: 10.5px;
+    margin-bottom: 5px;
+  }
+  .sa-status { border-radius: 999px; padding: 2px 8px; font-size: 10px; font-weight: 700; }
+  .sa-status--available { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
+  .sa-status--occupied { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+  .sa-progress-wrap { margin-top: 8px; display: flex; align-items: center; gap: 7px; }
+  .sa-progress { height: 6px; border-radius: 999px; background: var(--bg); overflow: hidden; flex: 1; }
+  .sa-progress-fill { height: 100%; border-radius: 999px; }
+  .sa-progress-fill--low {
+    background: linear-gradient(90deg, #22c55e 0%, #4ade80 100%);
+    box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.15) inset;
+  }
+  .sa-progress-fill--medium {
+    background: linear-gradient(90deg, #f59e0b 0%, #fbbf24 100%);
+    box-shadow: 0 0 0 1px rgba(245, 158, 11, 0.15) inset;
+  }
+  .sa-progress-fill--high {
+    background: linear-gradient(90deg, #fb923c 0%, #ef4444 100%);
+    box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.15) inset;
+  }
+  .sa-pct { min-width: 34px; text-align: right; font-size: 11px; color: var(--text2); font-weight: 700; }
+
+  .sa-collab-row { display: flex; align-items: flex-start; gap: 10px; }
+  .sa-collab-body { flex: 1; min-width: 0; }
+  .sa-collab-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+  .sa-collab-sub { margin-top: 4px; color: var(--text2); font-size: 11px; }
+
+  .sa-ai-icon { text-align: center; font-size: 36px; color: var(--text3); margin-top: 4px; }
+  .sa-ai-text { margin: 8px auto 0; max-width: 260px; text-align: center; font-size: 12px; color: var(--text2); font-style: italic; }
+  .sa-ai-btn { width: 100%; margin-top: 12px; border: none; border-radius: 10px; padding: 10px 12px; font-size: 12px; font-weight: 700; color: var(--card); background: linear-gradient(135deg, #E53935, #c62828); cursor: pointer; transition: transform .2s ease, box-shadow .2s ease, background .2s ease; }
+  .sa-ai-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 0 18px rgba(230, 57, 70, 0.38);
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+  }
+  .sa-ai-card {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    background: linear-gradient(170deg, var(--card) 0%, #f6faff 100%);
+    border-color: #dbeafe;
+  }
+  .sa-ai-mini-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+  }
+  .sa-ai-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border-radius: 999px;
+    background: var(--bg);
+    color: var(--text2);
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 10px;
+    white-space: nowrap;
+  }
+  .sa-ai-chip--loading { background: #fff7ed; color: #c2410c; }
+  .sa-ai-metrics { display: grid; gap: 10px; }
+  .sa-ai-metric {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--bg);
+    padding: 11px 12px;
+  }
+  .sa-ai-metric__icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+  .sa-ai-metric__icon--blue { background: #dbeafe; }
+  .sa-ai-metric__icon--green { background: #dcfce7; }
+  .sa-ai-metric__icon--amber { background: #fef3c7; }
+  .sa-ai-metric__icon--red { background: #fee2e2; }
+  .sa-ai-metric__label { color: var(--text2); font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; }
+  .sa-ai-metric__value { margin-top: 2px; color: var(--text); font-size: 1.5rem; line-height: 1; font-weight: 800; }
+  .sa-ai-metric__value--green { color: #10b981; }
+  .sa-ai-metric__value--amber { color: #f59e0b; }
+  .sa-ai-metric__value--red { color: #ef4444; }
+  .sa-ai-footnote { margin: 0; color: var(--text2); font-size: 12px; line-height: 1.45; }
+  .sa-ai-footer { display: flex; flex-direction: column; gap: 10px; }
+  .sa-ai-btn--open { margin-top: 0; }
+  .sa-chat { margin-top: 12px; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+  .sa-chat-head { display: flex; justify-content: space-between; align-items: center; padding: 10px 11px; border-bottom: 1px solid var(--bg); }
+  .sa-chat-body { padding: 10px; display: flex; flex-direction: column; gap: 8px; }
+  .sa-chat-msg { font-size: 11px; color: var(--text2); background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 8px; }
+  .sa-quick-row { display: flex; flex-wrap: wrap; gap: 6px; }
+  .sa-quick-btn { border-radius: 999px; padding: 4px 8px; font-size: 10px; font-weight: 700; cursor: pointer; }
+  .sa-chat-input-row { display: flex; gap: 6px; }
+  .sa-chat-input { flex: 1; border: 1px solid var(--border); border-radius: 8px; padding: 7px 10px; font-size: 11px; outline: none; }
+  .sa-chat-send { border: none; border-radius: 8px; background: #E53935; color: var(--card); padding: 7px 10px; font-size: 11px; font-weight: 700; cursor: pointer; }
+
+  .sa-alert-list { display: flex; flex-direction: column; gap: 10px; }
+  .sa-alert {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    border-radius: 12px;
+    padding: 11px;
+    border: 1px solid;
+    border-left-width: 4px;
+    transition: transform .2s ease, box-shadow .2s ease;
+  }
+  .sa-alert:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 16px rgba(15, 23, 42, 0.1);
+  }
+  .sa-alert--danger {
+    background: #fff5f5;
+    border-color: #fecaca;
+    border-left-color: #ef4444;
+  }
+  .sa-alert--info {
+    background: #f0f7ff;
+    border-color: #bfdbfe;
+    border-left-color: #3b82f6;
+  }
+  .sa-alert__icon {
+    font-size: 18px;
+    margin-top: 2px;
+  }
+  .sa-alert__icon--danger { color: #dc2626; }
+  .sa-alert__icon--info { color: #1d4ed8; }
+  .sa-alert__pill {
+    border-radius: 999px;
+    padding: 3px 9px;
+    font-size: 10px;
+    font-weight: 700;
+  }
+  .sa-alert__pill--danger {
+    background: #fee2e2;
+    color: #991b1b;
+  }
+  .sa-alert__pill--info {
+    background: #dbeafe;
+    color: #1e40af;
+  }
+  .sa-alert--danger .sa-alert__pill {
+    animation: sa-alert-pulse 1.8s ease-in-out infinite;
+  }
+  .sa-alert-title { font-size: 12px; font-weight: 700; color: var(--text); }
+  .sa-alert-sub { font-size: 11px; color: var(--text2); margin-top: 2px; }
+
+  @keyframes sa-progress-flow {
+    0% { background-position: 0% 50%; }
+    100% { background-position: 100% 50%; }
+  }
+
+  @keyframes sa-alert-pulse {
+    0%, 100% {
+      box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.28);
+    }
+    50% {
+      box-shadow: 0 0 0 7px rgba(239, 68, 68, 0);
+    }
+  }
+
+  @media (max-width: 1200px) {
+    .skpi-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .sa-main-grid { grid-template-columns: 1fr; }
+  }
+
+  @media (max-width: 900px) {
+    .skpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .sa-ai-mini-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+
+  @media (max-width: 640px) {
+    .skpi-grid { grid-template-columns: 1fr; }
+    .sa-ai-mini-grid { grid-template-columns: 1fr; }
+    .mg-page-header__actions { width: 100%; }
+  }
+</style>
+
+<app-manager-shell activeSection="dashboard" [projectBadge]="projets.length" [collaboratorBadge]="collaborateurs.length">
+
+    <app-manager-topbar 
+      breadcrumb="SmartAssign › Manager › Supervision"
+      [notificationCount]="0">
+    </app-manager-topbar>
+
+      <section class="mg-page-header">
+        <div>
+          <h1 class="mg-page-header__title">Supervision globale</h1>
+          <p class="mg-page-header__subtitle">
+            Pilotage quotidien â€” {{ subtitleDate }}
+          </p>
+        </div>
+
+        <div class="mg-page-header__actions">
+          <button class="mg-btn mg-btn--ghost" type="button" (click)="exportDashboard()">
+            <svg viewBox="0 0 16 16" fill="none">
+              <path d="M8 2v9" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"></path>
+              <path d="M4.5 8.5L8 12l3.5-3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"></path>
+              <path d="M2 13h12" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"></path>
+            </svg>
+            Exporter
+          </button>
+
+          <button class="mg-btn mg-btn--danger" type="button" (click)="exportDashboardPdf()">
+            <svg viewBox="0 0 16 16" fill="none">
+              <path d="M3 2h7l3 3v9a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1Z" stroke="currentColor" stroke-width="1.4"></path>
+              <path d="M10 2v4h4M6 9h4M6 12h2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"></path>
+            </svg>
+            Export PDF
+          </button>
+        </div>
+      </section>
+
+      <div class="skpi-grid">
+        <app-kpi-card label="Projets actifs" [value]="kpiCards[0].value" [subtitle]="kpiCards[0].sub" badge="+50%" tone="blue"></app-kpi-card>
+        <app-kpi-card label="Ressources disponibles" [value]="kpiCards[1].value" [subtitle]="kpiCards[1].sub" badge="stable" tone="green" valueTone="green"></app-kpi-card>
+        <app-kpi-card label="Taux d'affectation" [value]="kpiCards[3].value" subtitle="Cible recommandée : 72%" badge="Vigilance" tone="amber" valueTone="amber"></app-kpi-card>
+        <app-kpi-card label="Alertes prioritaires" [value]="kpiCards[4].value" [subtitle]="kpiCards[4].value + ' active(s)'" [badge]="kpiCards[4].value" tone="red" valueTone="red"></app-kpi-card>
+        <app-kpi-card label="Compatibilité IA" [value]="kpiCards[5].value" subtitle="score moyen des dernières affectations" [badge]="kpiCards[2].value + ' total'" tone="neutral"></app-kpi-card>
       </div>
-    </div>
 
-    <nav class="db-nav">
-      <p class="db-nav__section">Principal</p>
-      <a class="db-nav__item db-nav__item--active" routerLink="/manager/dashboard">
-        <i class="ti ti-layout-dashboard db-nav__ico"></i>
-        Dashboard
-      </a>
-
-      <p class="db-nav__section db-nav__section--spaced">Gestion</p>
-      <a class="db-nav__item" routerLink="/manager/projets">
-        <i class="ti ti-folder db-nav__ico"></i>
-        Projets
-        <span class="db-nav__badge db-nav__badge--blue">{{ projets.length }}</span>
-      </a>
-      <a class="db-nav__item" routerLink="/manager/collaborateurs">
-        <i class="ti ti-users db-nav__ico"></i>
-        Collaborateurs
-        <span class="db-nav__badge db-nav__badge--blue">{{ collaborateurs.length }}</span>
-      </a>
-      <a class="db-nav__item" routerLink="/manager/charge-travail">
-        <i class="ti ti-chart-bar db-nav__ico"></i>
-        Charge de travail
-      </a>
-
-      <p class="db-nav__section db-nav__section--spaced">Affectations</p>
-      <a class="db-nav__item" routerLink="/manager/affectation">
-        <i class="ti ti-arrow-right db-nav__ico"></i>
-        Affectations IA
-        <span class="db-nav__badge db-nav__badge--red">0</span>
-      </a>
-      <a class="db-nav__item" routerLink="/manager/historique-affectations">
-        <i class="ti ti-history db-nav__ico"></i>
-        Historique
-      </a>
-
-      <a class="db-nav__item" routerLink="/manager/notifications" routerLinkActive="db-nav__item--active">
-        <i class="ti ti-bell db-nav__ico"></i>
-        Notifications
-        <span class="db-nav__badge db-nav__badge--blue">3</span>
-      </a>
-    </nav>
-
-    <div class="db-sidebar__footer">
-      <div class="db-user-block">
-        <div class="db-av db-av--green db-av--md">MS</div>
-        <div class="db-user-info">
-          <div class="db-user-name">Manager SmartAssign</div>
-          <div class="db-user-role">Manager</div>
-        </div>
-      </div>
-      <button type="button" class="db-logout" (click)="logout()">
-        <i class="ti ti-logout"></i>
-        Déconnexion
-      </button>
-    </div>
-  </aside>
-
-  <!-- ══ MAIN ═════════════════════════════════════════════════ -->
-  <div class="db-main">
-
-    <!-- TOPBAR -->
-    <div class="db-topbar">
-      <div class="db-topbar__left">
-        <nav class="db-breadcrumb">
-          <span>SmartAssign</span>
-          <span class="db-breadcrumb__sep">›</span>
-          <span>Manager</span>
-          <span class="db-breadcrumb__sep">›</span>
-          <span class="db-breadcrumb__cur">Dashboard</span>
-        </nav>
-        <h1 class="db-title">Supervision globale</h1>
-      </div>
-      <div class="db-topbar__right">
-        <div class="db-status-pill">
-          <span class="db-dot db-dot--green"></span>
-          Flux maîtrisé
-        </div>
-        <button type="button" class="db-btn db-btn--primary db-btn--pill" (click)="openNewProject()">
-          <i class="ti ti-plus"></i>
-          Nouveau projet
-        </button>
-        <div class="db-av db-av--green db-av--topbar">MS</div>
-      </div>
-    </div>
-
-    <!-- CONTENT -->
-    <div class="db-content">
-
-      <p class="db-date-label">Pilotage — {{ currentDate | date:'EEEE d MMMM yyyy' : '' : 'fr' }}</p>
-
-      <!-- KPI GRID -->
-      <div class="db-kpi-grid">
-
-        <div class="db-kpi">
-          <div class="db-kpi__bar" style="background:#3b82f6"></div>
-          <div class="db-kpi__head"><span class="db-badge db-badge--neutral">Pilotage</span></div>
-          <div class="db-kpi__label">PROJETS ACTIFS</div>
-          <div class="db-kpi__val" style="color:#3b82f6">{{ kpiCards[0].value }}</div>
-          <div class="db-kpi__sub">{{ kpiCards[0].sub }}</div>
-        </div>
-
-        <div class="db-kpi">
-          <div class="db-kpi__bar" style="background:#10b981"></div>
-          <div class="db-kpi__head"><span class="db-badge db-badge--neutral">Stable</span></div>
-          <div class="db-kpi__label">RESSOURCES DISPONIBLES</div>
-          <div class="db-kpi__val" style="color:#10b981">{{ kpiCards[1].value }}</div>
-          <div class="db-kpi__sub">{{ kpiCards[1].sub }}</div>
-        </div>
-
-        <div class="db-kpi">
-          <div class="db-kpi__bar" style="background:#8b5cf6"></div>
-          <div class="db-kpi__head"><span class="db-badge db-badge--neutral">Pilotage</span></div>
-          <div class="db-kpi__label">AFFECTATIONS EN COURS</div>
-          <div class="db-kpi__val" style="color:#8b5cf6">{{ kpiCards[2].value }}</div>
-          <div class="db-kpi__sub">{{ kpiCards[2].sub }}</div>
-        </div>
-
-        <div class="db-kpi">
-          <div class="db-kpi__bar" style="background:#f59e0b"></div>
-          <div class="db-kpi__head"><span class="db-badge db-badge--vigilance">Vigilance</span></div>
-          <div class="db-kpi__label">TAUX D'AFFECTATION</div>
-          <div class="db-kpi__val" style="color:#f59e0b">{{ tauxAffectation }}</div>
-          <div class="db-kpi__sub">Cible recommandée : 72%</div>
-        </div>
-
-        <div class="db-kpi">
-          <div class="db-kpi__bar" style="background:#ef4444"></div>
-          <div class="db-kpi__head"><span class="db-badge db-badge--neutral">Pilotage</span></div>
-          <div class="db-kpi__label">ALERTES PRIORITAIRES</div>
-          <div class="db-kpi__val" style="color:#ef4444">{{ kpiCards[4].value }}</div>
-          <div class="db-kpi__sub">{{ kpiCards[4].sub }}</div>
-        </div>
-
-        <div class="db-kpi">
-          <div class="db-kpi__bar" style="background:#8b5cf6"></div>
-          <div class="db-kpi__head"><span class="db-badge db-badge--ia">IA</span></div>
-          <div class="db-kpi__label">COMPATIBILITÉ IA MOYENNE</div>
-          <div class="db-kpi__val" style="color:#8b5cf6">{{ kpiCards[5].value }}</div>
-          <div class="db-kpi__sub">score moyen recommandations</div>
-        </div>
-
-      </div>
-
-      <!-- MAIN GRID (2 col) -->
-      <div class="db-main-grid">
-
-        <!-- LEFT COLUMN -->
-        <div class="db-left-col">
-
-          <!-- Projets card -->
-          <div class="db-card">
-            <div class="db-card__hd">
+      <div class="sa-main-grid">
+        <div class="sa-col">
+          <section class="sa-card sa-card--projects">
+            <div class="sa-card-head">
               <div>
-                <p class="db-section-lbl">PILOTAGE</p>
-                <h2 class="db-card__title">Projets sous supervision</h2>
+                <p class="sa-kicker">Pilotage</p>
+                <h2 class="sa-card-title">Projets sous supervision</h2>
               </div>
-              <a class="db-btn db-btn--ghost db-btn--pill" routerLink="/manager/projets">Voir tout →</a>
+              <a class="sa-link" routerLink="/manager/projets">Voir tout →</a>
             </div>
-            <div class="db-proj-list">
-              <div class="db-proj"
-                   *ngFor="let p of projets"
-                   [style.border-left-color]="projBorderColor(p)">
-                <div class="db-proj__row1">
-                  <strong class="db-proj__name">{{ p.name }}</strong>
-                  <span class="db-proj__status"
-                        [ngClass]="p.statusClass === 'active' ? 'db-proj__status--active' : 'db-proj__status--pending'">
-                    {{ p.status }}
-                  </span>
-                </div>
-                <div class="db-proj__row2">
-                  <div class="db-proj__client">
-                    <div class="db-av db-av--sm" [style.background]="projClientColor(p.client)">{{ clientInitials(p.client) }}</div>
-                    <span>{{ p.client }}</span>
-                  </div>
-                  <span class="db-deadline-pill">Échéance {{ p.deadline | date:'dd/MM/yyyy' }}</span>
-                </div>
-                <div class="db-proj__resources">
-                  {{ p.resourceCount }} ressource(s){{ p.resourceCount > 0 ? ' affectée(s)' : '' }}
-                </div>
-                <div class="db-pbar">
-                  <div class="db-pbar__fill" [style.width.%]="p.progress" [style.background]="projProgressColor(p.progressColor)"></div>
-                </div>
-                <div class="db-proj__pct">{{ p.progress }}%</div>
-              </div>
-            </div>
-          </div>
 
+            <div class="sa-project-list">
+              <article class="sa-item sa-project-item" *ngFor="let p of projets">
+                <div class="sa-item-top">
+                  <div class="sa-left-pack">
+                    <div class="sa-avatar" [style.background]="projClientColor(p.client)">{{ clientInitials(p.client) }}</div>
+                    <div style="min-width:0;">
+                      <div class="sa-item-name">{{ p.name }}</div>
+                      <div class="sa-item-desc">{{ p.description || p.client || 'Projet en suivi manager' }}</div>
+                    </div>
+                  </div>
+
+                  <div class="sa-item-meta">
+                    <div class="sa-item-date">Échéance {{ p.deadline | date:'dd/MM/yyyy' }}</div>
+                    <span class="sa-status sa-project-status"
+                          [ngClass]="{
+                            'sa-project-status--active': p.statusClass === 'active',
+                            'sa-project-status--pending': p.statusClass === 'pending',
+                            'sa-project-status--paused': p.statusClass !== 'active' && p.statusClass !== 'pending'
+                          }">
+                      {{ p.status }}
+                    </span>
+                  </div>
+                </div>
+
+                <div class="sa-progress-wrap">
+                  <div class="sa-progress">
+                    <div class="sa-progress-fill sa-project-progress" [style.width.%]="p.progress"></div>
+                  </div>
+                  <span class="sa-pct">{{ p.progress }}%</span>
+                </div>
+              </article>
+            </div>
+          </section>
+
+          <section class="sa-card sa-card--resources">
+            <div class="sa-card-head">
+              <div>
+                <p class="sa-kicker">Ressources humaines</p>
+                <h2 class="sa-card-title">Charge et disponibilité des collaborateurs</h2>
+              </div>
+              <a class="sa-link" routerLink="/manager/charge-travail">Voir l'analyse →</a>
+            </div>
+
+            <div class="sa-collab-list">
+              <article class="sa-item sa-collab-card" *ngFor="let c of collaborateurs">
+                <div class="sa-collab-row">
+                  <div class="sa-avatar" [style.background]="c.color">
+                    {{ c.initials }}
+                  </div>
+
+                  <div class="sa-collab-body">
+                    <div class="sa-collab-top">
+                      <div>
+                        <div class="sa-item-name">{{ c.name }}</div>
+                        <div class="sa-item-desc">{{ c.role }}</div>
+                      </div>
+                      <span class="sa-status"
+                            [ngClass]="{
+                              'sa-status--occupied': c.statusClass === 'occupied',
+                              'sa-status--available': c.statusClass !== 'occupied'
+                            }">
+                        {{ c.statusClass === 'occupied' ? 'Occupé' : 'Disponible' }}
+                      </span>
+                    </div>
+
+                    <div class="sa-progress-wrap">
+                      <div class="sa-progress">
+                        <div class="sa-progress-fill"
+                             [style.width.%]="c.loadPercent"
+                             [ngClass]="{
+                               'sa-progress-fill--low': c.loadPercent <= 35,
+                               'sa-progress-fill--medium': c.loadPercent > 35 && c.loadPercent <= 70,
+                               'sa-progress-fill--high': c.loadPercent > 70
+                             }"></div>
+                      </div>
+                    </div>
+                    <div class="sa-collab-sub">{{ c.loadPercent }}% · {{ c.projectCount }} projet(s)</div>
+                  </div>
+                </div>
+              </article>
+            </div>
+          </section>
         </div>
 
-        <!-- RIGHT COLUMN -->
-        <div class="db-right-col">
-
-          <!-- Décision IA -->
-          <div class="db-card">
-            <div class="db-card__hd db-card__hd--row">
-              <div class="db-ia-title">
-                <i class="ti ti-sparkles db-ia-icon"></i>
-                <span>Décision assistée IA</span>
+        <div class="sa-col">
+          <section class="sa-card sa-ai-card">
+            <div class="sa-card-head" style="margin-bottom: 0; align-items: flex-start;">
+              <div>
+                <p class="sa-kicker">Décision assistée IA</p>
+                <h2 class="sa-card-title" style="margin:4px 0 0;">Stats globales en temps réel</h2>
               </div>
-              <span class="db-badge db-badge--ia">Assistant IA</span>
-            </div>
-            <div class="db-ia-empty">
-              <i class="ti ti-robot db-ia-empty__robot"></i>
-              <p class="db-ia-empty__text">Posez une question à l'assistant IA ou lancez une analyse de recommandation.</p>
-              <a class="db-btn db-btn--primary db-btn--block" routerLink="/manager/affectation">
-                <i class="ti ti-arrow-right"></i>
-                Lancer l'analyse
-              </a>
-            </div>
-          </div>
-
-          <!-- Points de vigilance -->
-          <div class="db-card">
-            <h2 class="db-vigilance-title">Points de vigilance</h2>
-            <div class="db-vigilance-item"
-                 *ngFor="let a of alertes"
-                 [class.db-vigilance-item--info]="a.type === 'info' || a.type === 'success'"
-                 [class.db-vigilance-item--warn]="a.type === 'warning'"
-                 [class.db-vigilance-item--danger]="a.type === 'danger'">
-              <i class="ti db-vigilance-item__ico"
-                 [class.ti-info-circle]="a.type === 'info' || a.type === 'success'"
-                 [class.ti-alert-triangle]="a.type === 'warning'"
-                 [class.ti-alert-octagon]="a.type === 'danger'"
-                 [class.db-vigilance-item__ico--warn]="a.type === 'warning'"
-                 [class.db-vigilance-item__ico--danger]="a.type === 'danger'"></i>
-              <div class="db-vigilance-item__body">
-                <div class="db-vigilance-item__title">{{ a.message }}</div>
-                <div class="db-vigilance-item__sub">{{ a.sub }}</div>
-              </div>
-              <span class="db-badge"
-                    [class.db-badge--info]="a.type === 'info' || a.type === 'success'"
-                    [class.db-badge--warn]="a.type === 'warning'"
-                    [class.db-badge--urgent]="a.type === 'danger'">
-                {{ a.type === 'danger' ? 'URGENT' : (a.type | uppercase) }}
+              <span class="sa-ai-chip" [class.sa-ai-chip--loading]="assistantAiLoading">
+                {{ assistantAiLoading ? 'Analyse en cours' : 'Synchronisé' }}
               </span>
             </div>
-            <p class="db-no-alert" *ngIf="alertes.length === 0">Aucune alerte active.</p>
-          </div>
 
-        </div>
-
-      </div>
-
-      <!-- Collaborateurs card (full width) -->
-      <div class="db-card db-card--mt">
-        <div class="db-card__hd">
-          <div>
-            <p class="db-section-lbl">RESSOURCES HUMAINES</p>
-            <h2 class="db-card__title">Charge et disponibilité des collaborateurs</h2>
-          </div>
-          <a class="db-btn db-btn--ghost" routerLink="/manager/charge-travail">Voir l'analyse complète →</a>
-        </div>
-        <div class="db-collab-grid db-collab-grid--full">
-          <div class="db-collab-card"
-               *ngFor="let c of collaborateurs">
-            <div class="db-av db-av--lg" [style.background]="c.color">{{ c.initials }}</div>
-            <div class="db-collab-info">
-              <div class="db-collab-info__top">
-                <div>
-                  <div class="db-collab-name">{{ c.name }}</div>
-                  <div class="db-collab-role">{{ c.role }}</div>
-                </div>
-                <span class="db-collab-badge"
-                      [ngClass]="c.statusClass === 'available' ? 'db-collab-badge--available' : 'db-collab-badge--occupied'">
-                  {{ c.status }}
-                </span>
-              </div>
-              <div class="db-pbar db-pbar--mt">
-                <div class="db-pbar__fill" [style.width.%]="c.loadPercent" [style.background]="collabProgressColor(c.statusClass)"></div>
-              </div>
-              <div class="db-collab-sub">{{ c.loadPercent }}% de charge · {{ c.projectCount }} projet(s)</div>
+            <div class="sa-ai-mini-grid">
+              <app-kpi-card label="Disponibles" [value]="assistantAiAvailableCount" subtitle="Collaborateurs mobilisables" badge="IA" tone="green" valueTone="green"></app-kpi-card>
+              <app-kpi-card label="Taux d'affectation" [value]="assistantAiAllocationRate + '%'" subtitle="Affectations actives / collaborateurs" badge="IA" tone="blue"></app-kpi-card>
+              <app-kpi-card label="Surchargés" [value]="assistantAiOverloadedCount" subtitle="Plus de 2 affectations actives" badge="Vigilance" tone="amber" valueTone="amber"></app-kpi-card>
             </div>
-          </div>
-        </div>
-      </div>
 
-      <!-- Historique card (full width) -->
-      <div class="db-card db-card--mt">
-        <div class="db-card__hd">
-          <div>
-            <p class="db-section-lbl">TRAÇABILITÉ</p>
-            <h2 class="db-card__title">Historique des affectations</h2>
-          </div>
-          <div class="db-hd-right">
-            <a class="db-btn db-btn--ghost db-btn--pill" routerLink="/manager/affectation">Voir tout →</a>
-          </div>
-        </div>
-        <table class="db-table">
-          <thead>
-            <tr>
-              <th>COLLABORATEUR</th>
-              <th>PROJET · RÔLE</th>
-              <th>SCORE IA</th>
-              <th>DATE</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let h of filteredHistory.slice(0, 3)">
-              <td>
-                <div class="db-person">
-                  <div class="db-av db-av--sm" [style.background]="h.collaborateurColor">{{ h.collaborateurInit }}</div>
-                  <span>{{ h.collaborateurNom }}</span>
+            <div class="sa-ai-footer">
+              <p class="sa-ai-footnote" *ngIf="assistantAiError; else assistantAiInfo">{{ assistantAiError }}</p>
+              <ng-template #assistantAiInfo>
+                <p class="sa-ai-footnote">
+                  Source: POST /manager/ia/analyse · {{ assistantAiLoading ? 'mise à jour...' : assistantAiLastSyncLabel }}
+                </p>
+              </ng-template>
+
+              <button type="button" class="sa-ai-btn sa-ai-btn--open" (click)="openAssistantChat()">
+                âš¡ Ouvrir l'assistant IA
+              </button>
+            </div>
+          </section>
+
+          <section class="sa-card">
+            <div class="sa-card-head" style="align-items:center;">
+              <h2 class="sa-card-title" style="margin:0;">Points de vigilance</h2>
+              <a class="sa-link" routerLink="/manager/notifications">Toutes →</a>
+            </div>
+
+            <div class="sa-alert-list">
+              <article class="sa-alert"
+                       *ngFor="let a of alertes"
+                       [ngClass]="{
+                         'sa-alert--danger': a.type === 'danger' || a.type === 'warning',
+                         'sa-alert--info': a.type !== 'danger' && a.type !== 'warning'
+                       }">
+                <i class="ti sa-alert__icon"
+                   [class.ti-alert-triangle]="a.type === 'danger' || a.type === 'warning'"
+                   [class.ti-info-circle]="a.type !== 'danger' && a.type !== 'warning'"
+                   [ngClass]="{
+                     'sa-alert__icon--danger': a.type === 'danger' || a.type === 'warning',
+                     'sa-alert__icon--info': a.type !== 'danger' && a.type !== 'warning'
+                   }"></i>
+
+                <div style="flex:1;min-width:0;">
+                  <div class="sa-alert-title">{{ a.message }}</div>
+                  <div class="sa-alert-sub">{{ a.sub }}</div>
                 </div>
-              </td>
-              <td class="db-table__sub">{{ h.projet }} · {{ h.profil }}</td>
-              <td><strong [style.color]="scoreColor(h.score)">{{ h.score }}%</strong></td>
-              <td><span class="db-date-pill">{{ h.date | date:'dd/MM/yyyy' }}</span></td>
-            </tr>
-          </tbody>
-        </table>
-        <div class="db-table-footer">
-          <span class="db-table-footer__count">
-            <span class="db-dot db-dot--green"></span>
-            {{ affectations.length }} affectation(s) au total
-          </span>
-          <a class="db-link" routerLink="/manager/affectation">Voir l'historique complet →</a>
+
+                <span class="sa-alert__pill"
+                      [ngClass]="{
+                        'sa-alert__pill--danger': a.type === 'danger' || a.type === 'warning',
+                        'sa-alert__pill--info': a.type !== 'danger' && a.type !== 'warning'
+                      }">
+                  {{ a.type === 'danger' ? 'URGENT' : 'INFO' }}
+                </span>
+              </article>
+            </div>
+
+            <p *ngIf="alertes.length === 0" style="font-size:12px;color:var(--text3);text-align:center;margin:6px 0 2px;">Aucune alerte active.</p>
+          </section>
         </div>
       </div>
-    </div>
-  </div>
 
-</section>
+      <div class="mg-confirm-overlay" *ngIf="confirmationDialog.visible" (click)="closeConfirmation()">
+        <section class="mg-confirm-dialog" role="dialog" aria-modal="true" [attr.aria-label]="confirmationDialog.title" (click)="$event.stopPropagation()">
+          <div class="mg-confirm-icon" aria-hidden="true">!</div>
+          <h2>{{ confirmationDialog.title }}</h2>
+          <p>{{ confirmationDialog.message }}</p>
+          <div class="mg-confirm-actions">
+            <button type="button" class="mg-confirm-btn mg-confirm-btn--ghost" (click)="closeConfirmation()">Fermer</button>
+            <button type="button" class="mg-confirm-btn mg-confirm-btn--danger" (click)="confirmCurrentAction()">
+              {{ confirmationDialog.confirmLabel }}
+            </button>
+          </div>
+        </section>
+      </div>
+</app-manager-shell>
+
+
+
+
+

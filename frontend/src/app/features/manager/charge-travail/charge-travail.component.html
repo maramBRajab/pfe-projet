@@ -1,227 +1,131 @@
-﻿<section class="ct-root">
+<app-manager-shell activeSection="charge">
 
-  <!-- ═══ SIDEBAR ══════════════════════════════════════════════════════ -->
-  <aside class="ct-sidebar">
+<app-manager-topbar 
+  breadcrumb="SmartAssign › Manager › Charge de travail"
+  [notificationCount]="0">
+</app-manager-topbar>
 
-    <div class="ct-sb-brand">
-      <div class="ct-sb-logo">SA</div>
-      <div class="ct-sb-brand-text">
-        <span class="ct-sb-name">SmartAssign</span>
-        <span class="ct-sb-tag">ESPACE MANAGER</span>
-      </div>
+<div class="page-wrapper">
+
+  <!-- STATS CARDS -->
+  <div class="stats-row">
+    <app-kpi-card label="Collaborateurs" [value]="totalCollaborateurs" subtitle="Capacités consolidées" badge="Stable" tone="green"></app-kpi-card>
+    <app-kpi-card label="Capacité libre" [value]="capaciteLibre" subtitle="Mobilisables rapidement" badge="Disponibles" tone="green" valueTone="green"></app-kpi-card>
+    <app-kpi-card label="Surcharges" [value]="surcharges" subtitle="Au-delà de 90% de charge" badge="Vigilance" tone="amber" valueTone="amber"></app-kpi-card>
+    <app-kpi-card label="Charge moyenne" [value]="chargeMoyenne + '%'" subtitle="Niveau global d'occupation" [badge]="chargeMoyenne + '%'" tone="blue" valueTone="blue"></app-kpi-card>
+    <app-kpi-card label="Projets actifs" [value]="projetsActifs" subtitle="Missions actuellement ouvertes" badge="Activité" tone="purple"></app-kpi-card>
+  </div>
+
+  <!-- FILTERS -->
+  <div class="filters-row">
+    <div class="search-input-wrapper">
+      <span class="search-icon">🔍</span>
+      <input
+        type="text"
+        class="search-input"
+        placeholder="Nom ou compétence..."
+        [(ngModel)]="searchTerm"
+        (input)="applyFilters()"
+      />
     </div>
+    <select class="filter-select" [(ngModel)]="filterDisponibilite"
+      (change)="applyFilters()">
+      <option value="">Toutes les disponibilités</option>
+      <option value="Disponible">Disponible</option>
+      <option value="Occupé">Occupé</option>
+    </select>
+    <select class="filter-select" [(ngModel)]="filterCharge"
+      (change)="applyFilters()">
+      <option value="">Tous les niveaux de charge</option>
+      <option value="low">Faible (0-30%)</option>
+      <option value="medium">Moyen (30-70%)</option>
+      <option value="high">Élevé (70-100%)</option>
+    </select>
+  </div>
 
-    <nav class="ct-nav">
-      <p class="ct-nav__sec">Principal</p>
-      <a class="ct-nav__item" routerLink="/manager/dashboard">
-        <i class="ti ti-layout-dashboard"></i>
-        <span>Dashboard</span>
-      </a>
+  <!-- RESULTS INFO -->
+  <div class="results-info">
+    {{ filteredCollaborateurs.length }} résultat(s)
+    <span class="engaged-link">
+      · {{ engagedCount }} collaborateur(s) engagé(s)
+    </span>
+  </div>
 
-      <p class="ct-nav__sec">Gestion</p>
-      <a class="ct-nav__item" routerLink="/manager/projets">
-        <i class="ti ti-folder"></i>
-        <span>Projets</span>
-        <span class="ct-nav__badge">3</span>
-      </a>
-      <a class="ct-nav__item" routerLink="/manager/collaborateurs">
-        <i class="ti ti-users"></i>
-        <span>Collaborateurs</span>
-        <span class="ct-nav__badge">11</span>
-      </a>
-      <a class="ct-nav__item ct-nav__item--active" routerLink="/manager/charge-travail">
-        <i class="ti ti-chart-bar"></i>
-        <span>Charge de travail</span>
-      </a>
+  <!-- CARDS GRID -->
+  <div class="cards-grid">
+    <div class="collab-card"
+      *ngFor="let collab of filteredCollaborateurs">
 
-      <p class="ct-nav__sec">Affectations</p>
-      <a class="ct-nav__item" routerLink="/manager/affectation">
-        <i class="ti ti-arrow-right"></i>
-        <span>Affectations IA</span>
-        <span class="ct-nav__badge ct-nav__badge--red">0</span>
-      </a>
-      <a class="ct-nav__item" routerLink="/manager/historique-affectations">
-        <i class="ti ti-history"></i>
-        <span>Historique</span>
-      </a>
-      <a class="ct-nav__item" routerLink="/manager/notifications" routerLinkActive="ct-nav__item--active">
-        <i class="ti ti-bell"></i>
-        <span>Notifications</span>
-        <span class="ct-nav__badge ct-nav__badge--blue">3</span>
-      </a>
-    </nav>
-
-    <div class="ct-sb-footer">
-      <div class="ct-sb-user" routerLink="/manager/profil" style="cursor:pointer">
-        <div class="ct-sb-av">MS</div>
-        <div class="ct-sb-user-info">
-          <div class="ct-sb-uname">Manager SmartAssign</div>
-          <div class="ct-sb-urole">Manager</div>
+      <div class="collab-card-header">
+        <div class="collab-left">
+          <div class="avatar" [style.background]="collab.avatarColor">
+            {{ collab.initials }}
+          </div>
+          <div class="collab-info">
+            <span class="collab-name">
+              {{ collab.prenom }} {{ collab.nom }}
+            </span>
+            <span
+              class="disponibilite-badge"
+              [class.disponible]="collab.disponibilite === 'Disponible'"
+              [class.occupe]="collab.disponibilite === 'Occupé'">
+              {{ collab.disponibilite }}
+            </span>
+          </div>
+        </div>
+        <div class="charge-percent"
+          [class.percent-green]="collab.chargeOccupation <= 30"
+          [class.percent-blue]="collab.chargeOccupation > 30 && collab.chargeOccupation <= 70"
+          [class.percent-orange]="collab.chargeOccupation > 70 && collab.chargeOccupation <= 90"
+          [class.percent-red]="collab.chargeOccupation > 90">
+          {{ collab.chargeOccupation }}%
         </div>
       </div>
-      <button type="button" class="ct-nav__item ct-nav__item--logout" (click)="logout()">
-        <i class="ti ti-logout"></i>
-        <span>D&eacute;connexion</span>
-      </button>
-    </div>
-  </aside>
 
-  <!-- ═══ MAIN ═════════════════════════════════════════════════════════ -->
-  <div class="ct-main">
-
-    <!-- TOPBAR -->
-    <div class="ct-topbar">
-      <div class="ct-topbar__left">
-        <div class="ct-topbar__bc">SmartAssign &rsaquo; Manager &rsaquo; Charge de travail</div>
-        <h1 class="ct-topbar__title">Charge de travail</h1>
-      </div>
-      <div class="ct-topbar__right">
-        <div class="ct-status-pill">
-          <span class="ct-status-dot"></span>
-          Donn&eacute;es synchronis&eacute;es
+      <div class="progress-bar-wrapper">
+        <div class="progress-bar" style="width:100%;">
+          <div class="progress-fill"
+            [style.width.%]="collab.chargeOccupation"
+            [class.fill-green]="collab.chargeOccupation <= 30"
+            [class.fill-blue]="collab.chargeOccupation > 30 && collab.chargeOccupation <= 70"
+            [class.fill-orange]="collab.chargeOccupation > 70 && collab.chargeOccupation <= 90"
+            [class.fill-red]="collab.chargeOccupation > 90">
+          </div>
         </div>
-        <a routerLink="/manager/collaborateurs" class="ct-btn ct-btn--primary">
-          <i class="ti ti-users"></i> Voir les profils
+      </div>
+
+      <div class="collab-card-footer">
+        {{ collab.chargeOccupation }}% d'occupation · {{ collab.projets.length }} projet(s)
+      </div>
+
+      <div style="margin-top:10px;" *ngIf="collab.projets?.length">
+        <p style="font-size:12px; color:#888; margin-bottom:6px;">Projets en cours :</p>
+        <div *ngFor="let p of collab.projets"
+             style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
+          <span style="font-size:13px;">• {{ p.nom }}</span>
+          <span style="font-size:11px; padding:2px 8px; border-radius:12px;"
+            [style.background]="p.statut === 'En cours' ? '#e8f5e9' :
+                                p.statut === 'En attente' ? '#fff3e0' : '#f3e5f5'"
+            [style.color]="p.statut === 'En cours' ? '#2e7d32' :
+                           p.statut === 'En attente' ? '#e65100' : '#6a1b9a'">
+            {{ p.statut }}
+          </span>
+        </div>
+      </div>
+      <p *ngIf="!collab.projets?.length"
+         style="font-size:12px; color:#aaa; margin-top:8px;">
+        Aucun projet actif.
+      </p>
+
+      <div style="text-align:right; margin-top:12px;">
+        <a routerLink="/manager/affectation"
+           style="font-size:12px; color:#999; text-decoration:none; cursor:pointer;">
+          Voir les affectations →
         </a>
-        <div class="ct-topbar__av">MS</div>
       </div>
+
     </div>
+  </div>
 
-    <!-- CONTENT -->
-    <div class="ct-content">
-
-      <!-- ── KPI GRID (5 cards) ────────────────────────────────────── -->
-      <div class="ct-kpi-grid">
-
-        <div class="ct-kpi">
-          <div class="ct-kpi__bar" style="background:#3b82f6"></div>
-          <span class="ct-kpi__badge ct-kpi__badge--neutral">Stable</span>
-          <div class="ct-kpi__label">COLLABORATEURS</div>
-          <div class="ct-kpi__val" style="color:#3b82f6">{{ collaborateurs.length }}</div>
-          <div class="ct-kpi__sub">Capacit&eacute;s consolid&eacute;es</div>
-        </div>
-
-        <div class="ct-kpi">
-          <div class="ct-kpi__bar" style="background:#10b981"></div>
-          <span class="ct-kpi__badge ct-kpi__badge--green">Disponibles</span>
-          <div class="ct-kpi__label">CAPACIT&Eacute; LIBRE</div>
-          <div class="ct-kpi__val" style="color:#10b981">{{ availabilityCount }}</div>
-          <div class="ct-kpi__sub">Mobilisables rapidement</div>
-        </div>
-
-        <div class="ct-kpi">
-          <div class="ct-kpi__bar" style="background:#ef4444"></div>
-          <span class="ct-kpi__badge ct-kpi__badge--amber">Vigilance</span>
-          <div class="ct-kpi__label">SURCHARGES</div>
-          <div class="ct-kpi__val" style="color:#1e293b">{{ overloadCount }}</div>
-          <div class="ct-kpi__sub">Au-del&agrave; de 90% de charge</div>
-        </div>
-
-        <div class="ct-kpi">
-          <div class="ct-kpi__bar" style="background:#f59e0b"></div>
-          <span class="ct-kpi__badge ct-kpi__badge--amber">{{ averageCharge }}%</span>
-          <div class="ct-kpi__label">CHARGE MOYENNE</div>
-          <div class="ct-kpi__val" style="color:#f59e0b">{{ averageCharge }}%</div>
-          <div class="ct-kpi__sub">Niveau global d&rsquo;occupation</div>
-        </div>
-
-        <div class="ct-kpi">
-          <div class="ct-kpi__bar" style="background:#8b5cf6"></div>
-          <span class="ct-kpi__badge ct-kpi__badge--neutral">Activit&eacute;</span>
-          <div class="ct-kpi__label">PROJETS ACTIFS</div>
-          <div class="ct-kpi__val" style="color:#8b5cf6">{{ activeProjectsCount }}</div>
-          <div class="ct-kpi__sub">Missions actuellement ouvertes</div>
-        </div>
-
-      </div><!-- /kpi-grid -->
-
-      <!-- ── MAIN BLOCK (filter + results + cards) ───────────────── -->
-      <div class="ct-main-block">
-
-        <!-- Filter bar -->
-        <div class="ct-filter-row">
-          <div class="ct-search-wrap">
-            <i class="ti ti-search ct-search-ico"></i>
-            <input type="text" [(ngModel)]="searchTerm"
-                   placeholder="Nom ou comp&eacute;tence&hellip;"
-                   class="ct-search" />
-          </div>
-          <select [(ngModel)]="availabilityFilter" class="ct-select">
-            <option value="all">Toutes les disponibilit&eacute;s</option>
-            <option value="available">Disponible</option>
-            <option value="busy">Occup&eacute;</option>
-          </select>
-          <select [(ngModel)]="chargeFilter" class="ct-select">
-            <option value="all">Tous les niveaux de charge</option>
-            <option value="ok">Charge faible (&#8804;40%)</option>
-            <option value="warn">Charge moyenne (41–89%)</option>
-            <option value="over">Surcharge (&ge;90%)</option>
-          </select>
-          <button type="button" class="ct-btn ct-btn--ghost" (click)="clearFilters()">
-            <i class="ti ti-filter-x"></i> R&eacute;initialiser
-          </button>
-        </div>
-
-        <!-- Results row -->
-        <div class="ct-results-row">
-          <span>{{ filteredCollaborateurs.length }} r&eacute;sultat(s)</span>
-          <span class="ct-results-right">{{ engagedCount }} collaborateur(s) engag&eacute;(s)</span>
-        </div>
-
-        <!-- Loading / Error -->
-        <div *ngIf="isLoading" class="ct-loading">
-          <div class="ct-spinner"></div>
-          <span>Chargement de la charge de travail&hellip;</span>
-        </div>
-        <div *ngIf="errorMessage" class="ct-error-msg">{{ errorMessage }}</div>
-
-        <!-- Cards grid -->
-        <div *ngIf="!isLoading" class="ct-cards-grid">
-
-          <div *ngFor="let c of filteredCollaborateurs; trackBy: trackByCollaborateur"
-               class="ct-card">
-
-            <!-- Row 1: avatar + name/badge + percentage -->
-            <div class="ct-card__header">
-              <div class="ct-card__av" [style.background]="avatarColor(c.nom)">
-                {{ c.initiales }}
-              </div>
-              <div class="ct-card__meta">
-                <div class="ct-card__name">{{ c.nom }}</div>
-                <span class="ct-card__badge"
-                      [ngClass]="c.disponible ? 'ct-card__badge--ok' : 'ct-card__badge--busy'">
-                  {{ c.disponible ? 'Disponible' : 'Occup&eacute;' }}
-                </span>
-              </div>
-              <div class="ct-card__pct" [style.color]="chargeColor(c.charge)">
-                {{ c.charge }}%
-              </div>
-            </div>
-
-            <!-- Progress bar -->
-            <div class="ct-pbar-track">
-              <div class="ct-pbar-fill"
-                   [style.width.%]="c.charge"
-                   [style.background]="chargeColor(c.charge)">
-              </div>
-            </div>
-
-            <!-- Sub text -->
-            <div class="ct-card__sub">
-              {{ c.charge }}% d&rsquo;occupation &middot; {{ c.projetsCount }} projet(s)
-            </div>
-
-          </div><!-- /ct-card -->
-
-          <!-- Empty state -->
-          <div *ngIf="filteredCollaborateurs.length === 0" class="ct-empty">
-            Aucun collaborateur ne correspond aux filtres.
-          </div>
-
-        </div><!-- /cards-grid -->
-
-      </div><!-- /main-block -->
-    </div><!-- /content -->
-  </div><!-- /main -->
-
-</section>
+</div>
+</app-manager-shell>

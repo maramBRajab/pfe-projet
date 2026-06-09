@@ -30,6 +30,8 @@ public class ProjetRequest {
     @Builder.Default
     private String statut = "en_attente";
 
+    private Long managerId;
+
     private Set<Long> competenceIds;
 
     @JsonIgnore

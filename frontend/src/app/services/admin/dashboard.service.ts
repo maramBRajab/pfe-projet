@@ -6,6 +6,7 @@ import { environment } from '../../../environments/environment';
 
 export interface DashboardStats {
   projetsActifs: number;
+  totalProjets: number;
   totalCollaborateurs: number;
   tauxAffectation: number;
   managersActifs: number;
@@ -33,6 +34,13 @@ export interface Alerte {
   icon: string;
   message: string;
   time: string;
+  title: string;
+  description: string;
+  level: 'INFO' | 'WARNING' | 'CRITICAL' | string;
+  generatedAt: string;
+  link: string;
+  projetId?: number;
+  projetNom?: string;
 }
 
 export interface Activite {
@@ -40,6 +48,12 @@ export interface Activite {
   action: string;
   temps: string;
   categorie: string;
+  createdAt: string;
+  role: string;
+  level: 'Info' | 'Warning' | 'Critique' | string;
+  type?: string;
+  userEmail?: string;
+  ip?: string;
 }
 
 export interface HealthFactor {
@@ -121,6 +135,7 @@ export interface SearchResult {
 @Injectable({ providedIn: 'root' })
 export class AdminDashboardService {
   private readonly url = `${environment.apiUrl}/dashboard/admin`;
+  private readonly adminAlertsUrl = `${environment.apiUrl}/admin/dashboard/alerts`;
 
   constructor(private readonly http: HttpClient) {}
 
@@ -138,6 +153,10 @@ export class AdminDashboardService {
 
   getAlertes(): Observable<Alerte[]> {
     return this.http.get<Alerte[]>(`${this.url}/alertes`);
+  }
+
+  getDashboardAlerts(): Observable<Alerte[]> {
+    return this.http.get<Alerte[]>(this.adminAlertsUrl);
   }
 
   getActiviteRecente(): Observable<Activite[]> {

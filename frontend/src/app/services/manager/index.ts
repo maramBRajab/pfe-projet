@@ -6,3 +6,5 @@ export * from './notification.service';
 export * from './competence.service';
 export * from './chatbot.service';
 export * from './manager-notification-api.service';
+export * from './manager-ia.service';
+export * from './manager-dashboard.service';

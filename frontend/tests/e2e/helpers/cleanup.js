@@ -1,7 +1,10 @@
 const { expect } = require('@playwright/test');
 const { API_URL, loginViaApi } = require('./auth');
 
-const ADMIN_CREDENTIALS = { email: 'admin@smartassign.tn', motDePasse: 'admin123' };
+const ADMIN_CREDENTIALS = {
+  email: process.env.SMOKE_ADMIN_EMAIL,
+  motDePasse: process.env.SMOKE_ADMIN_PASSWORD
+};
 
 function isSmokePublicEmail(email) {
   return typeof email === 'string'

@@ -1,0 +1,108 @@
+:host {
+  display: block;
+  min-width: 0;
+}
+
+.skpi-card {
+  min-height: 132px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--card);
+  color: var(--text);
+  padding: 16px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+  text-decoration: none;
+}
+
+.skpi-card--link {
+  cursor: pointer;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
+
+  &:hover {
+    border-color: color-mix(in srgb, var(--primary) 45%, var(--border));
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.09);
+    transform: translateY(-1px);
+  }
+}
+
+.skpi-card__head {
+  min-height: 28px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.skpi-card__badge {
+  width: fit-content;
+  border-radius: 999px;
+  background: var(--bg);
+  color: var(--text2);
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.skpi-card__icon {
+  margin-left: auto;
+  color: var(--text3);
+  font-size: 20px;
+  line-height: 1;
+}
+
+.skpi-card__label {
+  color: var(--text2);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.skpi-card__value {
+  color: var(--text);
+  font-size: 32px;
+  line-height: 1;
+  font-weight: 800;
+}
+
+.skpi-card__subtitle {
+  margin-top: auto;
+  color: var(--text2);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.skpi-card--blue .skpi-card__badge,
+.skpi-card__value--blue {
+  color: #1d4ed8;
+}
+
+.skpi-card--green .skpi-card__badge,
+.skpi-card__value--green {
+  color: var(--success);
+}
+
+.skpi-card--amber .skpi-card__badge,
+.skpi-card__value--amber {
+  color: var(--warning);
+}
+
+.skpi-card--red .skpi-card__badge,
+.skpi-card__value--red {
+  color: var(--danger);
+}
+
+.skpi-card--purple .skpi-card__badge,
+.skpi-card__value--purple {
+  color: #7c3aed;
+}
+
+.skpi-card--blue .skpi-card__badge { background: #dbeafe; }
+.skpi-card--green .skpi-card__badge { background: #dcfce7; }
+.skpi-card--amber .skpi-card__badge { background: #fef3c7; }
+.skpi-card--red .skpi-card__badge { background: #fee2e2; }
+.skpi-card--purple .skpi-card__badge { background: #ede9fe; }

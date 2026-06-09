@@ -8,4 +8,5 @@ public class UpdateProfileRequest {
     private String telephone;
     private String poste;
     private String departement;
+    private String photoUrl;
 }

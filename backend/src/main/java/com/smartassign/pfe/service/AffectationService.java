@@ -4,6 +4,7 @@ import java.util.List;
 
 import com.smartassign.pfe.dto.AffectationCreateRequest;
 import com.smartassign.pfe.dto.AffectationResponse;
+import com.smartassign.pfe.dto.CollaborateurAffectationDto;
 
 public interface AffectationService {
 
@@ -16,6 +17,10 @@ public interface AffectationService {
     List<AffectationResponse> getByProjet(Long projetId);
 
     List<AffectationResponse> getByCollaborateur(Long collaborateurId);
+
+    List<CollaborateurAffectationDto> getResumeByCollaborateur(Long collaborateurId);
+
+    List<AffectationResponse> getHistoriqueByCollaborateur(Long collaborateurId);
 
     AffectationResponse getById(Long id);
 

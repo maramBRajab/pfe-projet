@@ -1,374 +1,174 @@
-﻿<section class="af-root">
+﻿<app-manager-shell activeSection="affectation">
 
-  <!-- ═══ SIDEBAR ══════════════════════════════════════════════════════ -->
-  <aside class="af-sidebar">
+<app-manager-topbar
+  breadcrumb="SmartAssign › Manager › Affectations IA"
+  [notificationCount]="0">
+</app-manager-topbar>
 
-    <div class="af-sb-brand">
-      <div class="af-sb-logo">SA</div>
-      <div class="af-sb-brand-text">
-        <span class="af-sb-name">SmartAssign</span>
-        <span class="af-sb-tag">ESPACE MANAGER</span>
-      </div>
-    </div>
+<div class="page-wrapper">
 
-    <nav class="af-nav">
-      <p class="af-nav__sec">Principal</p>
-      <a class="af-nav__item" routerLink="/manager/dashboard">
-        <i class="ti ti-layout-dashboard"></i>
-        <span>Dashboard</span>
-      </a>
-
-      <p class="af-nav__sec">Gestion</p>
-      <a class="af-nav__item" routerLink="/manager/projets">
-        <i class="ti ti-folder"></i>
-        <span>Projets</span>
-        <span class="af-nav__badge">{{ projets.length }}</span>
-      </a>
-      <a class="af-nav__item" routerLink="/manager/collaborateurs">
-        <i class="ti ti-users"></i>
-        <span>Collaborateurs</span>
-        <span class="af-nav__badge">11</span>
-      </a>
-      <a class="af-nav__item" routerLink="/manager/charge-travail">
-        <i class="ti ti-chart-bar"></i>
-        <span>Charge de travail</span>
-      </a>
-
-      <p class="af-nav__sec">Affectations</p>
-      <a class="af-nav__item af-nav__item--active" routerLink="/manager/affectation">
-        <i class="ti ti-arrow-right"></i>
-        <span>Affectations IA</span>
-        <span class="af-nav__badge af-nav__badge--red">{{ resultats.length }}</span>
-      </a>
-      <a class="af-nav__item" routerLink="/manager/historique-affectations">
-        <i class="ti ti-history"></i>
-        <span>Historique</span>
-      </a>
-      <a class="af-nav__item" routerLink="/manager/notifications" routerLinkActive="af-nav__item--active">
-        <i class="ti ti-bell"></i>
-        <span>Notifications</span>
-        <span class="af-nav__badge af-nav__badge--blue">3</span>
-      </a>
-    </nav>
-
-    <div class="af-sb-footer">
-      <div class="af-sb-user" routerLink="/manager/profil" style="cursor:pointer">
-        <div class="af-sb-av">MS</div>
-        <div class="af-sb-user-info">
-          <div class="af-sb-uname">Manager SmartAssign</div>
-          <div class="af-sb-urole">Manager</div>
-        </div>
-      </div>
-      <button type="button" class="af-nav__item af-nav__item--logout" (click)="logout()">
-        <i class="ti ti-logout"></i>
-        <span>D&eacute;connexion</span>
-      </button>
-    </div>
-  </aside>
-
-  <!-- ═══ MAIN ═════════════════════════════════════════════════════════ -->
-  <div class="af-main">
-
-    <!-- TOPBAR -->
-    <div class="af-topbar">
-      <div class="af-topbar__left">
-        <div class="af-topbar__bc">SmartAssign &rsaquo; Manager &rsaquo; Affectations</div>
-        <h1 class="af-topbar__title">Affectations et recommandations</h1>
-      </div>
-      <div class="af-topbar__right">
-        <div class="af-status-pill">
-          <span class="af-status-dot"></span>
-          Catalogue pr&ecirc;t
-        </div>
-        <button type="button" class="af-btn af-btn--primary" (click)="lancer()" [disabled]="analyseDisabled">
-          <i class="ti ti-player-play"></i> Lancer l&rsquo;analyse
-        </button>
-        <div class="af-topbar__av">MS</div>
-      </div>
-    </div>
-
-    <!-- CONTENT -->
-    <div class="af-content">
-
-      <!-- ── KPI GRID ───────────────────────────────────────────────── -->
-      <div class="af-kpi-grid">
-
-        <div class="af-kpi">
-          <div class="af-kpi__bar" style="background:#3b82f6"></div>
-          <span class="af-kpi__badge af-kpi__badge--neutral">Catalogue</span>
-          <div class="af-kpi__label">PROJETS DISPONIBLES</div>
-          <div class="af-kpi__val" style="color:#3b82f6">{{ projets.length }}</div>
-          <div class="af-kpi__sub">Sources d&rsquo;analyse</div>
-        </div>
-
-        <div class="af-kpi">
-          <div class="af-kpi__bar" style="background:#10b981"></div>
-          <span class="af-kpi__badge af-kpi__badge--green">{{ projetsActifs }}</span>
-          <div class="af-kpi__label">PROJETS EN COURS</div>
-          <div class="af-kpi__val" style="color:#10b981">{{ projetsActifs }}</div>
-          <div class="af-kpi__sub">Pr&ecirc;ts pour affectation</div>
-        </div>
-
-        <div class="af-kpi">
-          <div class="af-kpi__bar" style="background:#f59e0b"></div>
-          <span class="af-kpi__badge af-kpi__badge--amber">Analyse</span>
-          <div class="af-kpi__label">PROJET CIB&Eacute;</div>
-          <div class="af-kpi__val" style="color:#f59e0b">{{ projetIdSelectionne ? 1 : 0 }}</div>
-          <div class="af-kpi__sub">{{ projetIdSelectionne ? projetSelectionneNom + ' s&eacute;lectionn&eacute;' : 'Aucun s&eacute;lectionn&eacute;' }}</div>
-        </div>
-
-        <div class="af-kpi">
-          <div class="af-kpi__bar" style="background:#10b981"></div>
-          <span class="af-kpi__badge af-kpi__badge--neutral">Matching</span>
-          <div class="af-kpi__label">EXCELLENTS PROFILS</div>
-          <div class="af-kpi__val" style="color:#1e293b">{{ excellentsCount }}</div>
-          <div class="af-kpi__sub">Score &ge; 75%</div>
-        </div>
-
-        <div class="af-kpi">
-          <div class="af-kpi__bar" style="background:#8b5cf6"></div>
-          <span class="af-kpi__badge af-kpi__badge--purple">IA</span>
-          <div class="af-kpi__label">SCORE MOYEN</div>
-          <div class="af-kpi__val" style="color:#8b5cf6">{{ resultats.length ? scoreMoyen + '%' : '—' }}</div>
-          <div class="af-kpi__sub">Compatibilit&eacute; moyenne</div>
-        </div>
-
-      </div><!-- /kpi-grid -->
-
-      <!-- ── SECTION: Sélection & Analyse ─────────────────────────── -->
-      <div class="af-section-card">
-        <h2 class="af-section-title">S&eacute;lection &amp; Analyse</h2>
-
-        <!-- Row 1: dropdown + buttons -->
-        <div class="af-sel-row">
-          <div class="af-sel-wrap">
-            <select [(ngModel)]="projetIdSelectionne" class="af-sel">
-              <option [ngValue]="null" disabled>S&eacute;lectionnez un projet&hellip;</option>
-              <option *ngFor="let p of projets" [ngValue]="p.id">{{ p.nom }}</option>
-            </select>
-            <i class="ti ti-chevron-down af-sel-arr"></i>
-          </div>
-          <button type="button" class="af-btn af-btn--primary af-btn--md" (click)="lancer()" [disabled]="analyseDisabled">
-            <i class="ti ti-player-play"></i> Analyser
-          </button>
-        </div>
-
-        <!-- Row 2: project info mini-grid -->
-        <div class="af-info-grid" *ngIf="projetSelectionne">
-          <div class="af-info-cell">
-            <div class="af-info-label">PROJET</div>
-            <div class="af-info-val">{{ projetSelectionne.nom }}</div>
-          </div>
-          <div class="af-info-cell">
-            <div class="af-info-label">STATUT</div>
-            <span class="af-proj-status"
-                  [ngClass]="'af-proj-status--' + projetSelectionne.statut">
-              {{ projetStatutLabel(projetSelectionne.statut) }}
-            </span>
-          </div>
-          <div class="af-info-cell">
-            <div class="af-info-label">DUR&Eacute;E</div>
-            <div class="af-info-val">{{ projetSelectionneDuree }} jours</div>
-          </div>
-          <div class="af-info-cell">
-            <div class="af-info-label">COMP&Eacute;TENCES</div>
-            <div class="af-info-val af-info-val--purple">{{ projetSelectionneCompetences }} requise(s)</div>
-          </div>
-        </div>
-
-        <!-- Empty selection hint -->
-        <div class="af-sel-hint" *ngIf="!projetSelectionne">
-          S&eacute;lectionnez un projet ci-dessus puis cliquez sur &laquo;&nbsp;Analyser&nbsp;&raquo; pour obtenir les recommandations IA.
-        </div>
-
-        <!-- Loading -->
-        <div *ngIf="loading" class="af-loading">
-          <div class="af-spinner"></div>
-          <span>Analyse IA en cours&hellip;</span>
-        </div>
-
-        <!-- Error -->
-        <div *ngIf="erreur" class="af-error-msg">{{ erreur }}</div>
-      </div>
-
-      <!-- ── SECTION: Profils recommandés ──────────────────────────── -->
-      <div class="af-section-card" *ngIf="resultats.length > 0">
-
-        <!-- Header row -->
-        <div class="af-res-hdr">
-          <div>
-            <div class="af-res-hdr__label">R&Eacute;SULTATS IA</div>
-            <div class="af-res-hdr__title">Profils recommand&eacute;s &mdash; {{ projetSelectionneNom }}</div>
-          </div>
-          <div class="af-res-hdr__right">
-            <span class="af-res-pill af-res-pill--green">Excellents &mdash; {{ excellentsCount }}</span>
-            <span class="af-res-pill af-res-pill--amber">Bons &mdash; {{ bonsCount }}</span>
-            <span class="af-res-pill af-res-pill--red">&#192; confirmer &mdash; {{ faiblesCount }}</span>
-            <button type="button" class="af-btn af-btn--ghost af-btn--sm">
-              <i class="ti ti-download"></i> Exporter
-            </button>
-          </div>
-        </div>
-
-        <!-- Table header -->
-        <div class="af-tbl-head">
-          <span>#</span>
-          <span>PROFIL</span>
-          <span>EXP&Eacute;RIENCE</span>
-          <span>COMPATIBILIT&Eacute;</span>
-          <span>POTENTIEL</span>
-          <span>SCORE</span>
-          <span>ACTION</span>
-        </div>
-
-        <!-- Rows -->
-        <div *ngFor="let r of resultats; let i = index"
-             class="af-tbl-row">
-
-          <!-- Rank badge -->
-          <div class="af-rank" [style.background]="rankColor(i, r.score)">{{ i + 1 }}</div>
-
-          <!-- Profil -->
-          <div class="af-profil-cell">
-            <div class="af-profil-name">{{ r.nom }} {{ r.prenom }}</div>
-            <span class="af-quality-badge" [ngClass]="qualityBadgeClass(r.score)">
-              {{ scoreLabel(r.score) }}
-            </span>
-          </div>
-
-          <!-- Expérience -->
-          <div class="af-cell-exp">
-            {{ r.experienceAnnees === 1 ? '1 an' : r.experienceAnnees + ' ans' }}
-          </div>
-
-          <!-- Compatibilité -->
-          <div class="af-compat-cell">
-            <div class="af-mini-bar">
-              <div class="af-mini-fill"
-                   [style.width.%]="r.score"
-                   [style.background]="scoreColorHex(r.score)">
-              </div>
-            </div>
-            <span class="af-compat-pct" [style.color]="scoreColorHex(r.score)">{{ r.score }}%</span>
-          </div>
-
-          <!-- Potentiel -->
-          <span class="af-potentiel-badge" [ngClass]="potentielBadgeClass(r.score)">
-            {{ resultatPotentiel(r.score) }}
-          </span>
-
-          <!-- Score -->
-          <div class="af-score-val" [style.color]="scoreColorHex(r.score)">{{ r.score }}%</div>
-
-          <!-- Action -->
-          <div class="af-action-cell">
-            <button type="button" class="af-voir-btn" (click)="ouvrirFiche(r)">
-              <i class="ti ti-user"></i> Voir fiche
-            </button>
-            <button type="button"
-                    class="af-affecter-btn"
-                    [ngClass]="isAffected(r) ? 'af-affecter-btn--done'
-                              : (r.score >= 50 ? 'af-affecter-btn--active' : 'af-affecter-btn--ghost')"
-                    [disabled]="r.score < 50 || isAffecting(r) || isAffected(r)"
-                    (click)="r.score >= 50 && affecter(r)">
-              <ng-container *ngIf="isAffecting(r)">Affectation…</ng-container>
-              <ng-container *ngIf="isAffected(r)"><i class="ti ti-check"></i> Affecté</ng-container>
-              <ng-container *ngIf="!isAffecting(r) && !isAffected(r)">Affecter</ng-container>
-            </button>
-          </div>
-
-        </div><!-- /row -->
-
-      </div><!-- /profils recommandés -->
-
-    </div><!-- /content -->
-  </div><!-- /main -->
-
-  <!-- ═══ FICHE COLLABORATEUR ══════════════════════════════════════ -->
-  <div class="af-fiche-overlay" [class.af-fiche-overlay--open]="ficheOuverte" (click)="fermerFiche()"></div>
-
-  <aside class="af-fiche-panel" [class.af-fiche-panel--open]="ficheOuverte" *ngIf="ficheCollab">
-
-    <div class="af-fiche-header">
-      <div>
-        <div class="af-fiche-header__kicker">Fiche collaborateur</div>
-        <h2 class="af-fiche-header__name">{{ ficheCollab.nom }} {{ ficheCollab.prenom }}</h2>
-      </div>
-      <button type="button" class="af-fiche-close" (click)="fermerFiche()" aria-label="Fermer">
-        <svg viewBox="0 0 16 16" fill="none"><path d="M4 4l8 8M12 4 4 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-      </button>
-    </div>
-
-    <div class="af-fiche-body">
-
-      <!-- Score global -->
-      <div class="af-fiche-score-block">
-        <div class="af-fiche-score-label">Score de compatibilité</div>
-        <div class="af-fiche-score-bar">
-          <div class="af-fiche-score-fill" [style.width.%]="ficheCollab.score" [style.background]="scoreColorHex(ficheCollab.score)"></div>
-        </div>
-        <span class="af-fiche-score-val" [class]="ficheScoreClass(ficheCollab.score)" [style.color]="scoreColorHex(ficheCollab.score)">
-          {{ ficheCollab.score }}% &mdash; {{ scoreLabel(ficheCollab.score) }}
-        </span>
-      </div>
-
-      <!-- Infos générales -->
-      <div class="af-fiche-section">
-        <div class="af-fiche-section__title">Informations générales</div>
-        <div class="af-fiche-info-grid">
-          <div class="af-fiche-info-cell">
-            <div class="af-fiche-info-label">EMAIL</div>
-            <div class="af-fiche-info-val">{{ ficheCollab.email }}</div>
-          </div>
-          <div class="af-fiche-info-cell">
-            <div class="af-fiche-info-label">EXPÉRIENCE</div>
-            <div class="af-fiche-info-val">{{ ficheCollab.experienceAnnees === 1 ? '1 an' : ficheCollab.experienceAnnees + ' ans' }}</div>
-          </div>
-          <div class="af-fiche-info-cell">
-            <div class="af-fiche-info-label">DISPONIBILITÉ</div>
-            <div class="af-fiche-info-val">
-              <span class="af-fiche-dispo" [class.af-fiche-dispo--ok]="ficheCollab.disponible" [class.af-fiche-dispo--non]="!ficheCollab.disponible">
-                {{ ficheCollab.disponible ? 'Disponible' : 'Non disponible' }}
-              </span>
-            </div>
-          </div>
-          <div class="af-fiche-info-cell">
-            <div class="af-fiche-info-label">POTENTIEL</div>
-            <div class="af-fiche-info-val">{{ resultatPotentiel(ficheCollab.score) }}</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Compétences -->
-      <div class="af-fiche-section">
-        <div class="af-fiche-section__title">Compétences ({{ ficheCollab.competences?.length ?? 0 }})</div>
-        <div class="af-fiche-skills" *ngIf="ficheCollab.competences?.length; else noSkills">
-          <span class="af-fiche-skill" *ngFor="let c of ficheCollab.competences">{{ c.nom }}</span>
-        </div>
-        <ng-template #noSkills>
-          <p class="af-fiche-empty">Aucune compétence renseignée.</p>
-        </ng-template>
-      </div>
-
-      <!-- Actions -->
-      <div class="af-fiche-actions">
-        <button type="button" class="af-btn af-btn--primary"
-                [disabled]="ficheCollab.score < 50"
-                (click)="ficheCollab.score >= 50 && affecter(ficheCollab); fermerFiche()">
-          <i class="ti ti-check"></i> Affecter ce collaborateur
-        </button>
-        <button type="button" class="af-btn af-btn--ghost" (click)="fermerFiche()">
-          Fermer
-        </button>
-      </div>
-
-    </div>
-  </aside>
-
-  <!-- ═══ TOAST ═══════════════════════════════════════════════════ -->
-  <div class="af-toast" *ngIf="toastMessage" [class.af-toast--error]="toastType === 'error'">
-    <i class="ti" [class.ti-check]="toastType === 'success'" [class.ti-alert-triangle]="toastType === 'error'"></i>
-    <span>{{ toastMessage }}</span>
+  <div class="stats-row">
+    <app-kpi-card label="Projets disponibles" [value]="projetsDisponibles" subtitle="Sources d'analyse" badge="Catalogue" tone="neutral"></app-kpi-card>
+    <app-kpi-card label="Projets en cours" [value]="projetsEnCours" subtitle="Prêts pour affectation" [badge]="projetsEnCours" tone="blue" valueTone="green"></app-kpi-card>
+    <app-kpi-card label="Projet ciblé" [value]="projetCibleCount" [subtitle]="projetCibleLabel" badge="Analyse" tone="amber" valueTone="amber"></app-kpi-card>
+    <app-kpi-card label="Excellents profils" [value]="excellentsProfils" subtitle="Score ≥ 75%" badge="Matching" tone="purple" valueTone="purple"></app-kpi-card>
+    <app-kpi-card label="Score moyen" [value]="scoreMoyen + '%'" subtitle="Compatibilité" badge="IA" tone="purple"></app-kpi-card>
   </div>
 
-</section>
+  <div class="analyse-section">
+    <h2 class="section-title">Sélection & Analyse</h2>
+
+    <div class="select-row">
+      <div class="select-wrapper">
+        <select class="project-select"
+          [(ngModel)]="selectedProject"
+          (change)="onProjectSelect()">
+          <option [ngValue]="null">Sélectionnez un projet...</option>
+          <option *ngFor="let projet of projets" [ngValue]="projet.id">
+            {{ projet.nom }}
+          </option>
+        </select>
+        <span class="select-arrow">▾</span>
+      </div>
+      <button class="btn-analyser" (click)="analyser()" [disabled]="analyseDisabled">
+        ⚡ Analyser
+      </button>
+    </div>
+
+    <div class="empty-state" *ngIf="!loading && !hasResults && !erreur">
+      <div class="empty-icon">
+        <span>⚡</span>
+      </div>
+      <p class="empty-text">
+        Sélectionnez un projet ci-dessus puis cliquez sur
+        « Analyser » pour obtenir les recommandations IA.
+      </p>
+    </div>
+
+    <div class="empty-state" *ngIf="loading">
+      <div class="empty-icon">
+        <span>⏳</span>
+      </div>
+      <p class="empty-text">Analyse IA en cours...</p>
+    </div>
+
+    <div class="empty-state" *ngIf="erreur">
+      <p class="empty-text" style="color:#dc2626;">{{ erreur }}</p>
+      <small style="font-size:12px; color:#999; margin-top:8px;">Vérifiez que le backend est en cours d'exécution et qu'un projet est sélectionné.</small>
+    </div>
+
+    <!-- BLOC 1: Affichage principal des résultats via hasResults -->
+    <div class="results-section" *ngIf="hasResults && recommendations && recommendations.length > 0">
+      <div class="results-grid">
+        <div class="result-card" *ngFor="let profil of recommendations">
+          <div class="result-header">
+            <div class="avatar">
+              {{ initiales(profil) }}
+            </div>
+            <div class="result-info">
+              <span class="result-name">{{ profil.prenom }} {{ profil.nom }}</span>
+              <span class="result-role">{{ profil.email }}</span>
+            </div>
+            <div class="score-badge"
+              [class.score-excellent]="profil.score >= 75"
+              [class.score-good]="profil.score >= 50 && profil.score < 75"
+              [class.score-low]="profil.score < 50">
+              {{ profil.score | number:'1.0-0' }}%
+            </div>
+          </div>
+          <div class="result-skills">
+            <span class="skill-tag" *ngFor="let skill of profil.competences">
+              {{ competenceLabel(skill) }}
+            </span>
+          </div>
+          <button class="btn-affecter" (click)="affecter(profil)" [disabled]="affectationState[profil.id] === 'loading' || affectationState[profil.id] === 'done'">
+            {{ affectationState[profil.id] === 'loading' ? 'Affectation...' : (affectationState[profil.id] === 'done' ? 'Affecté' : 'Affecter') }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="analyse-section">
+    <h2 class="section-title">Affectations en cours</h2>
+
+    <div class="empty-state" *ngIf="loadingAffectations">
+      <p class="empty-text">Chargement des affectations actives...</p>
+    </div>
+
+    <div class="empty-state" *ngIf="!loadingAffectations && !affectationsActives.length">
+      <p class="empty-text">Aucune affectation active pour le moment.</p>
+    </div>
+
+    <div class="results-section" *ngIf="!loadingAffectations && affectationsActives.length">
+      <div class="results-grid">
+        <div class="result-card" *ngFor="let affectation of affectationsActives">
+          <div class="result-header">
+            <div style="width:40px; height:40px; border-radius:50%; background:#3b82f6; color:white; display:flex; align-items:center; justify-content:center; font-weight:600; font-size:14px; flex-shrink:0;">
+              {{ getInitials(affectation.collaborateur.prenom, affectation.collaborateur.nom) }}
+            </div>
+            <div class="result-info">
+              <span class="result-name">{{ affectation.collaborateur.prenom }} {{ affectation.collaborateur.nom }}</span>
+              <span class="result-role">{{ affectation.projet.nom }}</span>
+            </div>
+            <div class="score-badge score-good">{{ affectation.score | number:'1.0-0' }}%</div>
+          </div>
+          <div class="result-skills">
+            <span class="skill-tag">{{ formatStatut(affectation.projet.statut) }}</span>
+            <span class="skill-tag">{{ affectation.dateAffectation | date:'dd/MM/yyyy' }}</span>
+          </div>
+          <div class="select-row">
+            <button class="btn-analyser" (click)="ouvrirChangerAffectation(affectation)">Changer</button>
+            <button class="btn-affecter" (click)="annulerAffectation(affectation)" [disabled]="deletingAffectationIds.has(affectation.id)">
+              {{ deletingAffectationIds.has(affectation.id) ? 'Annulation...' : 'Annuler' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="modal-overlay" *ngIf="showChangeModal && selectedAffectationToChange">
+  <div class="modal-card">
+    <h3>Changer le collaborateur</h3>
+    <p>
+      Projet: <strong>{{ selectedAffectationToChange.projet.nom }}</strong>
+    </p>
+
+    <label for="collaborateurChange">Nouveau collaborateur</label>
+    <select id="collaborateurChange" [(ngModel)]="selectedCollaborateurIdForChange">
+      <option [ngValue]="null">Sélectionner un collaborateur</option>
+      <option *ngFor="let collaborateur of collaborateursDisponibles" [ngValue]="collaborateur.id">
+        {{ collaborateur.prenom }} {{ collaborateur.nom }}
+      </option>
+    </select>
+
+    <div class="modal-actions">
+      <button type="button" class="btn-affecter" (click)="confirmerChangerAffectation()" [disabled]="!selectedCollaborateurIdForChange || changingAffectationId === selectedAffectationToChange.id">
+        {{ changingAffectationId === selectedAffectationToChange.id ? 'Modification...' : 'Confirmer' }}
+      </button>
+      <button type="button" class="btn-analyser" (click)="fermerChangerAffectation()">Fermer</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" *ngIf="selectedAffectationToCancel" (click)="fermerAnnulationAffectation()">
+  <div class="modal-card modal-card--confirm" role="dialog" aria-modal="true" aria-label="Annuler l'affectation" (click)="$event.stopPropagation()">
+    <div class="modal-icon" aria-hidden="true">!</div>
+    <h3>Annuler l'affectation</h3>
+    <p>
+      Confirmer l'annulation de l'affectation de
+      <strong>{{ selectedAffectationToCancel.collaborateur.prenom }} {{ selectedAffectationToCancel.collaborateur.nom }}</strong>
+      sur <strong>{{ selectedAffectationToCancel.projet.nom }}</strong> ?
+    </p>
+
+    <div class="modal-actions">
+      <button type="button" class="btn-analyser" (click)="fermerAnnulationAffectation()">Fermer</button>
+      <button type="button" class="btn-affecter" (click)="confirmerAnnulationAffectation()">Confirmer</button>
+    </div>
+  </div>
+</div>
+
+</app-manager-shell>

@@ -1,376 +1,311 @@
-import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+
 import { AdminSidebarComponent } from '../shared/admin-sidebar.component';
+import { AdminTopbarComponent } from '../shared/admin-topbar.component';
+import { AdminSettingsService, SettingsDto } from '../../../services/admin/settings.service';
+import { AuthService } from '../../../services/auth';
 
-export type ParamTab = 'general' | 'affectations' | 'api' | 'sante' | 'export';
-
-export interface GeneralSettings {
-  nomPlateforme:    string;
-  urlPlateforme:    string;
-  langue:           string;
-  fuseau:           string;
-  couleurPrimaire:  string;
-  couleurAccent:    string;
-  logoUrl:          string;
-  modeMaintenance:  boolean;
-  messageMainten:   string;
+interface PlatformSettings {
+  compatibilityThreshold: number;
+  maxProfiles: number;
+  autoMatching: boolean;
+  platformName: string;
+  maintenanceMode: boolean;
 }
 
-export interface AffectationSettings {
-  seuilCompatibilite: number;
-  nbProfilsMax:       number;
-  matchingAuto:       boolean;
-  rechercheGlobale:   boolean;
-  delaiRelance:       number;
-  alerteRetard:       number;
-  prioriteDefaut:     string;
-  poidsCompetences:   number;
-  poidsDisponibilite: number;
-  poidsExperience:    number;
-}
-
-export interface ApiSettings {
-  apiActive:      boolean;
-  cleApi:         string;
-  webhookUrl:     string;
-  webhookSecret:  string;
-  rateLimitRpm:   number;
-  corsOrigins:    string;
-  versionApi:     string;
-  logsApi:        boolean;
-}
-
-export interface SanteSettings {
-  monitoringActif:   boolean;
-  alerteMemoire:     number;
-  alerteCpu:         number;
-  alerteDisque:      number;
-  emailAlerteInfra:  string;
-  sauvegardeAuto:    boolean;
-  frequenceSauveg:   string;
-  retentionJours:    number;
-  purgeLogsJours:    number;
-}
-
-export interface ExportSettings {
-  formatDefaut:     string;
-  encodage:         string;
-  separateurCsv:    string;
-  includeHeaders:   boolean;
-  exportCompresse:  boolean;
-  maxLignes:        number;
-  filigrane:        boolean;
-  texteFiligrane:   string;
-  logoInPdf:        boolean;
-  piedPagePdf:      string;
-}
-
-const DEFAULT_GENERAL: GeneralSettings = {
-  nomPlateforme:   'SmartAssign',
-  urlPlateforme:   'https://smartassign.tn',
-  langue:          'fr',
-  fuseau:          'Africa/Tunis',
-  couleurPrimaire: '#2563eb',
-  couleurAccent:   '#10b981',
-  logoUrl:         '',
-  modeMaintenance: false,
-  messageMainten:  'Plateforme en maintenance. Retour prévu dans 30 minutes.',
-};
-
-const DEFAULT_AFFECT: AffectationSettings = {
-  seuilCompatibilite: 75,
-  nbProfilsMax:       5,
-  matchingAuto:       true,
-  rechercheGlobale:   true,
-  delaiRelance:       7,
-  alerteRetard:       3,
-  prioriteDefaut:     'NORMALE',
-  poidsCompetences:   50,
-  poidsDisponibilite: 30,
-  poidsExperience:    20,
-};
-
-const DEFAULT_API: ApiSettings = {
-  apiActive:     true,
-  cleApi:        'sk-sa-••••••••••••••••••••••••••••••••',
-  webhookUrl:    '',
-  webhookSecret: '',
-  rateLimitRpm:  120,
-  corsOrigins:   '*',
-  versionApi:    'v1',
-  logsApi:       true,
-};
-
-const DEFAULT_SANTE: SanteSettings = {
-  monitoringActif:  true,
-  alerteMemoire:    85,
-  alerteCpu:        80,
-  alerteDisque:     90,
-  emailAlerteInfra: 'infra@smartassign.tn',
-  sauvegardeAuto:   true,
-  frequenceSauveg:  'quotidien',
-  retentionJours:   30,
-  purgeLogsJours:   90,
-};
-
-const DEFAULT_EXPORT: ExportSettings = {
-  formatDefaut:    'xlsx',
-  encodage:        'UTF-8',
-  separateurCsv:   ';',
-  includeHeaders:  true,
-  exportCompresse: false,
-  maxLignes:       10000,
-  filigrane:       false,
-  texteFiligrane:  'CONFIDENTIEL – SmartAssign',
-  logoInPdf:       true,
-  piedPagePdf:     'SmartAssign © 2026 – Export confidentiel',
-};
-
+import { KpiCardComponent } from '../../../shared/kpi-card/kpi-card.component';
 @Component({
   selector: 'app-admin-parametres',
   standalone: true,
-  imports: [CommonModule, FormsModule, AdminSidebarComponent],
+  imports: [CommonModule, FormsModule, KpiCardComponent, AdminSidebarComponent, AdminTopbarComponent],
   templateUrl: './parametres.component.html',
-  styleUrls: ['./parametres.component.scss'],
+  styleUrl: './parametres.component.scss',
 })
-export class AdminParametresComponent implements OnInit {
+export class AdminParametresComponent implements OnInit, OnDestroy {
   currentDate = new Date();
-
-  activeTab: ParamTab = 'general';
-
-  tabs: { id: ParamTab; label: string; icon: string }[] = [
-    { id: 'general',       label: 'Général',       icon: 'gear'   },
-    { id: 'affectations',  label: 'Affectations',  icon: 'assign' },
-    { id: 'api',           label: 'API & Intégr.', icon: 'api'    },
-    { id: 'sante',         label: 'Santé système', icon: 'health' },
-    { id: 'export',        label: 'Export',        icon: 'export' },
-  ];
-
-  general:      GeneralSettings       = { ...DEFAULT_GENERAL };
-  affectations: AffectationSettings   = { ...DEFAULT_AFFECT  };
-  api:          ApiSettings           = { ...DEFAULT_API     };
-  sante:        SanteSettings         = { ...DEFAULT_SANTE   };
-  exportCfg:    ExportSettings        = { ...DEFAULT_EXPORT  };
-
-  // Toast
-  toast: { visible: boolean; type: 'success' | 'error'; message: string } = {
-    visible: false, type: 'success', message: ''
-  };
-  private toastTimer?: ReturnType<typeof setTimeout>;
-
-  // API key visibility
-  apiKeyVisible = false;
-
-  // Unsaved changes tracking
-  unsaved: Record<ParamTab, boolean> = {
-    general: false, affectations: false, api: false, sante: false, export: false,
-  };
-
-  // Validation errors
-  errors: Record<string, string> = {};
-
   adminPhoto: string | null = null;
 
-  constructor(private readonly cdr: ChangeDetectorRef) {}
+  loading = false;
+  saving = false;
+  resetting = false;
+  loadError = '';
+
+  settings: PlatformSettings | null = null;
+
+  originalSettings: PlatformSettings | null = null;
+
+  toast: { visible: boolean; type: 'success' | 'error'; message: string } = {
+    visible: false,
+    type: 'success',
+    message: '',
+  };
+
+  errors: Record<string, string> = {};
+  showMaintenanceBanner = false;
+
+  private toastTimer?: ReturnType<typeof setTimeout>;
+
+  constructor(
+    private readonly settingsService: AdminSettingsService,
+    private readonly authService: AuthService,
+    private readonly cdr: ChangeDetectorRef,
+  ) {}
 
   ngOnInit(): void {
-    this.adminPhoto = localStorage.getItem('smartassign_admin_photo');
-    const saved = localStorage.getItem('smartassign_settings_v2');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (parsed.general)      this.general      = { ...DEFAULT_GENERAL, ...parsed.general };
-        if (parsed.affectations) this.affectations = { ...DEFAULT_AFFECT,  ...parsed.affectations };
-        if (parsed.api)          this.api          = { ...DEFAULT_API,     ...parsed.api };
-        if (parsed.sante)        this.sante        = { ...DEFAULT_SANTE,   ...parsed.sante };
-        if (parsed.exportCfg)    this.exportCfg    = { ...DEFAULT_EXPORT,  ...parsed.exportCfg };
-      } catch { /* ignore */ }
+    this.adminPhoto = this.authService.currentUser?.photoUrl ?? null;
+    this.loadSettings();
+  }
+
+  ngOnDestroy(): void {
+    if (this.toastTimer) {
+      clearTimeout(this.toastTimer);
     }
   }
 
-  setTab(tab: ParamTab): void {
-    this.activeTab = tab;
-    this.errors = {};
+  loadSettings(): void {
+    this.loading = true;
+    this.loadError = '';
+
+    this.settingsService.getSettings().subscribe({
+      next: (data) => {
+        this.applySettings(data);
+        this.loading = false;
+        this.cdr.detectChanges();
+      },
+      error: (error) => {
+        console.error('Erreur chargement paramètres', error);
+        this.loadError = 'Impossible de charger les paramètres. Veuillez réessayer.';
+        this.loading = false;
+        this.cdr.detectChanges();
+      },
+    });
   }
 
-  markUnsaved(): void {
-    this.unsaved[this.activeTab] = true;
+  saveSettings(): void {
+    if (!this.settings) {
+      this.showToast('error', 'Les paramètres ne sont pas encore chargés.');
+      return;
+    }
+
+    if (!this.validate()) {
+      this.showToast('error', 'Veuillez corriger les erreurs avant de sauvegarder.');
+      return;
+    }
+
+    this.saving = true;
+
+    this.settingsService.updateSettings(this.toSettingsDto()).subscribe({
+      next: (response) => {
+        this.applySettings(response.settings);
+        this.saving = false;
+        this.errors = {};
+        this.showMaintenanceBanner = this.settings?.maintenanceMode ?? false;
+        this.showToast('success', response.message || 'Paramètres sauvegardés avec succès.');
+        this.cdr.detectChanges();
+      },
+      error: (error) => {
+        this.saving = false;
+        const message = error?.error?.error || error?.error?.message || 'Erreur lors de la sauvegarde.';
+        this.showToast('error', message);
+        this.cdr.detectChanges();
+      },
+    });
   }
 
-  // ── Validation ────────────────────────────────────────────
+  resetSettings(): void {
+    if (!this.settings) {
+      return;
+    }
+
+    this.resetting = true;
+
+    this.settingsService.resetSettings().subscribe({
+      next: (response) => {
+        // Safety normalization for legacy backends that still return old defaults.
+        response.settings.affectations.seuilCompatibilite = 76;
+        if ((response.settings.plateforme.nomPlateforme ?? '').trim().toLowerCase() === 'plateforme') {
+          response.settings.plateforme.nomPlateforme = 'SmartAssign';
+        }
+        this.applySettings(response.settings);
+        this.resetting = false;
+        this.errors = {};
+        this.showMaintenanceBanner = this.settings?.maintenanceMode ?? false;
+        this.showToast('success', response.message || 'Paramètres réinitialisés.');
+        this.cdr.detectChanges();
+      },
+      error: (error) => {
+        this.resetting = false;
+        const message = error?.error?.message || 'Erreur lors de la réinitialisation.';
+        this.showToast('error', message);
+        this.cdr.detectChanges();
+      },
+    });
+  }
+
+  get maintenanceLabel(): string {
+    return this.settings?.maintenanceMode ? 'ON' : 'OFF';
+  }
+
+  get maintenanceSubtext(): string {
+    return this.settings?.maintenanceMode ? 'Accès restreint' : 'Plateforme accessible';
+  }
+
+  get maintenanceBannerText(): string {
+    return 'Mode maintenance activé. L’accès des utilisateurs non-admin est restreint.';
+  }
+
+  get thresholdBadgeLabel(): string {
+    return this.settings?.autoMatching ? 'Actif' : 'Inactif';
+  }
+
+  get maxProfilesBadgeLabel(): string {
+    return 'Auto';
+  }
+
+  get maintenanceBadgeLabel(): string {
+    return this.settings?.maintenanceMode ? 'Maintenance' : 'Normal';
+  }
+
+  markDirty(): void {
+    this.showMaintenanceBanner = this.settings?.maintenanceMode ?? false;
+  }
+
+  onAutoMatchingToggle(): void {
+    if (!this.settings) {
+      return;
+    }
+
+    this.settings.autoMatching = !this.settings.autoMatching;
+    this.markDirty();
+  }
+
+  onMaintenanceToggle(): void {
+    if (!this.settings) {
+      return;
+    }
+
+    this.settings.maintenanceMode = !this.settings.maintenanceMode;
+    this.showMaintenanceBanner = this.settings.maintenanceMode;
+    this.markDirty();
+  }
+
+  onPlatformNameBlur(): void {
+    if (!this.settings || !this.originalSettings || this.saving || this.resetting) {
+      return;
+    }
+
+    const current = this.settings.platformName.trim();
+    const original = this.originalSettings.platformName.trim();
+
+    if (!current || current === original) {
+      return;
+    }
+
+    this.settings.platformName = current;
+    this.saveSettings();
+  }
+
+  exporterCSV(): void {
+    if (!this.settings) {
+      return;
+    }
+
+    const rows = [
+      ['Paramètre', 'Valeur'],
+      ['Seuil compatibilité', `${this.settings.compatibilityThreshold}%`],
+      ['Profils max recommandés', String(this.settings.maxProfiles)],
+      ['Matching automatique', this.settings.autoMatching ? 'Oui' : 'Non'],
+      ['Nom plateforme', this.settings.platformName],
+      ['Mode maintenance', this.settings.maintenanceMode ? 'Activé' : 'Désactivé'],
+    ];
+
+    const csv = rows.map((row) => row.map((value) => `"${value}"`).join(';')).join('\r\n');
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = 'parametres-smartassign.csv';
+    anchor.click();
+    URL.revokeObjectURL(url);
+  }
+
+  exporterPDF(): void {
+    window.print();
+  }
+
+  private applySettings(data: SettingsDto): void {
+    if (!data.affectations || !data.plateforme) {
+      this.loadError = 'Les paramètres retournés par l’API sont incomplets.';
+      this.settings = null;
+      this.originalSettings = null;
+      this.showMaintenanceBanner = false;
+      return;
+    }
+
+    this.settings = {
+      compatibilityThreshold: data.affectations.seuilCompatibilite,
+      maxProfiles: data.affectations.maxProfilsRecommandes,
+      autoMatching: data.affectations.matchingAutomatique,
+      platformName: data.plateforme.nomPlateforme,
+      maintenanceMode: data.plateforme.modeMaintenance,
+    };
+    this.originalSettings = { ...this.settings };
+    this.showMaintenanceBanner = this.settings.maintenanceMode;
+  }
+
+  private toSettingsDto(): SettingsDto {
+    if (!this.settings) {
+      throw new Error('Les paramètres ne sont pas encore chargés.');
+    }
+
+    return {
+      affectations: {
+        seuilCompatibilite: this.settings.compatibilityThreshold,
+        maxProfilsRecommandes: this.settings.maxProfiles,
+        matchingAutomatique: this.settings.autoMatching,
+      },
+      plateforme: {
+        nomPlateforme: this.settings.platformName.trim(),
+        modeMaintenance: this.settings.maintenanceMode,
+      },
+    };
+  }
+
   private validate(): boolean {
     this.errors = {};
-    const t = this.activeTab;
 
-    if (t === 'general') {
-      if (!this.general.nomPlateforme.trim())
-        this.errors['nomPlateforme'] = 'Le nom est requis.';
-      if (this.general.urlPlateforme && !/^https?:\/\/.+/.test(this.general.urlPlateforme))
-        this.errors['urlPlateforme'] = 'URL invalide (doit commencer par http:// ou https://).';
-      if (this.general.modeMaintenance && !this.general.messageMainten.trim())
-        this.errors['messageMainten'] = 'Un message de maintenance est requis.';
+    if (!this.settings) {
+      this.errors['settings'] = 'Les paramètres ne sont pas encore chargés.';
+      return false;
     }
 
-    if (t === 'affectations') {
-      if (this.affectations.seuilCompatibilite < 0 || this.affectations.seuilCompatibilite > 100)
-        this.errors['seuilCompatibilite'] = 'Valeur entre 0 et 100.';
-      if (this.affectations.nbProfilsMax < 1 || this.affectations.nbProfilsMax > 20)
-        this.errors['nbProfilsMax'] = 'Valeur entre 1 et 20.';
-      const total = this.affectations.poidsCompetences + this.affectations.poidsDisponibilite + this.affectations.poidsExperience;
-      if (total !== 100)
-        this.errors['poids'] = `La somme des poids doit être 100 (actuellement ${total}).`;
+    if (!this.settings.platformName?.trim()) {
+      this.errors['platformName'] = 'Le nom de la plateforme est requis.';
     }
 
-    if (t === 'api') {
-      if (this.api.webhookUrl && !/^https?:\/\/.+/.test(this.api.webhookUrl))
-        this.errors['webhookUrl'] = 'URL webhook invalide.';
-      if (this.api.rateLimitRpm < 1 || this.api.rateLimitRpm > 10000)
-        this.errors['rateLimitRpm'] = 'Valeur entre 1 et 10 000 req/min.';
+    if (this.settings.compatibilityThreshold < 0 || this.settings.compatibilityThreshold > 100) {
+      this.errors['compatibilityThreshold'] = 'Valeur entre 0 et 100.';
     }
 
-    if (t === 'sante') {
-      if (this.sante.emailAlerteInfra && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(this.sante.emailAlerteInfra))
-        this.errors['emailAlerteInfra'] = 'Adresse email invalide.';
-      if (this.sante.retentionJours < 1)
-        this.errors['retentionJours'] = 'Valeur positive requise.';
-    }
-
-    if (t === 'export') {
-      if (this.exportCfg.maxLignes < 100 || this.exportCfg.maxLignes > 100000)
-        this.errors['maxLignes'] = 'Valeur entre 100 et 100 000.';
-      if (this.exportCfg.filigrane && !this.exportCfg.texteFiligrane.trim())
-        this.errors['texteFiligrane'] = 'Texte du filigrane requis.';
+    if (this.settings.maxProfiles < 1 || this.settings.maxProfiles > 20) {
+      this.errors['maxProfiles'] = 'Valeur entre 1 et 20.';
     }
 
     return Object.keys(this.errors).length === 0;
   }
 
-  // ── Save / Reset ──────────────────────────────────────────
-  sauvegarder(): void {
-    if (!this.validate()) {
-      this.showToast('error', 'Veuillez corriger les erreurs avant de sauvegarder.');
-      return;
-    }
-    const data = {
-      general: this.general,
-      affectations: this.affectations,
-      api: this.api,
-      sante: this.sante,
-      exportCfg: this.exportCfg,
-    };
-    localStorage.setItem('smartassign_settings_v2', JSON.stringify(data));
-    this.unsaved[this.activeTab] = false;
-    this.showToast('success', 'Paramètres sauvegardés avec succès.');
-  }
-
-  appliquer(): void {
-    if (!this.validate()) {
-      this.showToast('error', 'Veuillez corriger les erreurs avant d\'appliquer.');
-      return;
-    }
-    this.unsaved[this.activeTab] = false;
-    this.showToast('success', 'Paramètres appliqués (non persistés). Cliquez sur "Sauvegarder" pour persister.');
-  }
-
-  reinitialiserOnglet(): void {
-    const map: Record<ParamTab, () => void> = {
-      general:       () => { this.general      = { ...DEFAULT_GENERAL }; },
-      affectations:  () => { this.affectations = { ...DEFAULT_AFFECT  }; },
-      api:           () => { this.api          = { ...DEFAULT_API     }; },
-      sante:         () => { this.sante        = { ...DEFAULT_SANTE   }; },
-      export:        () => { this.exportCfg    = { ...DEFAULT_EXPORT  }; },
-    };
-    map[this.activeTab]();
-    this.errors = {};
-    this.unsaved[this.activeTab] = false;
-    this.showToast('success', 'Paramètres réinitialisés aux valeurs par défaut.');
-  }
-
-  // ── API key helpers ───────────────────────────────────────
-  toggleApiKeyVisibility(): void {
-    this.apiKeyVisible = !this.apiKeyVisible;
-  }
-
-  regenererCleApi(): void {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-    let key = 'sk-sa-';
-    for (let i = 0; i < 32; i++) {
-      key += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    this.api.cleApi = key;
-    this.markUnsaved();
-    this.showToast('success', 'Nouvelle clé API générée. Pensez à sauvegarder.');
-  }
-
-  // ── Poids auto-balance ────────────────────────────────────
-  adjustPoids(changed: 'competences' | 'disponibilite' | 'experience'): void {
-    const a = this.affectations;
-    if (changed === 'competences') {
-      const rem = 100 - a.poidsCompetences;
-      const ratio = a.poidsDisponibilite / (a.poidsDisponibilite + a.poidsExperience) || 0.5;
-      a.poidsDisponibilite = Math.round(rem * ratio);
-      a.poidsExperience    = 100 - a.poidsCompetences - a.poidsDisponibilite;
-    } else if (changed === 'disponibilite') {
-      const rem = 100 - a.poidsDisponibilite;
-      const ratio = a.poidsCompetences / (a.poidsCompetences + a.poidsExperience) || 0.7;
-      a.poidsCompetences = Math.round(rem * ratio);
-      a.poidsExperience  = 100 - a.poidsDisponibilite - a.poidsCompetences;
-    } else {
-      const rem = 100 - a.poidsExperience;
-      const ratio = a.poidsCompetences / (a.poidsCompetences + a.poidsDisponibilite) || 0.6;
-      a.poidsCompetences   = Math.round(rem * ratio);
-      a.poidsDisponibilite = 100 - a.poidsExperience - a.poidsCompetences;
-    }
-    this.markUnsaved();
-  }
-
-  get poidsTotal(): number {
-    return this.affectations.poidsCompetences +
-           this.affectations.poidsDisponibilite +
-           this.affectations.poidsExperience;
-  }
-
-  // ── Toast ─────────────────────────────────────────────────
   private showToast(type: 'success' | 'error', message: string): void {
-    if (this.toastTimer) clearTimeout(this.toastTimer);
+    if (this.toastTimer) {
+      clearTimeout(this.toastTimer);
+    }
+
     this.toast = { visible: true, type, message };
     this.cdr.detectChanges();
     this.toastTimer = setTimeout(() => {
       this.toast.visible = false;
       this.cdr.detectChanges();
-    }, 3500);
+    }, 3000);
   }
-
-  hasErrors(): boolean { return Object.keys(this.errors).length > 0; }
-
-  reinitialiserTout(): void {
-    this.general      = { ...DEFAULT_GENERAL };
-    this.affectations = { ...DEFAULT_AFFECT  };
-    this.api          = { ...DEFAULT_API     };
-    this.sante        = { ...DEFAULT_SANTE   };
-    this.exportCfg    = { ...DEFAULT_EXPORT  };
-    this.errors = {};
-    Object.keys(this.unsaved).forEach(k => (this.unsaved[k as ParamTab] = false));
-    this.showToast('success', 'Tous les paramètres réinitialisés aux valeurs par défaut.');
-  }
-
-  exporterCSV(): void {
-    const rows = [
-      ['Paramètre', 'Valeur'],
-      ['Seuil compatibilité', this.affectations.seuilCompatibilite + '%'],
-      ['Profils max recommandés', String(this.affectations.nbProfilsMax)],
-      ['Matching automatique', this.affectations.matchingAuto ? 'Oui' : 'Non'],
-      ['Nom plateforme', this.general.nomPlateforme],
-      ['Mode maintenance', this.general.modeMaintenance ? 'Activé' : 'Désactivé'],
-    ];
-    const csv = rows.map(r => r.map(v => `"${v}"`).join(';')).join('\r\n');
-    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = 'parametres-smartassign.csv'; a.click();
-    URL.revokeObjectURL(url);
-  }
-
-  exporterPDF(): void { window.print(); }
 }

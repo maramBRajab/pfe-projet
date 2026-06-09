@@ -9,6 +9,7 @@ export interface AuthUser {
   email: string;
   role:  string;
   token: string;
+  photoUrl?: string | null;
   telephone?: string;
   poste?: string;
   departement?: string;
@@ -84,6 +85,7 @@ export class AuthService {
   private readonly url         = `${environment.apiUrl}/auth`;
   private readonly SESSION_KEY = 'smartassign_user';
   private readonly TOKEN_KEY   = 'token';
+  private cachedUser: AuthUser | null = null;
 
   constructor(private http: HttpClient) {}
 
@@ -92,8 +94,9 @@ export class AuthService {
       .post<AuthUser>(`${this.url}/login`, { email, motDePasse })
       .pipe(
         tap(user => {
-          localStorage.setItem(this.SESSION_KEY, JSON.stringify(user));
+          this.cachedUser = user;
           localStorage.setItem(this.TOKEN_KEY, user.token);
+          localStorage.removeItem(this.SESSION_KEY);
         })
       );
   }
@@ -103,8 +106,9 @@ export class AuthService {
       .post<AuthUser>(`${this.url}/register`, payload)
       .pipe(
         tap(user => {
-          localStorage.setItem(this.SESSION_KEY, JSON.stringify(user));
+          this.cachedUser = user;
           localStorage.setItem(this.TOKEN_KEY, user.token);
+          localStorage.removeItem(this.SESSION_KEY);
         })
       );
   }
@@ -144,6 +148,7 @@ export class AuthService {
   }
 
   logout(): void {
+    this.cachedUser = null;
     localStorage.removeItem(this.SESSION_KEY);
     localStorage.removeItem(this.TOKEN_KEY);
   }
@@ -154,34 +159,51 @@ export class AuthService {
       return;
     }
 
-    localStorage.setItem(this.SESSION_KEY, JSON.stringify({
-      ...current,
-      nom,
-      email
-    }));
+    this.cachedUser = { ...current, nom, email };
+  }
+
+  updateCurrentUser(data: Partial<{ nom: string; email: string; telephone: string; poste: string; photoUrl: string }>): void {
+    const current = this.currentUser;
+    if (!current) {
+      return;
+    }
+
+    const updated = { ...current, ...data };
+    this.cachedUser = updated;
+  }
+
+  getCurrentProfile(): Observable<AuthUser> {
+    return this.http.get<AuthUser>(`${this.url}/me/profile`).pipe(
+      tap((profile) => {
+        const token = this.token;
+        this.cachedUser = {
+          ...profile,
+          token: profile.token || token || ''
+        };
+      })
+    );
   }
 
   updateProfile(payload: {
     nom: string;
     email: string;
+    photoUrl?: string | null;
     telephone?: string;
     poste?: string;
     departement?: string;
-  }): Observable<{ id: number; nom: string; email: string; role: string }> {
+  }): Observable<AuthUser> {
     return this.http
-      .put<{ id: number; nom: string; email: string; role: string }>(
+      .put<AuthUser>(
         `${this.url}/me/profile`,
         payload
       )
       .pipe(
         tap((res) => {
-          const stored = this.currentUser;
-          if (stored) {
-            localStorage.setItem(
-              this.SESSION_KEY,
-              JSON.stringify({ ...stored, nom: res.nom, email: res.email })
-            );
-          }
+          const token = this.token;
+          this.cachedUser = {
+            ...res,
+            token: res.token || token || ''
+          };
         })
       );
   }
@@ -198,26 +220,32 @@ export class AuthService {
   }
 
   get currentUser(): AuthUser | null {
-    const data = localStorage.getItem(this.SESSION_KEY);
-    if (!data) {
+    if (this.cachedUser) {
+      return {
+        ...this.cachedUser,
+        role: normalizeUserRole(this.cachedUser.role)
+      };
+    }
+
+    const token = localStorage.getItem(this.TOKEN_KEY);
+    if (!token) {
+      localStorage.removeItem(this.SESSION_KEY);
       return null;
     }
 
-    try {
-      const parsed = JSON.parse(data) as Partial<AuthUser>;
-      if (!parsed?.email || !parsed?.token) {
-        this.logout();
-        return null;
-      }
-
+    const parsed = this.decodeToken(token);
+    if (parsed?.email && parsed?.role) {
       return {
-        ...(parsed as AuthUser),
+        id: Number(parsed.id ?? 0),
+        nom: parsed.nom ?? '',
+        email: parsed.email,
+        token,
         role: normalizeUserRole(parsed.role)
       };
-    } catch {
-      this.logout();
-      return null;
     }
+
+    this.logout();
+    return null;
   }
 
   get isLoggedIn(): boolean {
@@ -225,6 +253,27 @@ export class AuthService {
   }
 
   get token(): string | null {
-    return this.currentUser?.token ?? localStorage.getItem(this.TOKEN_KEY);
+    return this.cachedUser?.token ?? localStorage.getItem(this.TOKEN_KEY);
+  }
+
+  private decodeToken(token: string): Partial<AuthUser> | null {
+    try {
+      const payload = token.split('.')[1];
+      if (!payload) {
+        return null;
+      }
+
+      const normalizedPayload = payload.replace(/-/g, '+').replace(/_/g, '/');
+      const paddedPayload = normalizedPayload.padEnd(Math.ceil(normalizedPayload.length / 4) * 4, '=');
+      const decoded = JSON.parse(atob(paddedPayload));
+      return {
+        email: decoded.sub,
+        role: decoded.role,
+        nom: decoded.nom,
+        id: decoded.id
+      };
+    } catch {
+      return null;
+    }
   }
 }

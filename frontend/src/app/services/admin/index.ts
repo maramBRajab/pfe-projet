@@ -25,3 +25,20 @@ export {
 	type ProjetRequest,
 	type StatutProjet,
 } from './projet.service';
+export {
+	AdminReportsService,
+	type SystemReport,
+	type SystemReportComptes,
+	type SystemReportConnexions,
+	type SystemReportAffectation,
+	type SystemReportProjets,
+	type SystemReportSante,
+	type EvolutionMoisReport,
+	type RepartitionDept,
+} from './reports.service';
+export {
+	AdminRolesService,
+	type AdminRole,
+	type RoleMember,
+	type RolePermission,
+} from './roles.service';

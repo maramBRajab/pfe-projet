@@ -19,6 +19,7 @@ export class ManagerAffectationsEnCoursComponent implements OnInit {
   searchTerm = '';
   isLoading = true;
   errorMessage = '';
+  affectationToCancel: Affectation | null = null;
 
   constructor(
     private readonly affectationService: AffectationService,
@@ -68,12 +69,30 @@ export class ManagerAffectationsEnCoursComponent implements OnInit {
     });
   }
 
-  supprimerAffectation(id: number): void {
-    if (this.deletingIds.has(id)) {
+  demanderAnnulation(affectation: Affectation): void {
+    if (this.deletingIds.has(affectation.id)) {
       return;
     }
 
-    if (!confirm('Confirmer l\'annulation de cette affectation ?')) {
+    this.affectationToCancel = affectation;
+  }
+
+  fermerAnnulation(): void {
+    this.affectationToCancel = null;
+  }
+
+  confirmerAnnulation(): void {
+    const id = this.affectationToCancel?.id;
+    if (id == null) {
+      return;
+    }
+
+    this.fermerAnnulation();
+    this.supprimerAffectation(id);
+  }
+
+  private supprimerAffectation(id: number): void {
+    if (this.deletingIds.has(id)) {
       return;
     }
 

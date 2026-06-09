@@ -2,9 +2,13 @@ package com.smartassign.pfe.dto;
 
 import java.util.Set;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Null;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -15,6 +19,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@JsonIgnoreProperties(ignoreUnknown = false)
 public class RegisterRequest {
 
     @NotBlank(message = "Le nom est obligatoire")
@@ -38,4 +43,8 @@ public class RegisterRequest {
     private boolean disponible = true;
 
     private Set<Long> competenceIds;
+
+    @Null(message = "Le role ne peut pas etre defini depuis l'inscription publique")
+    @JsonAlias({ "Role", "ROLE" })
+    private String role;
 }

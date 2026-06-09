@@ -4,6 +4,7 @@ import java.util.List;
 
 import com.smartassign.pfe.dto.ProjetRequest;
 import com.smartassign.pfe.dto.ProjetResponse;
+import com.smartassign.pfe.entity.Affectation;
 import com.smartassign.pfe.entity.Projet;
 
 public interface ProjetService {
@@ -22,5 +23,5 @@ public interface ProjetService {
 
     List<ProjetResponse> getByStatut(String statut);
 
-    ProjetResponse toResponse(Projet projet);
+    ProjetResponse toResponse(Projet projet, List<Affectation> affectations);
 }

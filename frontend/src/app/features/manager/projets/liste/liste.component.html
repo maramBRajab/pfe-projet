@@ -1,91 +1,11 @@
-﻿<section class="pj-root">
+﻿<app-manager-shell activeSection="projets" [projectBadge]="projets.length" [collaboratorBadge]="11">
 
-  <!-- ═══ SIDEBAR ═══════════════════════════════════════════════════════ -->
-  <aside class="pj-sidebar">
+  <app-manager-topbar 
+    breadcrumb="SmartAssign › Manager › Projets"
+    [notificationCount]="0">
+  </app-manager-topbar>
 
-    <div class="pj-sb-brand">
-      <div class="pj-sb-logo">SA</div>
-      <div class="pj-sb-brand-text">
-        <span class="pj-sb-name">SmartAssign</span>
-        <span class="pj-sb-tag">ESPACE MANAGER</span>
-      </div>
-    </div>
-
-    <nav class="pj-nav">
-      <p class="pj-nav__sec">Principal</p>
-      <a class="pj-nav__item" routerLink="/manager/dashboard">
-        <i class="ti ti-layout-dashboard"></i>
-        <span>Dashboard</span>
-      </a>
-
-      <p class="pj-nav__sec">Gestion</p>
-      <a class="pj-nav__item pj-nav__item--active" routerLink="/manager/projets">
-        <i class="ti ti-folder"></i>
-        <span>Projets</span>
-        <span class="pj-nav__badge">{{ projets.length }}</span>
-      </a>
-      <a class="pj-nav__item" routerLink="/manager/collaborateurs">
-        <i class="ti ti-users"></i>
-        <span>Collaborateurs</span>
-        <span class="pj-nav__badge">11</span>
-      </a>
-      <a class="pj-nav__item" routerLink="/manager/charge-travail">
-        <i class="ti ti-chart-bar"></i>
-        <span>Charge de travail</span>
-      </a>
-
-      <p class="pj-nav__sec">Affectations</p>
-      <a class="pj-nav__item" routerLink="/manager/affectation">
-        <i class="ti ti-arrow-right"></i>
-        <span>Affectations IA</span>
-        <span class="pj-nav__badge pj-nav__badge--red">0</span>
-      </a>
-      <a class="pj-nav__item" routerLink="/manager/historique-affectations">
-        <i class="ti ti-history"></i>
-        <span>Historique</span>
-      </a>
-      <a class="pj-nav__item" routerLink="/manager/notifications" routerLinkActive="pj-nav__item--active">
-        <i class="ti ti-bell"></i>
-        <span>Notifications</span>
-        <span class="pj-nav__badge pj-nav__badge--blue">3</span>
-      </a>
-    </nav>
-
-    <div class="pj-sb-footer">
-      <div class="pj-sb-user" routerLink="/manager/profil" style="cursor:pointer">
-        <div class="pj-sb-av">MS</div>
-        <div class="pj-sb-user-info">
-          <div class="pj-sb-uname">Manager SmartAssign</div>
-          <div class="pj-sb-urole">Manager</div>
-        </div>
-      </div>
-      <button type="button" class="pj-nav__item pj-nav__item--logout" (click)="logout()">
-        <i class="ti ti-logout"></i>
-        <span>D&eacute;connexion</span>
-      </button>
-    </div>
-  </aside>
-
-  <!-- ═══ MAIN ══════════════════════════════════════════════════════════ -->
   <div class="pj-main">
-
-    <!-- TOPBAR -->
-    <div class="pj-topbar">
-      <div class="pj-topbar__left">
-        <div class="pj-topbar__bc">SmartAssign &rsaquo; Manager &rsaquo; Projets</div>
-        <h1 class="pj-topbar__title">Gestion des projets</h1>
-      </div>
-      <div class="pj-topbar__right">
-        <div class="pj-status-pill">
-          <span class="pj-status-dot"></span>
-          Portefeuille synchronis&eacute;
-        </div>
-        <button type="button" class="pj-btn pj-btn--primary pj-btn--pill" (click)="openCreateModal()">
-          <i class="ti ti-plus"></i> Nouveau projet
-        </button>
-        <div class="pj-topbar__av">MS</div>
-      </div>
-    </div>
 
     <!-- CONTENT -->
     <div class="pj-content">
@@ -94,43 +14,67 @@
       <div class="pj-kpi-grid">
 
         <div class="pj-kpi">
-          <div class="pj-kpi__bar" style="background:#3b82f6"></div>
           <span class="pj-kpi__badge pj-kpi__badge--neutral">Catalogue</span>
+          <span class="pj-kpi__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none">
+              <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+            </svg>
+          </span>
           <div class="pj-kpi__label">TOTAL PROJET</div>
-          <div class="pj-kpi__val" style="color:#3b82f6">{{ projets.length }}</div>
+          <div class="pj-kpi__val">6</div>
           <div class="pj-kpi__sub">Portefeuille manager</div>
         </div>
 
         <div class="pj-kpi">
-          <div class="pj-kpi__bar" style="background:#10b981"></div>
           <span class="pj-kpi__badge pj-kpi__badge--green">Actifs</span>
+          <span class="pj-kpi__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none">
+              <circle cx="12" cy="12" r="8.5" stroke="currentColor" stroke-width="1.6"/>
+              <path d="M10 9.5 15 12l-5 2.5V9.5Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+            </svg>
+          </span>
           <div class="pj-kpi__label">EN COURS</div>
-          <div class="pj-kpi__val" style="color:#10b981">{{ countStatut('en_cours') }}</div>
+          <div class="pj-kpi__val pj-kpi__val--green">3</div>
           <div class="pj-kpi__sub">Suivis en ex&eacute;cution</div>
         </div>
 
         <div class="pj-kpi">
-          <div class="pj-kpi__bar" style="background:#f59e0b"></div>
           <span class="pj-kpi__badge pj-kpi__badge--amber">&Agrave; cadrer</span>
+          <span class="pj-kpi__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none">
+              <circle cx="12" cy="12" r="8.5" stroke="currentColor" stroke-width="1.6"/>
+              <path d="M12 8v4.5M12 15.2h.01" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+            </svg>
+          </span>
           <div class="pj-kpi__label">EN ATTENTE</div>
-          <div class="pj-kpi__val" style="color:#f59e0b">{{ countStatut('en_attente') }}</div>
-          <div class="pj-kpi__sub">Planification &agrave; confirmer</div>
+          <div class="pj-kpi__val pj-kpi__val--amber">1</div>
+          <div class="pj-kpi__sub">&Agrave; planifier</div>
         </div>
 
         <div class="pj-kpi">
-          <div class="pj-kpi__bar" style="background:#8b5cf6"></div>
-          <span class="pj-kpi__badge pj-kpi__badge--neutral">Livr&eacute;s</span>
+          <span class="pj-kpi__badge pj-kpi__badge--purple">Livr&eacute;s</span>
+          <span class="pj-kpi__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none">
+              <circle cx="12" cy="12" r="8.5" stroke="currentColor" stroke-width="1.6"/>
+              <path d="m8.7 12 2.3 2.3 4.3-4.3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </span>
           <div class="pj-kpi__label">TERMIN&Eacute;S</div>
-          <div class="pj-kpi__val" style="color:#8b5cf6">{{ terminesCount }}</div>
-          <div class="pj-kpi__sub">Cl&ocirc;tur&eacute;s dans le suivi</div>
+          <div class="pj-kpi__val pj-kpi__val--purple">2</div>
+          <div class="pj-kpi__sub">Cl&ocirc;tur&eacute;s</div>
         </div>
 
         <div class="pj-kpi">
-          <div class="pj-kpi__bar" style="background:#64748b"></div>
           <span class="pj-kpi__badge pj-kpi__badge--neutral">Moyenne</span>
+          <span class="pj-kpi__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none">
+              <rect x="4" y="5" width="16" height="15" rx="2" stroke="currentColor" stroke-width="1.6"/>
+              <path d="M8 3.5v3M16 3.5v3M8.5 11.5h7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+            </svg>
+          </span>
           <div class="pj-kpi__label">DUR&Eacute;E MOYENNE</div>
-          <div class="pj-kpi__val" style="color:#64748b">{{ averageDuration }}</div>
-          <div class="pj-kpi__sub">Jours par projet</div>
+          <div class="pj-kpi__val">20 j</div>
+          <div class="pj-kpi__sub">Par projet</div>
         </div>
 
       </div><!-- /kpi-grid -->
@@ -144,17 +88,11 @@
             <div class="pj-search-wrap">
               <i class="ti ti-search pj-search-ico"></i>
               <input type="text" [(ngModel)]="searchTerm"
-                     placeholder="Nom, description ou statut&hellip;"
+                placeholder="Nom, description ou statut..."
                      class="pj-search" />
             </div>
-            <select [(ngModel)]="statutFilter" class="pj-select">
-              <option value="all">Tous les statuts</option>
-              <option value="en_attente">En attente</option>
-              <option value="en_cours">En cours</option>
-              <option value="termine">Termin&eacute;</option>
-            </select>
-            <button type="button" class="pj-btn pj-btn--ghost" (click)="clearFilters()">
-              <i class="ti ti-filter-x"></i> R&eacute;initialiser
+            <button type="button" class="pj-btn pj-btn--primary" (click)="openCreateModal()">
+              <i class="ti ti-plus"></i> Créer un projet
             </button>
             <button type="button" class="pj-btn pj-btn--ghost" (click)="exportCsv()">
               <i class="ti ti-download"></i> Export CSV
@@ -162,8 +100,8 @@
           </div>
           <div class="pj-filter-meta">
             <span class="pj-results-count">{{ filteredProjets.length }} r&eacute;sultat(s)</span>
-            <span class="pj-filter-spacer"></span>
-            <span class="pj-results-right">{{ totalCompetences }} comp&eacute;tence(s) suivie(s)</span>
+            <span class="pj-results-dot">&middot;</span>
+            <a href="#" class="pj-results-right" (click)="$event.preventDefault()">6 comp&eacute;tence(s) suivie(s)</a>
           </div>
         </div>
 
@@ -200,7 +138,7 @@
           </div>
 
           <!-- DESCRIPTION -->
-          <div class="pj-cell-desc">{{ projet.description || '&mdash;' }}</div>
+          <div class="pj-cell-desc">{{ projet.description || '—' }}</div>
 
           <!-- P&Eacute;RIODE -->
           <div class="pj-cell-period">
@@ -226,7 +164,7 @@
             <button type="button" class="pj-act" title="Modifier" (click)="openEditModal(projet.id!)">
               <i class="ti ti-edit"></i>
             </button>
-            <button type="button" class="pj-act pj-act--danger"
+            <button type="button" class="pj-act"
                     (click)="supprimer(projet.id!)" title="Supprimer">
               <i class="ti ti-trash"></i>
             </button>
@@ -266,11 +204,6 @@
       </app-formulaire-projet>
     </div>
   </div>
-  <app-manager-notifications-panel
-    [open]="notificationsPanel.isOpen()"
-    (close)="notificationsPanel.close()">
-  </app-manager-notifications-panel>
-
   <!-- ═══ VIEW MODAL (Consulter projet) ═════════════════════════════════ -->
   <div class="pv-overlay" *ngIf="viewedProjet" (click)="closeViewModal()" role="dialog" aria-modal="true">
     <div class="pv-modal" (click)="$event.stopPropagation()">
@@ -317,19 +250,21 @@
           </div>
         </div>
 
-        <!-- Ressources déjà affectées -->
-        <div class="pv-aff" *ngIf="affectationsExistantes.length">
-          <p class="pv-comps__title">RESSOURCES AFFECTÉES ({{ ressourceCount() }})</p>
+        <!-- Collaborateurs affectés -->
+        <div class="pv-aff">
+          <p class="pv-comps__title">COLLABORATEURS AFFECTÉS</p>
+          <p class="pv-reco-empty" *ngIf="!affectationsExistantes.length">Aucun collaborateur affecté pour l'instant.</p>
           <div class="pv-aff-list">
             <div class="pv-aff-row" *ngFor="let a of affectationsExistantes">
               <div class="pv-aff-av">
-                {{ (a.collaborateur?.prenom?.[0] || '') + (a.collaborateur?.nom?.[0] || '') | uppercase }}
+                {{ (a.collaborateur.prenom[0] || '') + (a.collaborateur.nom[0] || '') | uppercase }}
               </div>
               <div class="pv-aff-name">
-                {{ a.collaborateur?.prenom }} {{ a.collaborateur?.nom }}
-                <small>Score IA : {{ a.score }}</small>
+                {{ a.collaborateur.prenom }} {{ a.collaborateur.nom }}
               </div>
-              <span class="pv-aff-badge">Affecté</span>
+              <span class="pv-aff-badge" [class.pv-aff-badge--available]="a.collaborateur.disponible" [class.pv-aff-badge--occupied]="!a.collaborateur.disponible">
+                {{ a.collaborateur.disponible ? 'Disponible' : 'Occupé' }}
+              </span>
             </div>
           </div>
         </div>
@@ -349,7 +284,7 @@
 
           <div class="pv-reco-list" *ngIf="!loadingRecommandations && recommandations.length">
             <div class="pv-reco-row" *ngFor="let r of recommandations">
-              <div class="pv-aff-av">{{ (r.prenom?.[0] || '') + (r.nom?.[0] || '') | uppercase }}</div>
+              <div class="pv-aff-av">{{ (r.prenom[0] || '') + (r.nom[0] || '') | uppercase }}</div>
               <div class="pv-aff-name">
                 {{ r.prenom }} {{ r.nom }}
                 <small>{{ r.experienceAnnees }} an(s) d'expérience</small>
@@ -403,4 +338,4 @@
   <!-- Toast -->
   <div class="pj-toast" *ngIf="toastMessage">{{ toastMessage }}</div>
 
-</section>
+</app-manager-shell>

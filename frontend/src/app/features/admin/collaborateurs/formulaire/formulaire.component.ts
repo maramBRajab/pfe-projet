@@ -10,14 +10,23 @@ import {
 import { AdminSidebarComponent } from '../../shared/admin-sidebar.component';
 import { CompetenceService, Competence } from '../../../../services/manager/competence.service';
 
+import { KpiCardComponent } from '../../../../shared/kpi-card/kpi-card.component';
 @Component({
   selector: 'app-formulaire-collaborateur',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, AdminSidebarComponent],
+  imports: [CommonModule, FormsModule, RouterLink, KpiCardComponent, AdminSidebarComponent],
   templateUrl: './formulaire.component.html',
   styleUrl: './formulaire.component.scss'
 })
 export class FormulaireCollaborateurComponent implements OnInit, OnChanges {
+  private readonly allowedEmailDomains = new Set([
+    'gmail.com',
+    'outlook.com',
+    'hotmail.com',
+    'yahoo.com',
+    'entreprise.com'
+  ]);
+
   @Input() embedded = false;
   @Output() cancel = new EventEmitter<void>();
   @Output() created = new EventEmitter<void>();
@@ -39,6 +48,9 @@ export class FormulaireCollaborateurComponent implements OnInit, OnChanges {
   errorMessage = '';
   copyMessage = '';
   telephone = '';
+  departement = '';
+  statutCompte: 'ACTIF' | 'SUSPENDU' = 'ACTIF';
+  originalStatutCompte: 'ACTIF' | 'SUSPENDU' = 'ACTIF';
   competencesTexte = '';
   availableCompetences: Competence[] = [];
   selectedCompetenceIds: number[] = [];
@@ -51,7 +63,7 @@ export class FormulaireCollaborateurComponent implements OnInit, OnChanges {
   }
 
   collaborateur: Collaborateur = {
-    nom: '', prenom: '', email: '', role: 'COLLAB',
+    nom: '', prenom: '', email: '', role: 'COLLAB', departement: '',
     experienceAnnees: 0, disponible: true, competences: []
   };
 
@@ -83,25 +95,34 @@ export class FormulaireCollaborateurComponent implements OnInit, OnChanges {
 
   get formInvalid(): boolean {
     return !this.collaborateur.prenom.trim()
-        || !this.collaborateur.nom.trim()
+      || !this.collaborateur.nom.trim()
+      || !this.collaborateur.email.trim()
+      || this.emailInvalid
+      || !this.telephone.trim()
+      || !this.isValidPhone(this.telephone.trim())
       || !this.collaborateur.role.trim()
-        || this.collaborateur.experienceAnnees < 0;
+      || (this.showExperience && this.collaborateur.experienceAnnees < 0);
+  }
+
+  get showExperience(): boolean {
+    return this.normalizeRole(this.collaborateur.role) !== 'ADMIN';
+  }
+
+  get showDisponibilite(): boolean {
+    return this.normalizeRole(this.collaborateur.role) === 'COLLAB';
+  }
+
+  get showCompetences(): boolean {
+    return this.normalizeRole(this.collaborateur.role) === 'COLLAB';
+  }
+
+  get emailInvalid(): boolean {
+    const email = this.collaborateur.email.trim();
+    return email.length > 0 && !this.isValidEmail(email);
   }
 
   get generatedEmailPreview(): string {
-    const prenom = this.collaborateur.prenom.trim();
-    const nom = this.collaborateur.nom.trim();
-
-    if (!prenom && !nom) {
-      return this.collaborateur.email || 'prenom.nom@smartassign.tn';
-    }
-
-    const localPart = [prenom, nom]
-      .map((value) => this.slugify(value))
-      .filter(Boolean)
-      .join('.');
-
-    return `${localPart || 'utilisateur'}@smartassign.tn`;
+    return this.collaborateur.email?.trim() || 'Email personnel (ex: m.ali@gmail.com)';
   }
 
   get fullNamePreview(): string {
@@ -171,20 +192,39 @@ export class FormulaireCollaborateurComponent implements OnInit, OnChanges {
       : [...this.selectedCompetenceIds, id];
   }
 
+  onRoleChanged(): void {
+    if (!this.showExperience) {
+      this.collaborateur.experienceAnnees = 0;
+    }
+
+    if (!this.showDisponibilite) {
+      this.collaborateur.disponible = true;
+    }
+
+    if (!this.showCompetences) {
+      this.selectedCompetenceIds = [];
+      this.syncSelectedCompetences();
+    }
+  }
+
   sauvegarder(): void {
     if (this.formInvalid || this.isSaving) return;
     this.isSaving = true; this.errorMessage = '';
+    const requestedStatut = this.statutCompte;
+    const previousStatut = this.originalStatutCompte;
 
     this.syncSelectedCompetences();
 
     const payload: CollaborateurRequest = {
       nom:    this.collaborateur.nom.trim(),
       prenom: this.collaborateur.prenom.trim(),
-      email:  this.generatedEmailPreview,
+      email:  this.collaborateur.email.trim(),
+      telephone: this.telephone.trim() || undefined,
       role: this.normalizeRole(this.collaborateur.role),
-      experienceAnnees: this.collaborateur.experienceAnnees,
-      disponible: this.collaborateur.disponible,
-      competenceIds: this.selectedCompetenceIds,
+      departement: this.departement.trim() || undefined,
+      experienceAnnees: this.showExperience ? this.collaborateur.experienceAnnees : 0,
+      disponible: this.showDisponibilite ? this.collaborateur.disponible : true,
+      competenceIds: this.showCompetences ? this.selectedCompetenceIds : [],
     };
 
     const req$ = this.isEditMode && this.id
@@ -193,37 +233,61 @@ export class FormulaireCollaborateurComponent implements OnInit, OnChanges {
 
     req$.subscribe({
       next:  (response) => {
-        this.isSaving = false;
+        const finalizeAfterStatut = () => {
+          this.isSaving = false;
 
-        if (this.isEditMode) {
-          if (this.embedded) {
-            this.created.emit();
+          if (this.isEditMode) {
+            if (this.embedded) {
+              this.created.emit();
+              return;
+            }
+
+            this.router.navigate(['/admin/collaborateurs']);
             return;
           }
 
-          this.router.navigate(['/admin/collaborateurs']);
+          this.collaborateur = {
+            ...response,
+            role: this.normalizeRole(response.role)
+          };
+          this.telephone = response.telephone ?? '';
+          this.departement = response.departement ?? '';
+          this.statutCompte = (response.statutCompte === 'SUSPENDU' ? 'SUSPENDU' : 'ACTIF');
+
+          this.createdCredentials = response.motDePasseGenere
+            ? {
+                fullName: `${response.prenom} ${response.nom}`.trim(),
+                email: response.email,
+                password: response.motDePasseGenere,
+                role: this.roleLabel
+              }
+            : null;
+
+          if (this.embedded) {
+            this.created.emit();
+          }
+
+          this.cdr.detectChanges();
+        };
+
+        if (this.isEditMode && this.id && requestedStatut !== previousStatut) {
+          this.adminCollaborateurService.updateStatut(this.id, requestedStatut).subscribe({
+            next: (updated) => {
+              this.statutCompte = (updated.statutCompte === 'SUSPENDU' ? 'SUSPENDU' : 'ACTIF');
+              this.originalStatutCompte = this.statutCompte;
+              finalizeAfterStatut();
+            },
+            error: () => {
+              this.errorMessage = 'La mise à jour du statut a échoué.';
+              this.isSaving = false;
+              this.cdr.detectChanges();
+            }
+          });
           return;
         }
 
-        this.collaborateur = {
-          ...response,
-          role: this.normalizeRole(response.role)
-        };
-
-        this.createdCredentials = response.motDePasseGenere
-          ? {
-              fullName: `${response.prenom} ${response.nom}`.trim(),
-              email: response.email,
-              password: response.motDePasseGenere,
-              role: this.roleLabel
-            }
-          : null;
-
-        if (this.embedded) {
-          this.created.emit();
-        }
-
-        this.cdr.detectChanges();
+        this.statutCompte = (response.statutCompte === 'SUSPENDU' ? 'SUSPENDU' : 'ACTIF');
+        finalizeAfterStatut();
       },
       error: (error) => {
         this.errorMessage = this.extractErrorMessage(error, 'Impossible d\'enregistrer le collaborateur.');
@@ -258,6 +322,10 @@ export class FormulaireCollaborateurComponent implements OnInit, OnChanges {
           ...data,
           role: this.normalizeRole(data.role)
         };
+        this.telephone = data.telephone ?? '';
+        this.departement = data.departement ?? '';
+        this.statutCompte = (data.statutCompte === 'SUSPENDU' ? 'SUSPENDU' : 'ACTIF');
+        this.originalStatutCompte = this.statutCompte;
         this.selectedCompetenceIds = (data.competences ?? [])
           .map((competence: Competence) => competence.id)
           .filter((id): id is number => typeof id === 'number');
@@ -346,15 +414,19 @@ export class FormulaireCollaborateurComponent implements OnInit, OnChanges {
     return 'COLLAB';
   }
 
-  private slugify(value: string): string {
-    return value
-      .trim()
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '.')
-      .replace(/\.+/g, '.')
-      .replace(/^\.|\.$/g, '');
+  private isValidEmail(email: string): boolean {
+    const normalized = email.trim().toLowerCase();
+    const match = normalized.match(/^([a-z0-9._%+-]+)@([a-z0-9.-]+\.[a-z]{2,})$/i);
+    if (!match) {
+      return false;
+    }
+
+    const domain = match[2];
+    return this.allowedEmailDomains.has(domain);
+  }
+
+  private isValidPhone(phone: string): boolean {
+    return /^\d{8}$/.test(phone);
   }
 
   private resetCreationState(): void {
@@ -368,9 +440,13 @@ export class FormulaireCollaborateurComponent implements OnInit, OnChanges {
     this.isSaving = false;
     this.selectedCompetenceIds = [];
     this.collaborateur = {
-      nom: '', prenom: '', email: '', role: 'COLLAB',
+      nom: '', prenom: '', email: '', role: 'COLLAB', departement: '',
       experienceAnnees: 0, disponible: true, competences: []
     };
+    this.telephone = '';
+    this.departement = '';
+    this.statutCompte = 'ACTIF';
+    this.originalStatutCompte = 'ACTIF';
     this.syncSelectedCompetences();
   }
 }

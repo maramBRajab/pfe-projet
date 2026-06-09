@@ -2,8 +2,11 @@ import { Component, OnInit, ChangeDetectorRef, ElementRef, HostListener } from '
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
+import { catchError, of } from 'rxjs';
 import { AuthService } from '../../../services/auth';
 import { AdminSidebarComponent } from '../shared/admin-sidebar.component';
+import { AdminTopbarComponent } from '../shared/admin-topbar.component';
+import { AdminCollaborateurService, AdminRole, AdminRolesService, Collaborateur, RoleMember } from '../../../services/admin';
 
 // ── Types ─────────────────────────────────────────────────────
 
@@ -27,6 +30,7 @@ export interface PredefinedRole {
   color: 'violet' | 'blue' | 'green';
   usersCount: number;
   permissions: RolePermission[];
+  members: RoleMember[];
   isSystem: true;
 }
 
@@ -57,6 +61,7 @@ const PREDEFINED_ROLES: PredefinedRole[] = [
     color: 'violet',
     usersCount: 2,
     isSystem: true,
+    members: [],
     permissions: [
       { id: 'manage_users',       label: 'Gérer utilisateurs',         granted: true  },
       { id: 'manage_roles',       label: 'Gérer rôles',                granted: true  },
@@ -77,6 +82,7 @@ const PREDEFINED_ROLES: PredefinedRole[] = [
     color: 'blue',
     usersCount: 9,
     isSystem: true,
+    members: [],
     permissions: [
       { id: 'create_projects',    label: 'Créer projets',              granted: true  },
       { id: 'edit_projects',      label: 'Modifier projets',           granted: true  },
@@ -96,6 +102,7 @@ const PREDEFINED_ROLES: PredefinedRole[] = [
     color: 'green',
     usersCount: 41,
     isSystem: true,
+    members: [],
     permissions: [
       { id: 'view_own_projects',  label: 'Voir ses projets',           granted: true  },
       { id: 'view_planning',      label: 'Consulter planning',         granted: true  },
@@ -198,13 +205,14 @@ const ALL_PERMISSION_CATEGORIES: PermissionCategory[] = [
 @Component({
   selector: 'app-admin-roles',
   standalone: true,
-  imports: [CommonModule, FormsModule, AdminSidebarComponent],
+  imports: [CommonModule, FormsModule, AdminSidebarComponent, AdminTopbarComponent],
   templateUrl: './roles.component.html',
   styleUrl: './roles.component.scss'
 })
 export class AdminRolesComponent implements OnInit {
 
   currentDate = new Date();
+  today = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
   activeTab: 'predefined' | 'custom' = 'predefined';
   adminPhoto: string | null = null;
 
@@ -253,9 +261,13 @@ export class AdminRolesComponent implements OnInit {
 
   // ── Delete modal ─────────────────────────────────────────────
   deleteTarget: CustomRole | null = null;
+  deletePredefinedTarget: PredefinedRole | null = null;
 
-  // ── View expanded role permissions ───────────────────────────
-  expandedRoleId: string | null = null;
+  // ── View role modal (predefined) ─────────────────────────────
+  viewedRole: PredefinedRole | null = null;
+
+  // ── Expand/collapse members list by role ─────────────────────
+  expandedRole: string | null = null;
 
   // ── Toast ────────────────────────────────────────────────────
   toastMessage = '';
@@ -263,13 +275,17 @@ export class AdminRolesComponent implements OnInit {
 
   constructor(
     private cdr: ChangeDetectorRef,
+    private readonly rolesService: AdminRolesService,
+    private readonly adminCollaborateurService: AdminCollaborateurService,
     private authService: AuthService,
     private router: Router,
     private elRef: ElementRef
   ) {}
 
   ngOnInit(): void {
-    this.adminPhoto = localStorage.getItem('smartassign_admin_photo');
+    this.adminPhoto = this.authService.currentUser?.photoUrl ?? null;
+    this.loadRoles();
+    this.loadMembersFromUsers();
     // initialise all permission checkboxes to false
     this.resetNewRolePerms();
   }
@@ -315,6 +331,131 @@ export class AdminRolesComponent implements OnInit {
     return role.permissions.filter(p => p.granted).length;
   }
 
+  private loadRoles(): void {
+    this.rolesService.getRoles().pipe(
+      catchError(() => of([] as AdminRole[]))
+    ).subscribe((roles) => {
+      if (!roles.length) {
+        return;
+      }
+
+      this.predefinedRoles = roles.map((role) => ({
+        id: role.id,
+        name: role.name,
+        description: this.getDisplayDescription(role.code),
+        icon: this.toRoleIcon(role.icon),
+        color: this.toRoleColor(role.color),
+        usersCount: role.usersCount,
+        isSystem: true,
+        members: role.members ?? [],
+        permissions: this.getDisplayPermissions(role.code, role.permissions)
+      }));
+
+      this.cdr.detectChanges();
+    });
+  }
+
+  private toRoleIcon(icon: string): PredefinedRole['icon'] {
+    if (icon === 'admin' || icon === 'manager' || icon === 'collab') {
+      return icon;
+    }
+    return 'collab';
+  }
+
+  private loadMembersFromUsers(): void {
+    this.adminCollaborateurService.getAll().pipe(
+      catchError(() => of([] as Collaborateur[]))
+    ).subscribe((users) => {
+      if (!users.length) {
+        return;
+      }
+
+      const membersByRole: Record<string, RoleMember[]> = {
+        admin: [],
+        manager: [],
+        collab: [],
+      };
+
+      users.forEach((user) => {
+        const roleId = this.normalizeRoleId(user.role);
+        membersByRole[roleId].push({
+          id: Number(user.id ?? 0),
+          prenom: user.prenom,
+          nom: user.nom,
+          email: user.email,
+          role: user.role,
+          statutCompte: user.statutCompte ?? 'ACTIF',
+        });
+      });
+
+      this.predefinedRoles = this.predefinedRoles.map((role) => {
+        const roleMembers = membersByRole[role.id] ?? [];
+        return {
+          ...role,
+          members: roleMembers,
+          usersCount: roleMembers.length,
+        };
+      });
+
+      this.cdr.detectChanges();
+    });
+  }
+
+  private normalizeRoleId(role: string | undefined): 'admin' | 'manager' | 'collab' {
+    const normalized = (role ?? '').trim().toUpperCase();
+
+    if (normalized.includes('ADMIN')) {
+      return 'admin';
+    }
+
+    if (normalized.includes('MANAGER')) {
+      return 'manager';
+    }
+
+    return 'collab';
+  }
+
+  private toRoleColor(color: string): PredefinedRole['color'] {
+    if (color === 'violet' || color === 'blue' || color === 'green') {
+      return color;
+    }
+    return 'green';
+  }
+
+  private getDisplayDescription(roleCode: string): string {
+    const normalizedCode = roleCode.toUpperCase();
+    if (normalizedCode === 'ADMIN') {
+      return 'Contrôle total de la plateforme';
+    }
+    if (normalizedCode === 'MANAGER') {
+      return 'Gestion des projets et équipes';
+    }
+    return 'Accès personnel et consultation';
+  }
+
+  private getDisplayPermissions(roleCode: string, grantedPermissions: AdminRole['permissions']): RolePermission[] {
+    const fallbackRole = PREDEFINED_ROLES.find((role) => role.id === roleCode.toLowerCase());
+    if (!fallbackRole) {
+      return grantedPermissions.map((perm) => ({
+        id: perm.id,
+        label: perm.label,
+        granted: !!perm.granted,
+      }));
+    }
+
+    const grantedIds = new Set(
+      grantedPermissions
+        .filter((perm) => perm.granted)
+        .map((perm) => perm.id)
+    );
+
+    return fallbackRole.permissions.map((perm) => ({
+      id: perm.id,
+      label: perm.label,
+      granted: grantedIds.has(perm.id)
+    }));
+  }
+
   toggleUserMenu(): void {
     this.userMenuOpen = !this.userMenuOpen;
   }
@@ -341,12 +482,150 @@ export class AdminRolesComponent implements OnInit {
     return role.permissions.filter(p => p.granted);
   }
 
+  exporterCSV(): void {
+    const data = this.predefinedRoles.map(r => ({
+      'Rôle': r.name,
+      'Description': r.description,
+      'Comptes': r.usersCount,
+      'Permissions accordées': r.permissions.filter(p => p.granted).map(p => p.label).join('; ')
+    }));
+    const csv = [
+      Object.keys(data[0]).join(','),
+      ...data.map(row => Object.values(row).map(v => `"${v}"`).join(','))
+    ].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `roles-permissions-${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+  }
+
+  exportPdf(): void {
+    const title = 'Rôles & Permissions';
+    const subtitle = `Rapport généré le ${new Date().toLocaleDateString('fr-FR')}`;
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="UTF-8">
+          <style>
+            body { font-family: Arial, sans-serif; padding: 40px; color: #111827; }
+            h1 { font-size: 24px; font-weight: 600; margin-bottom: 4px; }
+            .subtitle { color: #6B7280; font-size: 14px; margin-bottom: 24px; }
+            table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+            th { background: #F3F4F6; padding: 12px; text-align: left; font-weight: 600; border-bottom: 1px solid #E5E7EB; }
+            td { padding: 12px; border-bottom: 1px solid #E5E7EB; }
+          </style>
+        </head>
+        <body>
+          <h1>${title}</h1>
+          <p class="subtitle">${subtitle}</p>
+          <table>
+            <thead>
+              <tr>
+                <th>Rôle</th>
+                <th>Description</th>
+                <th>Comptes</th>
+                <th>Permissions accordées</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${this.predefinedRoles.map(r => `
+                <tr>
+                  <td>${r.name}</td>
+                  <td>${r.description}</td>
+                  <td>${r.usersCount}</td>
+                  <td>${r.permissions.filter(p => p.granted).map(p => p.label).join('; ')}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </body>
+      </html>
+    `;
+    const printWindow = window.open('', '', 'height=600,width=1000');
+    if (printWindow) {
+      printWindow.document.write(html);
+      printWindow.document.close();
+      setTimeout(() => {
+        printWindow.print();
+        printWindow.close();
+      }, 250);
+    }
+  }
+
   deniedPerms(role: PredefinedRole): RolePermission[] {
     return role.permissions.filter(p => !p.granted);
   }
 
-  toggleExpand(id: string): void {
-    this.expandedRoleId = this.expandedRoleId === id ? null : id;
+  toggleRole(roleId: string): void {
+    this.expandedRole = this.expandedRole === roleId ? null : roleId;
+  }
+
+  getRoleMembers(role: PredefinedRole): RoleMember[] {
+    return role.members ?? [];
+  }
+
+  memberDisplayName(member: RoleMember): string {
+    const prenom = (member.prenom ?? '').trim();
+    const nom = (member.nom ?? '').trim();
+
+    if (prenom && nom) {
+      return `${prenom} ${nom}`.trim();
+    }
+
+    return nom || member.email;
+  }
+
+  memberInitiales(member: RoleMember): string {
+    const name = this.memberDisplayName(member).trim();
+    const parts = name.split(/\s+/).filter(Boolean);
+
+    if (!parts.length) {
+      return '?';
+    }
+
+    const first = parts[0]?.[0] ?? '';
+    const second = (parts.length > 1 ? parts[1]?.[0] : parts[0]?.[1]) ?? '';
+    return `${first}${second}`.toUpperCase();
+  }
+
+  isMemberActif(member: RoleMember): boolean {
+    return (member.statutCompte ?? 'ACTIF') !== 'SUSPENDU';
+  }
+
+  // ── View predefined role (modal) ─────────────────────────────
+  openViewRole(role: PredefinedRole): void { this.viewedRole = role; }
+  closeViewRole(): void { this.viewedRole = null; }
+  editFromViewRole(): void {
+    const r = this.viewedRole;
+    this.viewedRole = null;
+    if (r) this.openEditRoleModal(r);
+  }
+
+  // ── Delete predefined role ───────────────────────────────────
+  openDeletePredefined(role: PredefinedRole): void {
+    this.deletePredefinedTarget = role;
+  }
+  closeDeletePredefined(): void {
+    this.deletePredefinedTarget = null;
+  }
+  confirmDeletePredefined(): void {
+    if (!this.deletePredefinedTarget) return;
+    const name = this.deletePredefinedTarget.name;
+    this.predefinedRoles = this.predefinedRoles.filter(r => r.id !== this.deletePredefinedTarget!.id);
+    this.deletePredefinedTarget = null;
+    this.showToast(`Rôle « ${name} » supprimé.`);
+    this.cdr.detectChanges();
+  }
+
+  /** Emoji-style icon for predefined roles (used in cards & modals). */
+  roleEmoji(role: PredefinedRole): string {
+    if (role.icon === 'admin')   return '⭐';
+    if (role.icon === 'manager') return '💼';
+    return '👤';
   }
 
   // ── Edit predefined role ─────────────────────────────────────
@@ -471,24 +750,7 @@ export class AdminRolesComponent implements OnInit {
     this.cdr.detectChanges();
   }
 
-  // ── Export ───────────────────────────────────────────────────
 
-  exportRoles(): void {
-    const header = 'Nom,Description,Utilisateurs,Date création';
-    const rows = this.customRoles.map(r =>
-      [r.name, r.description, r.usersCount, r.createdAt.toLocaleDateString('fr-FR')].join(',')
-    );
-    const csv = [header, ...rows].join('\n');
-    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = 'roles.csv'; a.click();
-    URL.revokeObjectURL(url);
-  }
-
-  exportPdf(): void {
-    window.print();
-  }
 
   // ── Toast ────────────────────────────────────────────────────
 

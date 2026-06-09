@@ -15,17 +15,22 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.smartassign.pfe.dto.ManagerNotificationDto;
 import com.smartassign.pfe.entity.Affectation;
 import com.smartassign.pfe.entity.Collaborateur;
-import com.smartassign.pfe.entity.Projet;
+import com.smartassign.pfe.entity.NotificationLue;
 import com.smartassign.pfe.entity.NotificationSupprimee;
+import com.smartassign.pfe.entity.Projet;
 import com.smartassign.pfe.repository.AffectationRepository;
-import com.smartassign.pfe.repository.ProjetRepository;
+import com.smartassign.pfe.repository.NotificationLueRepository;
 import com.smartassign.pfe.repository.NotificationSupprimeeRepository;
+import com.smartassign.pfe.repository.ProjetRepository;
 
 @RestController
 @RequestMapping("/api/manager/notifications")
@@ -34,23 +39,29 @@ public class ManagerNotificationController {
     private final ProjetRepository projetRepository;
     private final AffectationRepository affectationRepository;
     private final NotificationSupprimeeRepository notificationSupprimeeRepository;
+    private final NotificationLueRepository notificationLueRepository;
 
     @Autowired
     public ManagerNotificationController(ProjetRepository projetRepository,
                                          AffectationRepository affectationRepository,
-                                         NotificationSupprimeeRepository notificationSupprimeeRepository) {
+                                         NotificationSupprimeeRepository notificationSupprimeeRepository,
+                                         NotificationLueRepository notificationLueRepository) {
         this.projetRepository = projetRepository;
         this.affectationRepository = affectationRepository;
         this.notificationSupprimeeRepository = notificationSupprimeeRepository;
+        this.notificationLueRepository = notificationLueRepository;
     }
 
     @GetMapping
+    @Transactional(readOnly = true)
     public List<ManagerNotificationDto> list() {
         List<ManagerNotificationDto> notifs = new ArrayList<>();
         long idSeq = 1L;
         
         Set<String> suppressedKeys = notificationSupprimeeRepository.findAll().stream()
                 .map(NotificationSupprimee::getNotificationKey)
+                .collect(Collectors.toSet());
+        Set<String> readKeys = notificationLueRepository.findAllNotificationKeys().stream()
                 .collect(Collectors.toSet());
 
         // 1) Affectations récentes (10 dernières) → type AFFECTATION
@@ -74,7 +85,7 @@ public class ManagerNotificationController {
                     "Score IA : " + scorePct + "% · Catégorie : " + categorie,
                     formatTemps(a.getDateAffectation()),
                     "AFFECTATION",
-                    false,
+                    readKeys.contains(key),
                     "ti-check",
                     "icon-green",
                     "badge-affectation",
@@ -103,7 +114,7 @@ public class ManagerNotificationController {
                     description,
                     "Échéance : " + p.getDateFin(),
                     "VIGILANCE",
-                    false,
+                    readKeys.contains(key),
                     "ti-alert-triangle",
                     "icon-amber",
                     "badge-vigilance",
@@ -131,7 +142,7 @@ public class ManagerNotificationController {
                     aff.size() + " collaborateur(s) trouvé(s) · Score moyen " + (int) Math.round(moyenne) + "%",
                     formatTemps(derniere),
                     "IA",
-                    false,
+                    readKeys.contains(key),
                     "ti-robot",
                     "icon-green",
                     "badge-ia",
@@ -153,6 +164,25 @@ public class ManagerNotificationController {
             notificationSupprimeeRepository.save(new NotificationSupprimee(key));
         }
         return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/mark-all-read")
+    @Transactional
+    public ResponseEntity<Void> markAllRead(@RequestBody List<String> keys) {
+        for (String key : keys) {
+            if (key != null && !key.isBlank() && !notificationLueRepository.existsByNotificationKey(key)) {
+                notificationLueRepository.save(new NotificationLue(key));
+            }
+        }
+        return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/count")
+    @Transactional(readOnly = true)
+    public ResponseEntity<Long> countUnread() {
+        List<ManagerNotificationDto> all = list();
+        long unread = all.stream().filter(n -> !n.isLu()).count();
+        return ResponseEntity.ok(unread);
     }
 
     private String formatTemps(LocalDateTime dt) {

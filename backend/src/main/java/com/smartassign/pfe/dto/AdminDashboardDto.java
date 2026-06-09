@@ -9,6 +9,7 @@ public final class AdminDashboardDto {
 
     public record DashboardStats(
         long projetsActifs,
+        long totalProjets,
         long totalCollaborateurs,
         long tauxAffectation,
         long managersActifs,
@@ -26,10 +27,31 @@ public final class AdminDashboardDto {
     public record RepartitionRoles(long collaborateurs, long managers, long admins) {
     }
 
-    public record Alerte(String type, String icon, String message, String time) {
+    public record Alerte(
+        String type,
+        String icon,
+        String message,
+        String time,
+        String title,
+        String description,
+        String level,
+        String generatedAt,
+        String link
+    ) {
     }
 
-    public record Activite(String initiales, String action, String temps, String categorie) {
+    public record Activite(
+        String initiales,
+        String action,
+        String temps,
+        String categorie,
+        String createdAt,
+        String role,
+        String level,
+        String type,
+        String userEmail,
+        String ip
+    ) {
     }
 
     public record DashboardInsights(

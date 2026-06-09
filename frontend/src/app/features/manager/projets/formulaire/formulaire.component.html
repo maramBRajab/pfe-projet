@@ -1,4 +1,14 @@
-﻿<app-manager-shell activeSection="projets">
+﻿<ng-container *ngIf="!embedded; else embeddedFormContent">
+  <app-manager-shell activeSection="projets">
+    <ng-container *ngTemplateOutlet="formCard"></ng-container>
+  </app-manager-shell>
+</ng-container>
+
+<ng-template #embeddedFormContent>
+  <ng-container *ngTemplateOutlet="formCard"></ng-container>
+</ng-template>
+
+<ng-template #formCard>
 <div class="fmp" [class.fmp--embedded]="embedded" [class.fmp--standalone]="!embedded">
 <div class="fmp__card">
 
@@ -99,4 +109,4 @@
 
 </div><!-- /fmp__card -->
 </div><!-- /fmp -->
-</app-manager-shell>
+</ng-template>

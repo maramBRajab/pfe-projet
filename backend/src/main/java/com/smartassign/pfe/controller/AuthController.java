@@ -16,6 +16,7 @@ import com.smartassign.pfe.dto.AuthResponse;
 import com.smartassign.pfe.dto.ForgotPasswordRequest;
 import com.smartassign.pfe.dto.MessageResponse;
 import com.smartassign.pfe.dto.RegisterRequest;
+import com.smartassign.pfe.dto.ResendCredentialsRequest;
 import com.smartassign.pfe.dto.ResetPasswordRequest;
 import com.smartassign.pfe.dto.UserPreferencesRequest;
 import com.smartassign.pfe.dto.UserPreferencesResponse;
@@ -23,7 +24,6 @@ import com.smartassign.pfe.dto.UtilisateurResponse;
 import com.smartassign.pfe.dto.UpdateProfileRequest;
 import com.smartassign.pfe.dto.UpdateProfileResponse;
 import com.smartassign.pfe.dto.ChangePasswordRequest;
-import org.springframework.security.access.prepost.PreAuthorize;
 import com.smartassign.pfe.service.AuthService;
 import com.smartassign.pfe.service.AuditLogService;
 
@@ -100,9 +100,23 @@ public class AuthController {
         return ResponseEntity.ok(response);
     }
 
+    @PostMapping("/renvoyer-identifiants")
+    public ResponseEntity<MessageResponse> renvoyerIdentifiants(
+            @Valid @RequestBody ResendCredentialsRequest request) {
+        LOGGER.info("POST /api/auth/renvoyer-identifiants pour {}", request.getEmail());
+        MessageResponse response = service.resendCredentials(request);
+        LOGGER.info("Reponse renvoyer-identifiants envoyee pour {}", request.getEmail());
+        return ResponseEntity.ok(response);
+    }
+
     @GetMapping("/reset-password/validate")
     public ResponseEntity<MessageResponse> validateResetPasswordToken(@RequestParam String token) {
         return ResponseEntity.ok(service.validatePasswordResetToken(token));
+    }
+
+    @GetMapping("/verify-email")
+    public ResponseEntity<MessageResponse> verifyEmail(@RequestParam String token) {
+        return ResponseEntity.ok(service.verifyEmail(token));
     }
 
     @PostMapping("/reset-password")
@@ -121,6 +135,11 @@ public class AuthController {
             Authentication authentication,
             @Valid @RequestBody UserPreferencesRequest request) {
         return ResponseEntity.ok(service.updateCurrentUserPreferences(authentication.getName(), request));
+    }
+
+    @GetMapping("/me/profile")
+    public ResponseEntity<UpdateProfileResponse> getProfile(Authentication authentication) {
+        return ResponseEntity.ok(service.getProfile(authentication.getName()));
     }
 
     @PutMapping("/me/profile")

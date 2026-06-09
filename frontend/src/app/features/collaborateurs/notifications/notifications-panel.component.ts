@@ -1,9 +1,10 @@
-import { CommonModule, DatePipe } from '@angular/common';
+﻿import { CommonModule, DatePipe } from '@angular/common';
 import { Component, EventEmitter, HostListener, Input, OnDestroy, OnInit, Output } from '@angular/core';
 import { Subscription } from 'rxjs';
 
 import { Notification } from '../../../shared/models/notification.model';
 import { NotificationService } from '../../../services/collaborateur';
+import { formatNotificationType } from '../../../shared/utils/notification-type.utils';
 
 @Component({
   selector: 'app-notifications-panel',
@@ -87,5 +88,9 @@ export class NotificationsPanelComponent implements OnInit, OnDestroy {
 
   trackByNotification(index: number, notification: Notification): string {
     return `${notification.type}-${notification.dateCreation}-${index}`;
+  }
+
+  formatNotificationType(type: string): string {
+    return formatNotificationType(type);
   }
 }

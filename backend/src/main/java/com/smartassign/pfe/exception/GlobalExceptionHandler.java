@@ -13,10 +13,10 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import jakarta.servlet.http.HttpServletRequest;
-import com.smartassign.pfe.exception.DuplicateEmailException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -66,6 +66,23 @@ public class GlobalExceptionHandler {
         HttpServletRequest request
     ) {
         return buildResponse(HttpStatus.NOT_FOUND, "La ressource demandee est introuvable", request, null);
+    }
+
+    @ExceptionHandler(ResponseStatusException.class)
+    public ResponseEntity<ApiErrorResponse> handleResponseStatus(
+        ResponseStatusException exception,
+        HttpServletRequest request
+    ) {
+        HttpStatus status = HttpStatus.resolve(exception.getStatusCode().value());
+        if (status == null) {
+            status = HttpStatus.INTERNAL_SERVER_ERROR;
+        }
+
+        String message = exception.getReason() == null || exception.getReason().isBlank()
+            ? status.getReasonPhrase()
+            : exception.getReason();
+
+        return buildResponse(status, message, request, null);
     }
 
     @ExceptionHandler(Exception.class)

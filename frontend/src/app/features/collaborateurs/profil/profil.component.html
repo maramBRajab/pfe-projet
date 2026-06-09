@@ -1,209 +1,217 @@
 <app-collaborateur-shell activeSection="profil">
+  <app-collab-topbar
+    shell-topbar
+    breadcrumb="SmartAssign › Collaborateur › Mon Profil"
+    [notificationCount]="0"
+    userName="Collaborateur Demo"
+    initials="CD">
+  </app-collab-topbar>
 
-  <!-- ── TOPBAR ── -->
-  <div shell-topbar class="prf-topbar">
-    <div class="prf-topbar__left">
-      <div class="prf-breadcrumb">SmartAssign &rsaquo; Collaborateur &rsaquo; Mon profil</div>
-      <div class="prf-title">Mon profil</div>
-    </div>
-    <div class="prf-topbar__right">
-      <div class="prf-status-pill">
-        <span class="prf-status-dot"></span>
-        <span class="prf-status-lbl">Syst&egrave;me op&eacute;rationnel</span>
-      </div>
-      <div class="prf-av">{{ userInitials }}</div>
-    </div>
-  </div>
-
-  <!-- ── LOADING / ERROR ── -->
   <div class="prf-loader" *ngIf="isLoading">
     <div class="prf-spinner"></div> Chargement du profil&hellip;
   </div>
   <div class="prf-error" *ngIf="loadError && !isLoading">{{ loadError }}</div>
 
   <ng-container *ngIf="!isLoading && !loadError">
-
-    <!-- ── SECTION 1: IDENTITY CARD ── -->
-    <div class="prf-identity">
-      <!-- Avatar -->
-      <div class="prf-identity__av">{{ userInitials }}</div>
-
-      <!-- Info -->
-      <div class="prf-identity__info">
-        <div class="prf-identity__name">{{ fullName }}</div>
-        <div class="prf-identity__sub">Collaborateur</div>
-        <div class="prf-identity__email">{{ email }}</div>
-        <div class="prf-identity__badges">
-          <span class="prf-badge prf-badge--green"><i class="ti ti-check"></i> Collaborateur</span>
-          <span class="prf-badge prf-badge--purple"><i class="ti ti-shield-check"></i> {{ allowedCount }}/{{ permissions.length }} permissions</span>
-          <span class="prf-badge prf-badge--green"><i class="ti ti-check"></i> {{ isDisponible ? 'Disponible' : 'Occupé' }}</span>
+    <div class="pf-page">
+      <div class="pf-photo-header">
+        <div class="pf-photo-wrapper">
+          <img *ngIf="displayPhotoUrl" [src]="displayPhotoUrl" class="pf-photo-img" alt="Photo de profil" />
+          <div *ngIf="!displayPhotoUrl" class="pf-photo-initials">{{ userInitials }}</div>
+          <label class="pf-photo-overlay" title="Changer la photo">
+            <i class="ti ti-camera"></i>
+            <input type="file" accept="image/*" (change)="onPhotoChange($event)" hidden />
+          </label>
+        </div>
+        <div class="pf-photo-info">
+          <div class="pf-photo-name">{{ fullName }}</div>
+          <div class="pf-photo-role">Collaborateur</div>
+          <div class="pf-photo-email">{{ email }}</div>
         </div>
       </div>
 
-    </div>
+      <div class="pf-two-col">
+        <div class="pf-card">
+          <div class="pf-card__lbl">ÉDITION</div>
+          <div class="pf-card__title">Informations personnelles</div>
 
-    <!-- ── SECTION 2: COMPLETION BANNER ── -->
-    <div class="prf-banner">
-      <div>
-        <div class="prf-kicker">MON PROFIL</div>
-        <div class="prf-banner__title">Compl&eacute;tude du profil</div>
-      </div>
-      <div class="prf-banner__pct">{{ completionRate }}%</div>
-      <div class="prf-banner__bar">
-        <div class="prf-banner__fill" [style.width.%]="completionRate"></div>
-      </div>
-      <div class="prf-banner__miss" *ngIf="missingFields">Il manque&nbsp;: {{ missingFields }}</div>
-    </div>
+          <form name="profilForm" autocomplete="off" (ngSubmit)="saveProfile()">
+            <input
+              type="text"
+              name="username"
+              autocomplete="username"
+              style="position:absolute; left:-9999px; opacity:0; pointer-events:none; width:0; height:0;"
+              tabindex="-1"
+              aria-hidden="true" />
+            <input
+              type="password"
+              name="password"
+              autocomplete="current-password"
+              style="position:absolute; left:-9999px; opacity:0; pointer-events:none; width:0; height:0;"
+              tabindex="-1"
+              aria-hidden="true" />
 
-    <!-- ── MAIN 2-COL GRID ── -->
-    <div class="prf-grid">
+          <div class="pf-feedback pf-feedback--error" *ngIf="errorMessage">{{ errorMessage }}</div>
+          <div class="pf-feedback pf-feedback--success" *ngIf="successMessage">{{ successMessage }}</div>
 
-      <!-- LEFT COLUMN -->
-      <div class="prf-left">
-
-        <!-- CARD A: Informations personnelles -->
-        <div class="prf-card">
-          <div class="prf-kicker">ÉDITION</div>
-          <div class="prf-card__title">Informations personnelles</div>
-
-          <!-- Feedback -->
-          <div class="prf-feedback prf-feedback--error" *ngIf="errorMessage">{{ errorMessage }}</div>
-          <div class="prf-feedback prf-feedback--success" *ngIf="successMessage">{{ successMessage }}</div>
-
-          <div class="prf-row prf-row--2">
-            <div class="prf-field">
-              <label class="prf-label">PRÉNOM</label>
-              <input type="text" [(ngModel)]="firstName" class="prf-input" />
+          <div class="pf-row">
+            <div class="pf-fg">
+              <label class="pf-fl">PRÉNOM</label>
+              <input type="text" name="prenom" autocomplete="given-name" [(ngModel)]="firstName" class="pf-fi" />
             </div>
-            <div class="prf-field">
-              <label class="prf-label">NOM</label>
-              <input type="text" [(ngModel)]="lastName" class="prf-input" />
+            <div class="pf-fg">
+              <label class="pf-fl">NOM</label>
+              <input type="text" name="nom" autocomplete="family-name" [(ngModel)]="lastName" class="pf-fi" />
             </div>
           </div>
 
-          <div class="prf-field">
-            <label class="prf-label">EMAIL</label>
-            <input type="email" [(ngModel)]="email" class="prf-input" />
+          <div class="pf-fg">
+            <label class="pf-fl">EMAIL</label>
+            <input type="email" name="email" autocomplete="email" [(ngModel)]="email" class="pf-fi" />
           </div>
 
-          <div class="prf-row prf-row--2">
-            <div class="prf-field">
-              <label class="prf-label">TÉLÉPHONE</label>
-              <input type="tel" [(ngModel)]="telephone" class="prf-input" placeholder="+216 …" />
+          <div class="pf-row">
+            <div class="pf-fg">
+              <label class="pf-fl">TÉLÉPHONE</label>
+              <input type="tel" name="telephone" autocomplete="tel" [(ngModel)]="telephone" class="pf-fi" placeholder="+216 ..." />
             </div>
-            <div class="prf-field">
-              <label class="prf-label">POSTE</label>
-              <input type="text" [(ngModel)]="poste" class="prf-input" />
+            <div class="pf-fg">
+              <label class="pf-fl">POSTE</label>
+              <input type="text" name="poste" autocomplete="organization-title" [(ngModel)]="poste" class="pf-fi" />
             </div>
           </div>
 
-          <div class="prf-field">
-            <label class="prf-label">COMPÉTENCES</label>
-            <div class="prf-skills-display">
-              <span *ngFor="let c of selectedCompetences" class="prf-skill-tag">
-                {{ c.nom }}
-                <button type="button" class="prf-skill-rm" (click)="removeCompetence(c)">&times;</button>
+          <div class="pf-fg">
+            <label class="pf-fl">DISPONIBILITÉ</label>
+            <div class="pf-availability-row">
+              <span class="pf-availability-pill">{{ isDisponible ? 'Disponible' : 'Indisponible' }}</span>
+              <label class="pf-toggle" [class.pf-toggle--disabled]="isUpdatingDisponibilite">
+                <input
+                  type="checkbox"
+                  name="disponibilite"
+                  autocomplete="off"
+                  class="pf-toggle__input"
+                  [checked]="isDisponible"
+                  [disabled]="isUpdatingDisponibilite"
+                  (change)="onDisponibiliteToggle($any($event.target).checked)"
+                />
+                <span class="pf-toggle__track"></span>
+                <span class="pf-toggle__label">DISPONIBLE</span>
+              </label>
+            </div>
+            <div class="pf-feedback pf-feedback--success" *ngIf="disponibiliteMessage">{{ disponibiliteMessage }}</div>
+            <div class="pf-feedback pf-feedback--error" *ngIf="disponibiliteError">{{ disponibiliteError }}</div>
+          </div>
+
+          <div class="pf-fg">
+            <label class="pf-fl">COMPÉTENCES</label>
+            <div class="competences-container">
+              <span
+                *ngFor="let skill of competences; let i = index; trackBy: trackByIndex"
+                class="skill-tag">
+                {{ skill }}
+                <button
+                  type="button"
+                  class="skill-remove"
+                  (click)="removeCompetence(i)"
+                  [attr.aria-label]="'Supprimer ' + skill">
+                  &times;
+                </button>
               </span>
-              <span class="prf-skills-empty" *ngIf="!selectedCompetences.length">Aucune compétence ajoutée</span>
-            </div>
-            <div class="prf-add-row">
-              <input type="text" [(ngModel)]="newCompetenceName" class="prf-input prf-input--add"
-                     placeholder="Ajouter une compétence…"
-                     (keyup.enter)="addCompetence()" />
-              <button type="button" class="prf-btn prf-btn--ghost prf-btn--add" (click)="addCompetence()">
-                <i class="ti ti-plus"></i> Ajouter
+              <span class="pf-skills-empty" *ngIf="!competences.length">Aucune compétence ajoutée</span>
+
+              <input
+                *ngIf="showSkillInput"
+                id="skill-input"
+                type="text"
+                name="competence-new"
+                autocomplete="off"
+                autocorrect="off"
+                autocapitalize="off"
+                spellcheck="false"
+                class="skill-input"
+                [(ngModel)]="newSkill"
+                (keydown)="onSkillKeyDown($event)"
+                (blur)="addCompetence()"
+                placeholder="Nouvelle compétence..."
+                maxlength="30" />
+
+              <button
+                *ngIf="!showSkillInput"
+                type="button"
+                class="skill-add-btn"
+                (click)="showAddSkillInput()">
+                + Ajouter
               </button>
             </div>
+            <div *ngIf="competencesModifiees" class="unsaved-hint">
+              Compétences modifiées - cliquez sur "Enregistrer" pour sauvegarder
+            </div>
           </div>
 
-          <div class="prf-form-actions">
-            <button type="button" class="prf-btn prf-btn--primary" (click)="saveProfile()" [disabled]="isSaving">
-              <i class="ti ti-check"></i> {{ isSaving ? 'Enregistrement…' : 'Enregistrer' }}
+          <div class="pf-btn-row">
+            <button type="submit" class="pf-btn pf-btn--primary" [disabled]="isSaving">
+              <i class="ti ti-check"></i>{{ isSaving ? 'Enregistrement...' : 'Enregistrer' }}
             </button>
-            <button type="button" class="prf-btn prf-btn--ghost" (click)="refresh()">Annuler</button>
+            <button type="button" class="pf-btn pf-btn--secondary" (click)="refresh()">Annuler</button>
           </div>
+          </form>
         </div>
 
-        <!-- CARD B: Permissions -->
-        <div class="prf-card">
-          <div class="prf-card__hd">
-            <div>
-              <div class="prf-kicker">PERMISSIONS</div>
-              <div class="prf-card__title prf-card__title--mb0">Droits du rôle Collaborateur</div>
-            </div>
-            <span class="prf-badge prf-badge--green"><i class="ti ti-check"></i> {{ allowedCount }}/{{ permissions.length }} actives</span>
+        <div class="pf-card">
+          <div class="pf-card__lbl">SÉCURITÉ</div>
+          <div class="pf-card__title">Modifier le mot de passe</div>
+
+          <form name="passwordForm" autocomplete="off" (ngSubmit)="changerMotDePasse()">
+
+          <div *ngIf="passwordSuccess" class="alert alert--success">{{ passwordSuccess }}</div>
+          <div *ngIf="passwordError" class="alert alert--error">{{ passwordError }}</div>
+
+          <div class="pf-fg">
+            <label class="pf-fl">MOT DE PASSE ACTUEL</label>
+            <input
+              type="password"
+              [(ngModel)]="motDePasseActuel"
+              name="motDePasseActuel"
+              class="pf-fi"
+              autocomplete="current-password"
+              placeholder="••••••••" />
           </div>
-
-          <div class="prf-perm-grid">
-            <div *ngFor="let p of permissions" class="prf-perm-tile" [class.prf-perm-tile--ok]="p.allowed" [class.prf-perm-tile--no]="!p.allowed">
-              <i *ngIf="p.allowed" [class]="p.icon + ' prf-perm-ico'"></i>
-              <div class="prf-perm-lbl">{{ p.label }}</div>
-              <div class="prf-perm-sub" [class.prf-perm-sub--ok]="p.allowed">{{ p.allowed ? 'AUTORISÉ' : 'RESTREINT' }}</div>
+          <div class="pf-row">
+            <div class="pf-fg">
+              <label class="pf-fl">NOUVEAU</label>
+              <input
+                type="password"
+                [(ngModel)]="nouveauMotDePasse"
+                name="nouveauMotDePasse"
+                class="pf-fi"
+                autocomplete="new-password"
+                placeholder="••••••••" />
             </div>
-          </div>
-        </div>
-
-      </div><!-- /left -->
-
-      <!-- RIGHT COLUMN -->
-      <div class="prf-right">
-
-        <!-- CARD C: Password -->
-        <div class="prf-card">
-          <div class="prf-kicker">SÉCURITÉ</div>
-          <div class="prf-card__title">Modifier le mot de passe</div>
-
-          <div class="prf-feedback prf-feedback--error"   *ngIf="passwordError">{{ passwordError }}</div>
-          <div class="prf-feedback prf-feedback--success" *ngIf="passwordSuccess">{{ passwordSuccess }}</div>
-
-          <div class="prf-field">
-            <label class="prf-label">MOT DE PASSE ACTUEL</label>
-            <input type="password" [(ngModel)]="currentPassword" class="prf-input" placeholder="••••••••" autocomplete="current-password" />
-          </div>
-          <div class="prf-row prf-row--2">
-            <div class="prf-field">
-              <label class="prf-label">NOUVEAU</label>
-              <input type="password" [(ngModel)]="newPassword" class="prf-input" placeholder="••••••••" autocomplete="new-password" />
-            </div>
-            <div class="prf-field">
-              <label class="prf-label">CONFIRMATION</label>
-              <input type="password" [(ngModel)]="confirmPassword" class="prf-input" placeholder="••••••••" autocomplete="new-password" />
+            <div class="pf-fg">
+              <label class="pf-fl">CONFIRMATION</label>
+              <input
+                type="password"
+                [(ngModel)]="confirmationMotDePasse"
+                name="confirmationMotDePasse"
+                class="pf-fi"
+                autocomplete="new-password"
+                placeholder="••••••••" />
             </div>
           </div>
-          <div class="prf-form-actions">
-            <button type="button" class="prf-btn prf-btn--primary" (click)="savePassword()">
-              <i class="ti ti-lock"></i> Valider
+          <div class="pf-btn-row">
+            <button
+              type="submit"
+              class="pf-btn pf-btn--primary pf-btn--secure"
+              [disabled]="isChangingPassword">
+              <i class="ti" [ngClass]="isChangingPassword ? 'ti-loader-2 spin' : 'ti-lock'"></i>
+              {{ isChangingPassword ? 'Validation...' : 'Valider' }}
             </button>
           </div>
+          </form>
         </div>
-
-        <!-- CARD D: Missions -->
-        <div class="prf-card">
-          <div class="prf-kicker">MISSIONS &mdash; AFFECTATIONS RÉCENTES</div>
-
-          <div *ngIf="missions.length; else emptyMissions">
-            <div *ngFor="let m of missions.slice(0,3); let last = last"
-                 class="prf-mission" [class.prf-mission--last]="last">
-              <span class="prf-mission__dot" [style.background]="missionDotColor(m.projet.statut)"></span>
-              <div class="prf-mission__body">
-                <div class="prf-mission__title">{{ m.projet.nom }} &mdash; {{ missionStatusLabel(m.projet.statut) }}</div>
-                <div class="prf-mission__sub">{{ missionClient(m) }} &middot; {{ missionPeriod(m) }} &middot; {{ m.score | number:'1.0-0' }}% compatibilité</div>
-              </div>
-            </div>
-          </div>
-
-          <ng-template #emptyMissions>
-            <p class="prf-empty">Aucune affectation enregistrée.</p>
-          </ng-template>
-
-          <div class="prf-card__footer">
-            <a routerLink="/historique" class="prf-hist-btn">Voir l&rsquo;historique complet &rarr;</a>
-          </div>
-        </div>
-
-      </div><!-- /right -->
-    </div><!-- /grid -->
-
+      </div>
+    </div>
   </ng-container>
 
 </app-collaborateur-shell>

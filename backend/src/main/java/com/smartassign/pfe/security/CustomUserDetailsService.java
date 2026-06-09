@@ -40,6 +40,7 @@ public class CustomUserDetailsService implements UserDetailsService {
                 .username(normalizedEmail)
                 .password(storedPassword)
                 .authorities(List.of(new SimpleGrantedAuthority("ROLE_" + role)))
+            .disabled(Boolean.FALSE.equals(utilisateur.getActif()) || !Boolean.TRUE.equals(utilisateur.getEmailVerifie()))
                 .build();
     }
 

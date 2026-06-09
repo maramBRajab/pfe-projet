@@ -28,6 +28,14 @@ public class Affectation {
     private double score;
 
     @Builder.Default
+    @Column(nullable = false, length = 50)
+    private String statut = "EN_ATTENTE";
+
+    @Builder.Default
+    @Column(nullable = false, length = 32)
+    private String potentiel = "À confirmer";
+
+    @Builder.Default
     private LocalDateTime dateAffectation = LocalDateTime.now();
 
     // Constructeur utilitaire pour l'algorithme
@@ -35,6 +43,8 @@ public class Affectation {
         this.projet          = projet;
         this.collaborateur   = collaborateur;
         this.score           = score;
+        this.statut          = "EN_ATTENTE";
+        this.potentiel       = "À confirmer";
         this.dateAffectation = LocalDateTime.now();
     }
 }

@@ -4,9 +4,8 @@ import { By } from '@angular/platform-browser';
 import { of } from 'rxjs';
 
 import { CollaborateurDashboardComponent } from './dashboard.component';
-import { AffectationService } from '../../../services/collaborateur';
 import { AuthService } from '../../../services/auth';
-import { CollaborateurService, PlanningService } from '../../../services/collaborateur';
+import { CollaborateurService } from '../../../services/collaborateur';
 
 const collaborateurStub = {
   id: 1,
@@ -15,40 +14,53 @@ const collaborateurStub = {
   email: 'collab@smartassign.tn',
   experienceAnnees: 4,
   disponible: true,
-  competences: []
+  competences: [
+    { id: 1, nom: 'Angular' },
+    { id: 2, nom: 'Spring Boot' }
+  ]
 };
 
-const affectationsStub = [
-  {
-    id: 11,
-    projet: {
-      id: 101,
-      nom: 'Projet Alpha',
-      description: 'Refonte portail RH',
-      dateDebut: '2026-04-10',
-      dateFin: '2026-05-12',
-      statut: 'en_cours',
-      competencesRequises: []
-    },
-    collaborateur: collaborateurStub,
-    score: 78,
-    dateAffectation: '2026-04-08'
+const dashboardStub = {
+  collaborateurId: 1,
+  collaborateurNom: 'Collaborateur Demo',
+  projetsActifs: 2,
+  disponibilite: {
+    etat: 'Disponible',
+    message: 'Disponible pour les missions en cours.',
+    dateDebut: null,
+    dateFin: null
   },
-  {
-    id: 12,
-    projet: {
-      id: 102,
-      nom: 'Projet Beta',
-      description: 'Mise a jour CRM',
-      dateDebut: '2026-04-15',
-      dateFin: '2026-06-01',
-      statut: 'en_attente',
-      competencesRequises: []
-    },
-    collaborateur: collaborateurStub,
-    score: 42,
-    dateAffectation: '2026-04-05'
-  }
+  competencesCount: 2,
+  chargeMoyenne: 78,
+  prochainsJalons: [
+    {
+      projet: 'Projet Alpha',
+      jalon: 'Livraison sprint',
+      dateEcheance: '12/05/2026',
+      statut: 'en_cours',
+      charge: 78
+    }
+  ],
+  pointsVigilance: {
+    count: 1,
+    entries: ['1 mission(s) avec une charge elevee (>= 80%).']
+  },
+  journalEntries: [
+    {
+      action: 'Connexion réussie',
+      date: '12/05/2026 10:15',
+      details: 'Connexion de test'
+    }
+  ],
+  activiteRecente: [
+    {
+      initiales: 'PR',
+      action: 'Projet prioritaire : Projet Alpha',
+      temps: '12/05/2026 - 15/05/2026',
+      categorie: 'projet',
+      createdAt: '12/05/2026 10:15'
+    }
+  ]
 ];
 
 function configureDashboard(): Promise<void> {
@@ -59,32 +71,14 @@ function configureDashboard(): Promise<void> {
       {
         provide: AuthService,
         useValue: {
-          currentUser: { nom: 'Collaborateur Demo', email: 'collab@smartassign.tn', role: 'COLLAB' }
+          currentUser: { id: 1, nom: 'Collaborateur Demo', email: 'collab@smartassign.tn', role: 'COLLAB' }
         }
       },
       {
         provide: CollaborateurService,
         useValue: {
-          getByEmail: () => of(collaborateurStub)
-        }
-      },
-      {
-        provide: AffectationService,
-        useValue: {
-          getByCollaborateur: () => of(affectationsStub)
-        }
-      },
-      {
-        provide: PlanningService,
-        useValue: {
-          getByCollaborateur: () => of({
-            collaborateur: collaborateurStub,
-            disponibiliteEtat: 'disponible',
-            disponibiliteMessage: 'Disponible',
-            affectations: affectationsStub,
-            taches: [],
-            conges: []
-          })
+          getCollaborateur: () => of(collaborateurStub),
+          getDashboard: () => of(dashboardStub)
         }
       }
     ]

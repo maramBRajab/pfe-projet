@@ -15,5 +15,9 @@ public class ProjetResponse {
     private LocalDate dateDebut;
     private LocalDate dateFin;
     private String    statut;
+    private Long      managerId;
+    private String    managerNom;
+    private int       nombreCollabs;
+    private int       progression;
     private Set<CompetenceResponse> competencesRequises;
 }

@@ -3,7 +3,9 @@
     <app-admin-sidebar></app-admin-sidebar>
 
     <div class="sp-main">
-      <app-admin-topbar></app-admin-topbar>
+      <header class="page-topbar">
+        <span class="page-topbar__crumb">SmartAssign › Admin › Projets</span>
+      </header>
       <div class="sp-body">
         <div class="page-hdr">
           <div class="page-hdr-left">
@@ -27,106 +29,12 @@
         </div>
 
         <div class="akpi-grid akpi-grid--5">
-
-            <!-- PROJET -->
-            <div class="admin-kpi-card admin-kpi-card--blue">
-              <div class="kpi-top">
-                <div class="kpi-icon kpi-icon--blue">
-                  <svg viewBox="0 0 16 16" fill="none">
-                    <path d="M2 4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V4Z" stroke="currentColor" stroke-width="1.4"/>
-                    <path d="M5 8h6M5 11h4M5 5h3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
-                  </svg>
-                </div>
-                <span class="kpi-tag">Nom</span>
-              </div>
-              <div class="kpi-label">Projet</div>
-              <div class="kpi-val">{{ projectNamePreview }}</div>
-              <div class="kpi-note">Identifiant fonctionnel du besoin</div>
-            </div>
-
-            <!-- STATUT -->
-            <div class="admin-kpi-card"
-                 [class.admin-kpi-card--amber]="projet.statut === 'en_attente'"
-                 [class.admin-kpi-card--blue]="projet.statut === 'en_cours'"
-                 [class.admin-kpi-card--green]="projet.statut === 'termine'">
-              <div class="kpi-top">
-                <div class="kpi-icon"
-                     [class.kpi-icon--amber]="projet.statut === 'en_attente'"
-                     [class.kpi-icon--blue]="projet.statut === 'en_cours'"
-                     [class.kpi-icon--green]="projet.statut === 'termine'">
-                  <svg viewBox="0 0 16 16" fill="none">
-                    <path d="M8 2.667v10.666M3.333 8h9.334" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
-                  </svg>
-                </div>
-                <span class="kpi-tag"
-                      [class.kpi-tag--amber]="projet.statut === 'en_attente'"
-                      [class.kpi-tag--blue]="projet.statut === 'en_cours'"
-                      [class.kpi-tag--green]="projet.statut === 'termine'">{{ statusLabel }}</span>
-              </div>
-              <div class="kpi-label">Statut</div>
-              <div class="kpi-val"
-                   [class.kpi-val--amber]="projet.statut === 'en_attente'"
-                   [class.kpi-val--green]="projet.statut === 'termine'">{{ statusLabel }}</div>
-              <div class="kpi-note">Cycle de vie déclaré</div>
-            </div>
-
-            <!-- DURÉE -->
-            <div class="admin-kpi-card admin-kpi-card--violet">
-              <div class="kpi-top">
-                <div class="kpi-icon kpi-icon--violet">
-                  <svg viewBox="0 0 16 16" fill="none">
-                    <path d="M8 3v5l3 2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
-                    <circle cx="8" cy="8" r="5.5" stroke="currentColor" stroke-width="1.4"/>
-                  </svg>
-                </div>
-                <span class="kpi-tag kpi-tag--violet">Calendrier</span>
-              </div>
-              <div class="kpi-label">Durée</div>
-              <div class="kpi-val">{{ durationDays }}</div>
-              <div class="kpi-note">Jour(s) planifiés</div>
-            </div>
-
-
-
-            <!-- COMPÉTENCES -->
-            <div class="admin-kpi-card admin-kpi-card--blue">
-              <div class="kpi-top">
-                <div class="kpi-icon kpi-icon--blue">
-                  <svg viewBox="0 0 16 16" fill="none">
-                    <path d="M3 8h10M8 3l5 5-5 5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
-                  </svg>
-                </div>
-                <span class="kpi-tag">{{ selectedCompetenceIds.length }}</span>
-              </div>
-              <div class="kpi-label">Compétences</div>
-              <div class="kpi-val">{{ selectedCompetenceIds.length }}</div>
-              <div class="kpi-note">Expertise(s) requise(s)</div>
-            </div>
-
-            <!-- ÉTAT -->
-            <div class="admin-kpi-card"
-                 [class.admin-kpi-card--green]="!formInvalid"
-                 [class.admin-kpi-card--amber]="formInvalid">
-              <div class="kpi-top">
-                <div class="kpi-icon"
-                     [class.kpi-icon--green]="!formInvalid"
-                     [class.kpi-icon--amber]="formInvalid">
-                  <svg viewBox="0 0 16 16" fill="none">
-                    <path d="M3.5 8.5 6.5 11.5 12.5 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                  </svg>
-                </div>
-                <span class="kpi-tag"
-                      [class.kpi-tag--green]="!formInvalid"
-                      [class.kpi-tag--amber]="formInvalid">{{ formInvalid ? 'Incomplet' : 'Prêt' }}</span>
-              </div>
-              <div class="kpi-label">État</div>
-              <div class="kpi-val"
-                   [class.kpi-val--green]="!formInvalid"
-                   [class.kpi-val--amber]="formInvalid">{{ formInvalid ? 'Brouillon' : 'OK' }}</div>
-              <div class="kpi-note">Validation du formulaire</div>
-            </div>
-
-        </div><!-- /akpi-grid--5 -->
+          <app-kpi-card label="Projet" [value]="projectNamePreview" subtitle="Identifiant fonctionnel du besoin" badge="Nom" tone="blue"></app-kpi-card>
+          <app-kpi-card label="Statut" [value]="statusLabel" subtitle="Cycle de vie déclaré" [badge]="statusLabel" [tone]="projet.statut === 'termine' ? 'green' : projet.statut === 'en_cours' ? 'blue' : 'amber'" [valueTone]="projet.statut === 'termine' ? 'green' : projet.statut === 'en_cours' ? 'blue' : 'amber'"></app-kpi-card>
+          <app-kpi-card label="Durée" [value]="durationDays" subtitle="Jour(s) planifiés" badge="Calendrier" tone="purple"></app-kpi-card>
+          <app-kpi-card label="Compétences" [value]="selectedCompetenceIds.length" subtitle="Expertise(s) requise(s)" [badge]="selectedCompetenceIds.length" tone="blue"></app-kpi-card>
+          <app-kpi-card label="État" [value]="formInvalid ? 'À compléter' : 'Prêt'" subtitle="Validation du formulaire" [badge]="formInvalid ? 'À compléter' : 'Valide'" [tone]="formInvalid ? 'amber' : 'green'" [valueTone]="formInvalid ? 'amber' : 'green'"></app-kpi-card>
+        </div>
 
         <ng-container *ngTemplateOutlet="workspace"></ng-container>
       </div>
@@ -162,50 +70,56 @@
       <div class="em-body">
 
         <!-- Section INFORMATIONS -->
-        <p class="em-section-title">Informations</p>
-        <div class="em-fg em-fg--full">
-          <label class="em-lbl" for="em-nom">Nom du projet <span class="em-req">*</span></label>
-          <input class="em-input" id="em-nom" type="text" [(ngModel)]="projet.nom" placeholder="Ex : Programme CRM 360">
-        </div>
-        <div class="em-fg em-fg--full">
-          <label class="em-lbl" for="em-desc">Description <span class="em-req">*</span></label>
-          <textarea class="em-input em-textarea" id="em-desc" [(ngModel)]="projet.description" rows="3" placeholder="Description, périmètre, objectifs..."></textarea>
+        <div class="em-section">
+          <p class="em-section-title">Informations</p>
+          <div class="em-fg em-fg--full">
+            <label class="em-lbl" for="em-nom">Nom du projet <span class="em-req">*</span></label>
+            <input class="em-input" id="em-nom" type="text" [(ngModel)]="projet.nom" placeholder="Ex : Programme CRM 360">
+          </div>
+          <div class="em-fg em-fg--full">
+            <label class="em-lbl" for="em-desc">Description <span class="em-req">*</span></label>
+            <textarea class="em-input em-textarea" id="em-desc" [(ngModel)]="projet.description" rows="3" placeholder="Description, périmètre, objectifs..."></textarea>
+          </div>
         </div>
 
         <!-- Section PLANIFICATION -->
-        <p class="em-section-title" style="margin-top:20px">Planification</p>
-        <div class="em-row">
-          <div class="em-fg">
-            <label class="em-lbl" for="em-debut">Date de début <span class="em-req">*</span></label>
-            <input class="em-input" id="em-debut" type="date" [(ngModel)]="projet.dateDebut">
+        <div class="em-section">
+          <p class="em-section-title">Planification</p>
+          <div class="em-row">
+            <div class="em-fg">
+              <label class="em-lbl" for="em-debut">Date de début <span class="em-req">*</span></label>
+              <input class="em-input" id="em-debut" type="date" [(ngModel)]="projet.dateDebut">
+            </div>
+            <div class="em-fg">
+              <label class="em-lbl" for="em-fin">Date de fin <span class="em-req">*</span></label>
+              <input class="em-input" id="em-fin" type="date" [(ngModel)]="projet.dateFin">
+            </div>
           </div>
-          <div class="em-fg">
-            <label class="em-lbl" for="em-fin">Date de fin <span class="em-req">*</span></label>
-            <input class="em-input" id="em-fin" type="date" [(ngModel)]="projet.dateFin">
+          <div class="em-fg em-fg--full">
+            <label class="em-lbl" for="em-statut">Statut <span class="em-req">*</span></label>
+            <select class="em-input em-select" id="em-statut" [(ngModel)]="projet.statut">
+              <option value="en_attente">En attente</option>
+              <option value="en_cours">En cours</option>
+              <option value="termine">Terminé</option>
+            </select>
           </div>
-        </div>
-        <div class="em-fg em-fg--full">
-          <label class="em-lbl" for="em-statut">Statut <span class="em-req">*</span></label>
-          <select class="em-input em-select" id="em-statut" [(ngModel)]="projet.statut">
-            <option value="en_attente">En attente</option>
-            <option value="en_cours">En cours</option>
-            <option value="termine">Terminé</option>
-          </select>
         </div>
 
         <!-- Section COMPÉTENCES -->
-        <p class="em-section-title" style="margin-top:20px">Compétences requises</p>
-        <div class="em-competences" *ngIf="!loadingCompetences && availableCompetences.length; else noComps">
-          <button type="button" class="em-comp-chip"
-            *ngFor="let c of availableCompetences"
-            [class.em-comp-chip--active]="isCompetenceSelected(c.id)"
-            (click)="toggleCompetence(c.id)">
-            {{ c.nom }}
-          </button>
+        <div class="em-section">
+          <p class="em-section-title">Compétences requises</p>
+          <div class="em-competences" *ngIf="!loadingCompetences && availableCompetences.length; else noComps">
+            <button type="button" class="em-comp-chip"
+              *ngFor="let c of availableCompetences"
+              [class.em-comp-chip--active]="isCompetenceSelected(c.id)"
+              (click)="toggleCompetence(c.id)">
+              {{ c.nom }}
+            </button>
+          </div>
+          <ng-template #noComps>
+            <p class="em-empty-comps">{{ loadingCompetences ? 'Chargement des compétences...' : 'Aucune compétence disponible.' }}</p>
+          </ng-template>
         </div>
-        <ng-template #noComps>
-          <p class="em-empty-comps">{{ loadingCompetences ? 'Chargement des compétences...' : 'Aucune compétence disponible.' }}</p>
-        </ng-template>
 
       </div><!-- /em-body -->
 

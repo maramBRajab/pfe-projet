@@ -3,14 +3,14 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink, ActivatedRoute, Router } from '@angular/router';
 import { AdminProjetService, Projet, ProjetRequest } from '../../../../services/admin';
-import { AdminTopbarComponent } from '../../shared/admin-topbar.component';
 import { AdminSidebarComponent } from '../../shared/admin-sidebar.component';
 import { CompetenceService, Competence } from '../../../../services/manager/competence.service';
 
+import { KpiCardComponent } from '../../../../shared/kpi-card/kpi-card.component';
 @Component({
   selector: 'app-formulaire-projet',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, AdminTopbarComponent, AdminSidebarComponent],
+  imports: [CommonModule, FormsModule, RouterLink, KpiCardComponent, AdminSidebarComponent],
   templateUrl: './formulaire.component.html',
   styleUrl: './formulaire.component.scss'
 })

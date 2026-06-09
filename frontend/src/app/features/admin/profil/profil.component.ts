@@ -5,14 +5,7 @@ import { Router } from '@angular/router';
 
 import { ProfileData, ProfileDetailItem, ProfileDetailSection, ProfileFeedbackTone, ProfileHighlightCard, ProfilePermission, ProfileSaveValue, ProfileStat } from '../../../shared/models/profile.model';
 import { AdminSidebarComponent } from '../shared/admin-sidebar.component';
-import { AdminTopbarComponent } from '../shared/admin-topbar.component';
-import { AuthService } from '../../../services/auth';
-
-interface LocalProfileExtras {
-  phone: string;
-  position: string;
-  roleSpecificField: string;
-}
+import { AuthService, AuthUser } from '../../../services/auth';
 
 @Component({
   selector: 'app-admin-profil',
@@ -32,7 +25,6 @@ export class AdminProfilComponent implements OnInit {
   passwordFeedbackTone: ProfileFeedbackTone = 'neutral';
   isSaving = false;
   photoUrl: string | null = null;
-  adminPhoto: string | null = null;
 
   readonly profileForm = new FormGroup({
     firstName: new FormControl('', { nonNullable: true }),
@@ -156,10 +148,7 @@ export class AdminProfilComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.adminPhoto = localStorage.getItem('smartassign_admin_photo');
     this.reloadProfile();
-    const saved = localStorage.getItem('smartassign_admin_photo');
-    if (saved) this.photoUrl = saved;
   }
 
   logout(): void {
@@ -208,13 +197,21 @@ export class AdminProfilComponent implements OnInit {
   }
 
   reloadProfile(): void {
-    this.profileData = this.buildProfileData();
-    this.syncProfileForm();
     this.passwordForm.reset();
     this.feedbackMessage = '';
     this.feedbackTone = 'neutral';
     this.passwordFeedbackMessage = '';
     this.passwordFeedbackTone = 'neutral';
+
+    this.authService.getCurrentProfile().subscribe({
+      next: (profile) => {
+        this.applyProfile(profile);
+      },
+      error: (err: { error?: { message?: string } }) => {
+        this.feedbackMessage = err?.error?.message ?? 'Impossible de charger le profil depuis le serveur.';
+        this.feedbackTone = 'error';
+      }
+    });
   }
 
   onPhotoChange(event: Event): void {
@@ -224,9 +221,48 @@ export class AdminProfilComponent implements OnInit {
     const reader = new FileReader();
     reader.onload = () => {
       this.photoUrl = reader.result as string;
-      localStorage.setItem('smartassign_admin_photo', this.photoUrl);
+      const formValue = this.profileForm.getRawValue();
+      const firstName = (formValue.firstName || this.currentProfile.firstName || '').trim();
+      const lastName = (formValue.lastName || this.currentProfile.lastName || '').trim();
+      const email = (formValue.email || this.currentProfile.email || this.authService.currentUser?.email || '').trim();
+
+      if (!email) {
+        this.feedbackMessage = 'Impossible de sauvegarder la photo: email introuvable.';
+        this.feedbackTone = 'error';
+        return;
+      }
+
+      this.authService.updateProfile({
+        nom: `${firstName} ${lastName}`.trim(),
+        email,
+        telephone: (formValue.phone || this.currentProfile.phone || '').trim(),
+        poste: (formValue.position || this.currentProfile.position || '').trim(),
+        departement: (formValue.roleSpecificField || this.currentProfile.roleSpecificField || '').trim(),
+        photoUrl: this.photoUrl
+      }).subscribe({
+        next: (response) => {
+          this.photoUrl = response.photoUrl ?? this.photoUrl;
+          this.feedbackMessage = 'Photo mise a jour avec succes.';
+          this.feedbackTone = 'success';
+        },
+        error: (err: { error?: { message?: string } }) => {
+          this.feedbackMessage = err?.error?.message ?? 'Erreur lors de la sauvegarde de la photo.';
+          this.feedbackTone = 'error';
+        }
+      });
     };
     reader.readAsDataURL(file);
+  }
+
+  get displayPhotoUrl(): string | null {
+    if (!this.photoUrl) {
+      return null;
+    }
+    if (this.photoUrl.startsWith('data:')) {
+      return this.photoUrl;
+    }
+    const cacheBuster = this.photoUrl.includes('?') ? '&v=' : '?v=';
+    return `${this.photoUrl}${cacheBuster}${Date.now()}`;
   }
 
   focusForm(): void {
@@ -304,9 +340,11 @@ export class AdminProfilComponent implements OnInit {
       email: value.email.trim(),
       telephone: value.phone.trim(),
       poste: value.position.trim(),
-      departement: value.roleSpecificField.trim()
+      departement: value.roleSpecificField.trim(),
+      photoUrl: this.photoUrl
     }).subscribe({
-      next: () => {
+      next: (response) => {
+        this.photoUrl = response.photoUrl ?? this.photoUrl;
         this.profileData = { ...this.profileData,
           firstName: value.firstName.trim(), lastName: value.lastName.trim(),
           email: value.email.trim(), phone: value.phone.trim(),
@@ -325,23 +363,23 @@ export class AdminProfilComponent implements OnInit {
     });
   }
 
-  private buildProfileData(): Partial<ProfileData> {
-    const session = this.authService.currentUser;
-    const email = session?.email?.trim() || 'admin@smartassign.tn';
-    const { firstName, lastName } = this.splitName(session?.nom?.trim() || 'Admin Principal');
-    const extras = this.restoreLocalExtras(email);
+  private applyProfile(profile: AuthUser): void {
+    const { firstName, lastName } = this.splitName(profile.nom?.trim() || '');
+    this.photoUrl = profile.photoUrl ?? null;
 
-    return {
+    this.profileData = {
       firstName,
       lastName,
-      email,
-      phone: session?.telephone || extras.phone || '+216 20 111 222',
-      position: session?.poste || extras.position || 'Administrateur plateforme',
-      roleSpecificField: session?.departement || extras.roleSpecificField || 'Direction des operations',
+      email: profile.email ?? '',
+      phone: profile.telephone ?? '',
+      position: profile.poste ?? '',
+      roleSpecificField: profile.departement ?? '',
       stats: this.stats,
       permissions: this.permissions
     };
-  }
+
+    this.syncProfileForm();
+  } 
 
   private syncProfileForm(): void {
     this.profileForm.setValue({
@@ -369,39 +407,12 @@ export class AdminProfilComponent implements OnInit {
     const parts = value.split(/\s+/).filter(Boolean);
 
     if (!parts.length) {
-      return { firstName: 'Admin', lastName: 'Principal' };
+      return { firstName: '', lastName: '' };
     }
 
     return {
       firstName: parts[0],
-      lastName: parts.slice(1).join(' ') || 'Principal'
+      lastName: parts.slice(1).join(' ')
     };
-  }
-
-  private restoreLocalExtras(email: string): LocalProfileExtras {
-    try {
-      const raw = localStorage.getItem(this.getStorageKey(email));
-      if (!raw) {
-        return { phone: '', position: '', roleSpecificField: '' };
-      }
-
-      const parsed = JSON.parse(raw) as Partial<LocalProfileExtras>;
-      return {
-        phone: parsed.phone ?? '',
-        position: parsed.position ?? '',
-        roleSpecificField: parsed.roleSpecificField ?? ''
-      };
-    } catch {
-      localStorage.removeItem(this.getStorageKey(email));
-      return { phone: '', position: '', roleSpecificField: '' };
-    }
-  }
-
-  private persistLocalExtras(email: string, extras: LocalProfileExtras): void {
-    localStorage.setItem(this.getStorageKey(email), JSON.stringify(extras));
-  }
-
-  private getStorageKey(email: string): string {
-    return `smartassign_admin_profile_${email.toLowerCase()}`;
   }
 }

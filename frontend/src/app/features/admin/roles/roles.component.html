@@ -3,45 +3,34 @@
 
   <div class="sp-main">
 
-    <!-- ══ TOPBAR ════════════════════════════════════════════ -->
-    <header class="sp-topbar">
-      <div class="sp-topbar__left">
-        <nav class="sp-topbar__breadcrumb">
-          <span>SmartAssign</span>
-          <span class="sp-topbar__sep">›</span>
-          <span>Admin</span>
-          <span class="sp-topbar__sep">›</span>
-          <span class="sp-topbar__current">Rôles</span>
-        </nav>
-        <h1 class="sp-topbar__title">Rôles &amp; Permissions</h1>
-      </div>
-      <div class="sp-topbar__right">
-        <div class="sp-status-pill">
-          <span class="sp-status-dot"></span>
+    <app-admin-topbar
+      breadcrumb="SmartAssign › Admin › Rôles & Permissions"
+      [notificationCount]="0">
+      <div topbarActions class="sp-topbar-actions">
+        <span class="sp-platform-health">
+          <span class="sp-health-dot">●</span>
           Plateforme saine
-        </div>
-        <button type="button" class="sp-btn sp-btn--ghost sp-btn--pill" (click)="exportRoles()">
-          <svg viewBox="0 0 16 16" fill="none">
-            <path d="M8 2v9" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
-            <path d="M4.5 8.5L8 12l3.5-3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
-            <path d="M2 13h12" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
-          </svg>
+        </span>
+        <button class="sp-btn sp-btn--ghost" (click)="exporterCSV()" title="Télécharger CSV">
+          <i class="ti ti-download"></i>
           Exporter
         </button>
-        <button type="button" class="sp-btn sp-btn--primary sp-btn--pill" (click)="exportPdf()">
-          <svg viewBox="0 0 16 16" fill="none">
-            <path d="M3 2h7l3 3v9a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1Z" stroke="currentColor" stroke-width="1.4"/>
-            <path d="M10 2v4h4M6 9h4M6 12h2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
-          </svg>
+        <button class="sp-btn sp-btn--ghost" (click)="exportPdf()" title="Imprimer PDF">
+          <i class="ti ti-file-pdf"></i>
           Export PDF
         </button>
-        <div class="sp-av-sm" routerLink="/admin/profil" style="cursor:pointer;overflow:hidden" title="Mon profil">
-          <img *ngIf="adminPhoto" [src]="adminPhoto" 
-               style="width:100%;height:100%;object-fit:cover;border-radius:50%;" alt="">
-          <span *ngIf="!adminPhoto">AP</span>
-        </div>
       </div>
-    </header>
+    </app-admin-topbar>
+
+    <!-- ══ PAGE HEADER ═════════════════════════════════════════ -->
+    <div class="sp-page-header">
+      <div class="sp-page-header__copy">
+        <div class="sp-page-header__title-row">
+          <h1 class="sp-page-header__title">Rôles & Permissions</h1>
+        </div>
+        <p class="sp-page-header__subtitle">Pilotage quotidien — {{ today }}</p>
+      </div>
+    </div>
 
     <!-- ══ BODY ══════════════════════════════════════════════ -->
     <div class="sp-body">
@@ -49,94 +38,58 @@
       <!-- ROLE CARDS -->
       <div class="sp-roles-list">
 
-        <!-- ── Administrateur ── -->
-        <article class="sp-role-card">
+        <article class="sp-role-card" *ngFor="let role of predefinedRoles">
           <div class="sp-role-card__hd">
-            <div class="sp-role-icon sp-role-icon--blue">
-              <svg viewBox="0 0 20 20" fill="none">
-                <path d="M10 2l2.39 4.84L17.5 7.64l-3.75 3.65.885 5.16L10 14.02l-4.635 2.43L6.25 11.3 2.5 7.64l5.11-.8L10 2Z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
+            <div class="sp-role-icon"
+                 [class.sp-role-icon--admin]="role.icon === 'admin'"
+                 [class.sp-role-icon--manager]="role.icon === 'manager'"
+                 [class.sp-role-icon--collab]="role.icon === 'collab'">
+              <span class="sp-role-icon__emoji">{{ roleEmoji(role) }}</span>
             </div>
             <div class="sp-role-card__info">
-              <h3>Administrateur</h3>
-              <p>Contrôle total de la plateforme — {{ predefinedRoles[0].usersCount }} compte(s)</p>
+              <h3>{{ role.name }}</h3>
+              <p>{{ role.description }} — <strong>{{ role.usersCount }} compte(s)</strong></p>
             </div>
           </div>
           <div class="sp-role-card__divider"></div>
-          <div class="sp-perm-grid">
-            <div class="sp-perm-item sp-perm-item--ok" *ngFor="let p of grantedPerms(predefinedRoles[0])">
-              <svg viewBox="0 0 14 14" fill="none">
-                <polyline points="2.5 7 5.5 10 11.5 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+          <div class="sp-perm-grid sp-perm-grid--stacked">
+            <div class="sp-perm-item" [class.sp-perm-item--ok]="p.granted" [class.sp-perm-item--no]="!p.granted" *ngFor="let p of role.permissions">
+              <svg viewBox="0 0 14 14" fill="none" *ngIf="p.granted; else deniedIcon">
+                <polyline points="2.5 7 5.5 10 11.5 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
-              <span>{{ p.label }}</span>
-            </div>
-            <div class="sp-perm-item sp-perm-item--no" *ngFor="let p of deniedPerms(predefinedRoles[0])">
-              <svg viewBox="0 0 14 14" fill="none">
-                <path d="M3 3l8 8M11 3l-8 8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
-              </svg>
+              <ng-template #deniedIcon>
+                <svg viewBox="0 0 14 14" fill="none">
+                  <path d="M3 3l8 8M11 3l-8 8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                </svg>
+              </ng-template>
               <span>{{ p.label }}</span>
             </div>
           </div>
-        </article>
 
-        <!-- ── Manager ── -->
-        <article class="sp-role-card">
-          <div class="sp-role-card__hd">
-            <div class="sp-role-icon sp-role-icon--purple">
-              <svg viewBox="0 0 20 20" fill="none">
-                <rect x="2" y="6" width="16" height="11" rx="2" stroke="currentColor" stroke-width="1.6"/>
-                <path d="M13 6V5a2 2 0 0 0-2-2H9a2 2 0 0 0-2 2v1" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
-              </svg>
-            </div>
-            <div class="sp-role-card__info">
-              <h3>Manager</h3>
-              <p>Gestion des projets et affectations — {{ predefinedRoles[1].usersCount }} compte(s)</p>
-            </div>
-          </div>
-          <div class="sp-role-card__divider"></div>
-          <div class="sp-perm-grid">
-            <div class="sp-perm-item sp-perm-item--ok" *ngFor="let p of grantedPerms(predefinedRoles[1])">
-              <svg viewBox="0 0 14 14" fill="none">
-                <polyline points="2.5 7 5.5 10 11.5 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-              <span>{{ p.label }}</span>
-            </div>
-            <div class="sp-perm-item sp-perm-item--no" *ngFor="let p of deniedPerms(predefinedRoles[1])">
-              <svg viewBox="0 0 14 14" fill="none">
-                <path d="M3 3l8 8M11 3l-8 8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
-              </svg>
-              <span>{{ p.label }}</span>
-            </div>
-          </div>
-        </article>
+          <button class="sp-role-members-toggle" type="button" (click)="toggleRole(role.id)">
+            <span>{{ expandedRole === role.id ? '▲' : '▼' }} Voir les membres ({{ getRoleMembers(role).length }})</span>
+          </button>
 
-        <!-- ── Collaborateur ── -->
-        <article class="sp-role-card">
-          <div class="sp-role-card__hd">
-            <div class="sp-role-icon sp-role-icon--green">
-              <svg viewBox="0 0 20 20" fill="none">
-                <circle cx="10" cy="7" r="3.5" stroke="currentColor" stroke-width="1.6"/>
-                <path d="M3 17c0-3.866 3.134-7 7-7s7 3.134 7 7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
-              </svg>
+          <div class="sp-role-members" *ngIf="expandedRole === role.id">
+            <div class="sp-role-members__empty" *ngIf="getRoleMembers(role).length === 0">
+              Aucun membre pour ce rôle.
             </div>
-            <div class="sp-role-card__info">
-              <h3>Collaborateur</h3>
-              <p>Consultation de ses affectations — {{ predefinedRoles[2].usersCount }} compte(s)</p>
-            </div>
-          </div>
-          <div class="sp-role-card__divider"></div>
-          <div class="sp-perm-grid">
-            <div class="sp-perm-item sp-perm-item--ok" *ngFor="let p of grantedPerms(predefinedRoles[2])">
-              <svg viewBox="0 0 14 14" fill="none">
-                <polyline points="2.5 7 5.5 10 11.5 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-              <span>{{ p.label }}</span>
-            </div>
-            <div class="sp-perm-item sp-perm-item--no" *ngFor="let p of deniedPerms(predefinedRoles[2])">
-              <svg viewBox="0 0 14 14" fill="none">
-                <path d="M3 3l8 8M11 3l-8 8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
-              </svg>
-              <span>{{ p.label }}</span>
+
+            <div class="sp-role-members__list" *ngIf="getRoleMembers(role).length > 0">
+              <div class="sp-role-member" *ngFor="let m of getRoleMembers(role)">
+                <div class="sp-role-member__top">
+                  <div class="sp-role-member__identity">
+                    <div class="sp-role-member__avatar">{{ memberInitiales(m) }}</div>
+                    <div class="sp-role-member__text">
+                      <div class="sp-role-member__name">{{ memberDisplayName(m) }}</div>
+                      <div class="sp-role-member__email">{{ m.email }}</div>
+                    </div>
+                  </div>
+                  <span class="sp-role-member__status" [class.sp-role-member__status--suspended]="!isMemberActif(m)">
+                    {{ isMemberActif(m) ? 'Actif' : 'Suspendu' }}
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
         </article>
@@ -146,6 +99,56 @@
     </div>
   </div>
 </section>
+
+<!-- ── VIEW ROLE MODAL (predefined) ───────────────────────────── -->
+<div class="sp-modal-overlay" *ngIf="viewedRole" (click)="closeViewRole()">
+  <div class="sp-modal sp-modal--view" (click)="$event.stopPropagation()">
+    <button class="sp-modal__close sp-modal__close--abs" (click)="closeViewRole()">×</button>
+
+    <div class="sp-view-hd-center">
+      <div class="sp-role-icon sp-role-icon--lg"
+           [class.sp-role-icon--admin]="viewedRole.icon === 'admin'"
+           [class.sp-role-icon--manager]="viewedRole.icon === 'manager'"
+           [class.sp-role-icon--collab]="viewedRole.icon === 'collab'">
+        <span class="sp-role-icon__emoji">{{ roleEmoji(viewedRole) }}</span>
+      </div>
+      <h2 class="sp-modal__name">{{ viewedRole.name }}</h2>
+      <p class="sp-view-desc">{{ viewedRole.description }}</p>
+      <div class="sp-view-hd__badges">
+        <span class="sp-badge sp-badge--neutral">{{ viewedRole.usersCount }} compte(s)</span>
+      </div>
+    </div>
+
+    <div class="sp-modal__body">
+      <p class="sp-view-comps__title">PERMISSIONS ACCORDÉES</p>
+      <div class="sp-perm-grid sp-perm-grid--start">
+        <div class="sp-perm-item sp-perm-item--ok" *ngFor="let p of grantedPerms(viewedRole)">
+          <svg viewBox="0 0 14 14" fill="none">
+            <polyline points="2.5 7 5.5 10 11.5 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <span>{{ p.label }}</span>
+        </div>
+      </div>
+
+      <p class="sp-view-comps__title sp-view-comps__title--mt">PERMISSIONS REFUSÉES</p>
+      <div class="sp-perm-grid sp-perm-grid--start">
+        <div class="sp-perm-item sp-perm-item--no" *ngFor="let p of deniedPerms(viewedRole)">
+          <svg viewBox="0 0 14 14" fill="none">
+            <path d="M3 3l8 8M11 3l-8 8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+          </svg>
+          <span>{{ p.label }}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="sp-modal__footer">
+      <button class="sp-btn sp-btn--ghost" (click)="closeViewRole()">Fermer</button>
+      <button class="sp-btn sp-btn--danger" (click)="editFromViewRole()">
+        <i class="ti ti-pencil"></i> Modifier
+      </button>
+    </div>
+  </div>
+</div>
 
 <!-- ── EDIT ROLE MODAL ────────────────────────────────────────── -->
 <div class="sp-modal-overlay" *ngIf="editingRole" (click)="closeEditRoleModal()">
@@ -229,25 +232,36 @@
   </div>
 </div>
 
-<!-- ── DELETE CONFIRM MODAL ────────────────────────────────────── -->
+<!-- ── DELETE CONFIRM MODAL (custom) ──────────────────────────── -->
 <div class="sp-modal-overlay" *ngIf="deleteTarget" (click)="closeDeleteModal()">
-  <div class="sp-modal sp-modal--sm" (click)="$event.stopPropagation()">
-    <div class="sp-modal__header">
-      <span class="sp-modal__title">Supprimer le rôle</span>
-      <button class="sp-modal__close" (click)="closeDeleteModal()">
-        <i class="ti ti-x"></i>
-      </button>
-    </div>
-    <div class="sp-modal__body">
-      <p class="sp-modal__confirm-text">
-        Êtes-vous sûr de vouloir supprimer le rôle
-        <strong>{{ deleteTarget?.name }}</strong> ?
-        Cette action est irréversible.
-      </p>
-    </div>
-    <div class="sp-modal__footer">
+  <div class="sp-modal sp-modal--sm sp-modal--confirm" (click)="$event.stopPropagation()">
+    <div class="sp-confirm-icon"><i class="ti ti-trash"></i></div>
+    <h3 class="sp-modal__danger-title">Supprimer le rôle ?</h3>
+    <p class="sp-modal__danger-msg">
+      Êtes-vous sûr de vouloir supprimer le rôle
+      <strong>{{ deleteTarget.name }}</strong> ?<br>
+      Cette action est irréversible.
+    </p>
+    <div class="sp-modal__footer sp-modal__ft--center">
       <button class="sp-btn sp-btn--ghost" (click)="closeDeleteModal()">Annuler</button>
       <button class="sp-btn sp-btn--danger" (click)="confirmDelete()">Supprimer</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── DELETE PREDEFINED ROLE MODAL ───────────────────────────── -->
+<div class="sp-modal-overlay" *ngIf="deletePredefinedTarget" (click)="closeDeletePredefined()">
+  <div class="sp-modal sp-modal--sm sp-modal--confirm" (click)="$event.stopPropagation()">
+    <div class="sp-confirm-icon"><i class="ti ti-trash"></i></div>
+    <h3 class="sp-modal__danger-title">Supprimer le rôle ?</h3>
+    <p class="sp-modal__danger-msg">
+      Êtes-vous sûr de vouloir supprimer le rôle
+      <strong>{{ deletePredefinedTarget.name }}</strong> ?<br>
+      Cette action est irréversible.
+    </p>
+    <div class="sp-modal__footer sp-modal__ft--center">
+      <button class="sp-btn sp-btn--ghost" (click)="closeDeletePredefined()">Annuler</button>
+      <button class="sp-btn sp-btn--danger" (click)="confirmDeletePredefined()">Supprimer</button>
     </div>
   </div>
 </div>

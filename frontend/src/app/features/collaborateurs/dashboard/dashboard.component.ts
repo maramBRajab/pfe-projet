@@ -5,15 +5,15 @@ import { catchError, forkJoin, of, switchMap } from 'rxjs';
 
 import {
   Affectation,
-  AffectationService,
   Collaborateur,
-  CollaborateurPlanningDto,
+  CollaborateurDashboardResponse,
   CollaborateurService,
-  PlanningService
 } from '../../../services/collaborateur';
 
 import { AuthService } from '../../../services/auth';
+import { KpiCardComponent, KpiCardTone } from '../../../shared/kpi-card/kpi-card.component';
 import { CollaborateurShellComponent } from '../shared/collaborateur-shell.component';
+import { CollabTopbarComponent } from '../shared/collab-topbar.component';
 
 type BadgeTone = 'success' | 'warning' | 'danger' | 'neutral';
 
@@ -39,13 +39,6 @@ interface DashboardPlanningCard {
   chargeBadge: StatusBadge;
   link: string;
   queryParams?: Record<string, string>;
-}
-
-interface DashboardWorkspaceCard {
-  icon: string;
-  title: string;
-  text: string;
-  link: string;
 }
 
 interface DashboardHeroStat {
@@ -92,23 +85,17 @@ interface DashboardSkillItem {
   stars: number;
 }
 
-interface DashboardDataBundle {
-  collaborateur: Collaborateur;
-  planning: CollaborateurPlanningDto | null;
-  affectations: Affectation[];
-}
-
 @Component({
   selector: 'app-collaborateur-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterModule, CollaborateurShellComponent],
+  imports: [CommonModule, RouterModule, KpiCardComponent, CollaborateurShellComponent, CollabTopbarComponent],
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.scss']
 })
 export class CollaborateurDashboardComponent implements OnInit {
 
   currentDate = new Date();
-  userName = 'Collaborateur';
+  userName = '';
   isLoading = true;
   errorMessage = '';
 
@@ -121,28 +108,21 @@ export class CollaborateurDashboardComponent implements OnInit {
   workloadChartData: DashboardWorkloadBar[] = [];
   projectLoadData: DashboardProjectLoadItem[] = [];
   competences: DashboardSkillItem[] = [];
-  footerAvailability = 'Disponible';
+  footerAvailability = '';
   footerMissions = 0;
   footerCharge = '0%';
   kpiProjectsCount = 0;
   kpiSkillsCount = 0;
-
-  workspaceCards: DashboardWorkspaceCard[] = [
-    { icon: 'PRJ', title: 'Consulter mes projets', text: 'Voir projets', link: '/mes-projets' },
-    { icon: 'PLN', title: 'Mon planning', text: 'Voir planning', link: '/mon-planning' },
-    { icon: 'SKL', title: 'Competences', text: 'Voir competences', link: '/competences' }
-  ];
+    averageCharge = 0;
 
   constructor(
     private router: Router,
     private authService: AuthService,
-    private collaborateurService: CollaborateurService,
-    private affectationService: AffectationService,
-    private planningService: PlanningService
+    private collaborateurService: CollaborateurService
   ) {}
 
   ngOnInit(): void {
-    this.userName = this.authService.currentUser?.nom || 'Collaborateur';
+    this.userName = this.authService.currentUser?.nom?.trim() || '';
     this.loadData();
   }
 
@@ -159,27 +139,27 @@ export class CollaborateurDashboardComponent implements OnInit {
     }
 
     this.collaborateurService.getByEmail(email).pipe(
-      switchMap((collaborateur) => {
-        if (!collaborateur.id) {
-          return of({ collaborateur, planning: null, affectations: [] } satisfies DashboardDataBundle);
+      switchMap((collaborateur) => forkJoin({
+        collaborateur: of(collaborateur),
+        dashboard: this.collaborateurService.getDashboard(collaborateur.id ?? 0).pipe(
+          catchError(() => of(null as CollaborateurDashboardResponse | null))
+        )
+      })),
+      catchError(() => of(null))
+    ).subscribe({
+      next: (result) => {
+        if (!result || !result.dashboard) {
+          this.errorMessage = 'Impossible de charger le dashboard collaborateur.';
+          this.isLoading = false;
+          return;
         }
 
-        return forkJoin({
-          planning: this.planningService.getByCollaborateur(collaborateur.id).pipe(catchError(() => of(null))),
-          affectations: this.affectationService.getByCollaborateur(collaborateur.id).pipe(catchError(() => of([])))
-        }).pipe(
-          switchMap(({ planning, affectations }) => {
-            return of({
-              collaborateur,
-              planning,
-              affectations: planning?.affectations?.length ? planning.affectations : affectations
-            } satisfies DashboardDataBundle);
-          })
-        );
-      })
-    ).subscribe({
-      next: (data) => {
-        this.consumeData(data);
+        const dashboard = result.dashboard;
+        const collaborateur = result.collaborateur;
+
+        this.userName = dashboard.collaborateurNom || this.buildCollaborateurName(collaborateur) || this.userName;
+        this.consumeDashboard(dashboard);
+
         this.isLoading = false;
       },
       error: () => {
@@ -194,100 +174,140 @@ export class CollaborateurDashboardComponent implements OnInit {
     this.router.navigate(['/collaborateurs/dashboard']);
   }
 
-  private consumeData(data: DashboardDataBundle): void {
-    const affectations = data.affectations.slice().sort((first, second) => {
-      return new Date(second.dateAffectation).getTime() - new Date(first.dateAffectation).getTime();
-    });
-    const activeMissions = affectations.filter((affectation) => this.isActiveProject(affectation.projet.statut));
-    const availabilityState = this.resolveAvailabilityKey(data.planning?.disponibiliteEtat, data.collaborateur.disponible);
-    const availabilityLabel = this.resolveAvailabilityValue(availabilityState, data.planning?.disponibiliteMessage);
-    const completedMissions = affectations.filter((affectation) => this.normalizeKey(affectation.projet.statut ?? '') === 'termine');
-    const criticalProjects = affectations.filter((affectation) => this.projectLoadFromScore(affectation.score, affectation.projet.statut) >= 90);
-    const topSkills = (data.collaborateur.competences ?? []).slice(0, 3).map((competence) => competence.nom).filter(Boolean);
-
-    this.kpiCards = [
-      this.buildKpiCard(
-        'Missions',
-        activeMissions.length,
-        activeMissions.length ? 'actives' : 'warning',
-        activeMissions.length ? 'ok' : 'warning'
-      ),
-      this.buildKpiCard('Disponibilite', availabilityLabel, 'statut', availabilityState)
-    ];
-
-    this.heroStats = [
-      { value: activeMissions.length, label: 'Projets actifs' },
-      { value: topSkills.length || 0, label: 'Competences clefs' },
-      { value: criticalProjects.length, label: 'Priorites', warn: criticalProjects.length > 0 }
-    ];
-
-    // Merge skills: profile + required skills from assigned projects
-    const profileSkillNames = (data.collaborateur.competences ?? []).map(c => c.nom).filter(Boolean);
-    const affectationSkillNames = affectations
-      .flatMap(a => (a.projet.competencesRequises ?? []).map(c => c.nom))
-      .filter(Boolean);
-    const mergedSkillNames = [...new Set([...profileSkillNames, ...affectationSkillNames])];
-
-    // Charge: use actual avg if affectations exist, else 18% base if partial/active leaves
-    const conges = data.planning?.conges ?? [];
-    const baseCharge = this.computeAverageLoad(affectations);
-    const chargeValue = affectations.length
-      ? baseCharge
-      : (conges.length && availabilityState !== 'indisponible' ? 18 : 0);
-
-    // Formatted availability hint
-    const availHint = this.formatAvailabilityHint(
-      data.planning?.disponibiliteMessage, availabilityState, conges
-    );
+  private consumeDashboard(dashboard: CollaborateurDashboardResponse): void {
+    const availabilityLabel = dashboard.disponibilite?.etat?.trim() || '';
+    this.averageCharge = dashboard.chargeMoyenne ?? 0;
 
     this.statWidgets = [
       {
         label: 'Projets actifs',
-        value: activeMissions.length,
-        hint: completedMissions.length
-          ? `${completedMissions.length} mission(s) terminée(s)`
-          : 'Missions en cours de suivi'
+        value: dashboard.projetsActifs,
+        hint: `${dashboard.projetsActifs} projet(s) actif(s)`
       },
       {
         label: 'Disponibilite',
         value: availabilityLabel,
-        hint: availHint
+        hint: this.buildAvailabilityHint(availabilityLabel)
       },
       {
         label: 'Competences',
-        value: mergedSkillNames.length,
-        hint: mergedSkillNames.length
-          ? mergedSkillNames.slice(0, 3).join(' · ')
-          : 'Aucune renseignée'
+        value: dashboard.competencesCount,
+        hint: dashboard.competencesCount > 0
+          ? `${dashboard.competencesCount} competence(s) renseignee(s)`
+          : 'Aucune competence renseignee'
       },
       {
         label: 'Charge moyenne',
-        value: `${chargeValue}%`,
-        hint: criticalProjects.length
-          ? `${criticalProjects.length} projet(s) à surveiller`
-          : 'Charge maîtrisée',
-        tone: criticalProjects.length ? 'alert' : 'default'
+        value: `${this.averageCharge}%`,
+        hint: this.averageCharge >= 80 ? 'Charge elevee' : 'Charge maitrisee',
+        tone: this.averageCharge >= 80 ? 'alert' : 'default'
       }
     ];
 
-    this.planning = affectations.slice(0, 3).map((affectation) => this.buildPlanningCard(
-      affectation.projet.nom,
-      this.buildProjectPeriodLabel(affectation.projet.dateDebut, affectation.projet.dateFin),
-      this.normalizeProjectStatus(affectation.projet.statut),
-      this.projectLoadFromScore(affectation.score, affectation.projet.statut),
-      affectation.projet.nom
+    this.planning = (dashboard.prochainsJalons ?? []).slice(0, 5).map((jalon) => this.buildPlanningCard(
+      jalon.projet || 'Projet non precise',
+      jalon.dateEcheance ? `Echeance ${jalon.dateEcheance}` : 'Echeance non definie',
+      this.normalizeProjectStatus(jalon.statut),
+      jalon.charge,
+      jalon.jalon
     ));
 
-    this.alertes = this.buildAlerts(activeMissions.length, availabilityState, criticalProjects.length);
-    this.activiteRecente = this.buildRecentActivity(activeMissions, topSkills, availabilityLabel);
-    this.workloadChartData = this.buildWorkloadChartData(affectations);
-    this.projectLoadData = this.buildProjectLoadData(affectations);
-    this.competences = this.buildSkillItems(data.collaborateur.competences ?? []);
+    this.alertes = this.buildVigilanceAlerts(dashboard.pointsVigilance?.entries ?? []);
+
+    this.activiteRecente = (dashboard.activiteRecente ?? []).slice(0, 5).map((entry) => ({
+      initiales: entry.initiales || 'JR',
+      action: entry.action,
+      temps: entry.temps || entry.createdAt || 'recemment',
+      categorie: entry.categorie || 'collab'
+    }));
+
     this.footerAvailability = availabilityLabel;
-    this.footerMissions = activeMissions.length;
-    this.footerCharge = this.computeAverageLoad(affectations) + '%';
-    this.kpiProjectsCount = activeMissions.length;
-    this.kpiSkillsCount = +(this.statWidgets[2]?.value ?? 0);
+    this.footerMissions = dashboard.projetsActifs;
+    this.footerCharge = `${this.averageCharge}%`;
+    this.kpiProjectsCount = dashboard.projetsActifs;
+    this.kpiSkillsCount = dashboard.competencesCount;
+    this.competences = [];
+  }
+
+  private estimateJalonCharge(statut: string): number {
+    const key = this.normalizeKey(statut || '');
+
+    if (key.includes('termine')) {
+      return 100;
+    }
+
+    if (key.includes('cours')) {
+      return 75;
+    }
+
+    if (key.includes('planifier') || key.includes('attente')) {
+      return 45;
+    }
+
+    return 60;
+  }
+
+  private resolveAlertType(type: string): DashboardAlertItem['type'] {
+    const key = this.normalizeKey(type || '');
+
+    if (key.includes('danger') || key.includes('critique')) {
+      return 'danger';
+    }
+
+    if (key.includes('warning') || key.includes('alerte')) {
+      return 'warning';
+    }
+
+    return 'info';
+  }
+
+  private initialsFromAction(action: string): string {
+    const raw = (action || '').trim();
+    if (!raw) {
+      return 'JR';
+    }
+    return raw
+      .split(/[_\s-]+/)
+      .map((part) => part.charAt(0))
+      .join('')
+      .slice(0, 2)
+      .toUpperCase();
+  }
+
+  private buildAvailabilityHint(statut: string): string {
+    const key = this.normalizeKey(statut || '');
+    if (key.includes('conge')) {
+      return 'Indisponible pendant le conge planifie';
+    }
+    if (key.includes('occupe')) {
+      return 'Charge RH en cours';
+    }
+    return 'Disponible pour les prochaines affectations';
+  }
+
+  private buildVigilanceAlerts(entries: string[]): DashboardAlertItem[] {
+    return entries.slice(0, 3).map((message, index) => {
+      const normalized = this.normalizeKey(message);
+      const type: DashboardAlertItem['type'] = normalized.includes('surcharg') || normalized.includes('indisponible')
+        ? 'danger'
+        : normalized.includes('attention') || normalized.includes('elevee') || normalized.includes('reduite')
+          ? 'warning'
+          : 'info';
+
+      return {
+        type,
+        message,
+        time: index === 0 ? 'mise a jour recente' : 'tableau de bord'
+      };
+    });
+  }
+
+  private buildCollaborateurName(collaborateur: Collaborateur | null): string {
+    if (!collaborateur) {
+      return '';
+    }
+
+    return `${collaborateur.prenom ?? ''} ${collaborateur.nom ?? ''}`.trim();
   }
 
   get planningCount(): number {
@@ -344,6 +364,11 @@ export class CollaborateurDashboardComponent implements OnInit {
     return 'slate';
   }
 
+  kpiCardTone(stat: DashboardStatWidget): KpiCardTone {
+    const tone = this.statCardTone(stat);
+    return tone === 'slate' ? 'neutral' : tone;
+  }
+
   statChipTone(stat: DashboardStatWidget): 'up' | 'neutral' | 'warn' | 'risk' {
     const key = this.statKey(stat.label);
 
@@ -370,7 +395,7 @@ export class CollaborateurDashboardComponent implements OnInit {
     }
 
     if (key === 'charge_moyenne' && stat.tone === 'alert') {
-      return 'Priorite';
+      return 'Priorité';
     }
 
     if (key === 'projets_actifs') {
@@ -394,6 +419,122 @@ export class CollaborateurDashboardComponent implements OnInit {
     }
 
     return 'neutral';
+  }
+
+  kpiValueTone(stat: DashboardStatWidget): KpiCardTone {
+    const key = this.statKey(stat.label);
+
+    if (key === 'disponibilite') {
+      return this.footerAvailability === 'Disponible' ? 'green' : 'amber';
+    }
+
+    if (key === 'charge_moyenne') {
+      return stat.tone === 'alert' ? 'red' : 'green';
+    }
+
+    return 'neutral';
+  }
+
+  planningDotColor(item: DashboardPlanningCard): string {
+    if (item.statutBadge.tone === 'danger') {
+      return '#c41e3a';
+    }
+
+    if (item.statutBadge.tone === 'warning') {
+      return '#f59e0b';
+    }
+
+    return '#3b82f6';
+  }
+
+  planningPillClass(item: DashboardPlanningCard): string {
+    if (item.chargeBadge.tone === 'danger') {
+      return 'cd-jalon__pill--red';
+    }
+
+    if (item.chargeBadge.tone === 'warning') {
+      return 'cd-jalon__pill--amber';
+    }
+
+    return 'cd-jalon__pill--blue';
+  }
+
+  alertCardClass(alert: DashboardAlertItem): string {
+    if (alert.type === 'warning') {
+      return 'cd-alert--warning';
+    }
+
+    if (alert.type === 'danger') {
+      return 'cd-alert--danger';
+    }
+
+    return 'cd-alert--info';
+  }
+
+  alertBadgeClass(alert: DashboardAlertItem): string {
+    if (alert.type === 'warning') {
+      return 'cd-alert__badge--warning';
+    }
+
+    if (alert.type === 'danger') {
+      return 'cd-alert__badge--danger';
+    }
+
+    return 'cd-alert__badge--info';
+  }
+
+  alertIconClass(alert: DashboardAlertItem): string {
+    if (alert.type === 'warning') {
+      return 'ti ti-alert-triangle cd-alert__ico';
+    }
+
+    if (alert.type === 'danger') {
+      return 'ti ti-alert-circle cd-alert__ico';
+    }
+
+    return 'ti ti-info-circle cd-alert__ico';
+  }
+
+  traduireType(type: string): string {
+    const map: Record<string, string> = {
+      'MODIFICATION_PROFIL': 'Modification du profil',
+      'MISE_A_JOUR_PROFIL': 'Mise à jour du profil',
+      'MISE_A_JOUR_COMPETENCES': 'Mise à jour des compétences',
+      'CONNEXION': 'Connexion réussie',
+      'DECONNEXION': 'Déconnexion',
+      'LOGIN': 'Connexion réussie',
+      'LOGOUT': 'Déconnexion',
+      'AFFECTATION': 'Nouvelle affectation',
+      'FIN_AFFECTATION': 'Fin d\'affectation',
+      'NOUVEAU_PROJET': 'Nouveau projet assigné',
+      'TACHE_ASSIGNEE': 'Tâche assignée',
+      'JALON_PROCHE': 'Jalon à venir',
+      'SURCHARGE': 'Surcharge de travail',
+      'DISPONIBILITE': 'Changement de disponibilité',
+    };
+
+    return map[type] ?? type.toLowerCase().replace(/_/g, ' ');
+  }
+
+  translatedAlertMessage(alert: DashboardAlertItem): string {
+    const raw = (alert.message ?? '').trim();
+    if (!raw) {
+      return '';
+    }
+
+    return /^[A-Z0-9_]+$/.test(raw) ? this.traduireType(raw) : raw;
+  }
+
+  translatedAlertType(alert: DashboardAlertItem): string {
+    if (alert.type === 'danger') {
+      return 'Critique';
+    }
+
+    if (alert.type === 'warning') {
+      return 'Vigilance';
+    }
+
+    return 'Information';
   }
 
   private buildKpiCard(label: string, value: number | string, rawHint: string, rawTrend: string): DashboardKpiCard {
@@ -474,15 +615,15 @@ export class CollaborateurDashboardComponent implements OnInit {
   }
 
   private buildChargeBadge(charge: number): StatusBadge {
-    if (charge >= 90) {
-      return { label: 'Surcharge ' + charge + '%', tone: 'danger' };
+    if (charge > 85) {
+      return { label: 'Charge élevée ' + charge + '%', tone: 'danger' };
     }
 
     if (charge >= 70) {
-      return { label: 'Charge elevee ' + charge + '%', tone: 'warning' };
+      return { label: 'Charge maîtrisée ' + charge + '%', tone: 'warning' };
     }
 
-    return { label: 'Charge maitrisee ' + charge + '%', tone: 'success' };
+    return { label: 'Charge faible ' + charge + '%', tone: 'success' };
   }
 
   private resolveTone(value: string): BadgeTone {
@@ -507,6 +648,32 @@ export class CollaborateurDashboardComponent implements OnInit {
     }
 
     return Math.max(0, Math.min(100, Math.round(charge)));
+  }
+
+  private parseDashboardDate(value: string | undefined): Date | null {
+    if (!value) {
+      return null;
+    }
+
+    const isoParsed = new Date(value);
+    if (!Number.isNaN(isoParsed.getTime())) {
+      return isoParsed;
+    }
+
+    const frenchPattern = /^(\d{2})\/(\d{2})\/(\d{4})(?:\s+(\d{2}):(\d{2}))?$/;
+    const match = value.trim().match(frenchPattern);
+    if (!match) {
+      return null;
+    }
+
+    const day = Number.parseInt(match[1], 10);
+    const month = Number.parseInt(match[2], 10) - 1;
+    const year = Number.parseInt(match[3], 10);
+    const hour = Number.parseInt(match[4] ?? '0', 10);
+    const minute = Number.parseInt(match[5] ?? '0', 10);
+
+    const parsed = new Date(year, month, day, hour, minute, 0, 0);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
   }
 
   private normalizeKey(value: string): string {
@@ -774,17 +941,7 @@ export class CollaborateurDashboardComponent implements OnInit {
 
   // ── New getters for redesigned template ─────────────────
   get userInitials(): string {
-    const nom = this.authService.currentUser?.nom?.trim() ?? '';
-    return nom.split(' ').map(p => p[0] ?? '').join('').slice(0, 2).toUpperCase() || 'CD';
-  }
-
-  get profileCompletion(): number {
-    return this.competences.length > 0 ? 65 : 40;
-  }
-
-  get missingItems(): string {
-    return this.competences.length === 0
-      ? 'Compétences, Photo'
-      : 'Photo de profil';
+    const source = this.userName.trim() || this.authService.currentUser?.nom?.trim() || '';
+    return source.split(' ').map((part) => part[0] ?? '').join('').slice(0, 2).toUpperCase();
   }
 }

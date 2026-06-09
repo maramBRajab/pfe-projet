@@ -1,175 +1,228 @@
-<section class="sp-root">
+﻿<section class="audit-root">
   <app-admin-sidebar></app-admin-sidebar>
 
-  <div class="sp-main">
+  <div class="audit-main">
 
-    <!-- ══ TOPBAR ════════════════════════════════════════════ -->
-    <header class="sp-topbar">
-      <div class="sp-topbar__left">
-        <nav class="sp-topbar__breadcrumb">
-          <span>SmartAssign</span>
-          <span class="sp-topbar__sep">›</span>
-          <span>Admin</span>
-          <span class="sp-topbar__sep">›</span>
-          <span class="sp-topbar__current">Audit</span>
-        </nav>
-        <h1 class="sp-topbar__title">Journal d'audit</h1>
+    <app-admin-topbar
+      breadcrumb="SmartAssign › Admin › Journal d'audit"
+      [notificationCount]="0">
+    </app-admin-topbar>
+
+    <div class="sp-page-header">
+      <div class="sp-page-header__copy">
+        <h1 class="sp-page-header__title">Journal d'audit</h1>
+        <p class="sp-page-header__subtitle">Traçabilité des actions sensibles et supervision opérationnelle.</p>
       </div>
-      <div class="sp-topbar__right">
-        <div class="sp-status-pill">
-          <span class="sp-status-dot"></span>
-          Plateforme saine
-        </div>
-        <button type="button" class="sp-btn sp-btn--primary sp-btn--pill" (click)="exportPdf()">
-          <svg viewBox="0 0 16 16" fill="none">
-            <path d="M3 2h7l3 3v9a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1Z" stroke="currentColor" stroke-width="1.4"/>
-            <path d="M10 2v4h4M6 9h4M6 12h2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
-          </svg>
-          Export PDF
-        </button>
-        <div class="sp-av-sm" routerLink="/admin/profil" style="cursor:pointer;overflow:hidden" title="Mon profil">
-          <img *ngIf="adminPhoto" [src]="adminPhoto" 
-               style="width:100%;height:100%;object-fit:cover;border-radius:50%;" alt="">
-          <span *ngIf="!adminPhoto">AP</span>
-        </div>
-      </div>
-    </header>
+    </div>
 
-    <!-- ══ BODY ══════════════════════════════════════════════ -->
-    <div class="sp-body">
+    <div class="sp-topbar-actions">
+      <span class="sp-platform-health"><span class="sp-health-dot">●</span>Plateforme saine</span>
+      <button (click)="exportCSV()" class="sp-action-btn">Exporter</button>
+      <button (click)="exportPDF()" class="sp-action-btn sp-action-btn--danger">Export PDF</button>
+    </div>
 
-      <!-- MAIN BLOCK: filters + tabs + events -->
-      <div class="sp-main-card">
+    <div class="audit-body">
 
-        <!-- ROW 1: search + selects + date + reset + export CSV -->
-        <div class="sp-filter-row">
-          <div class="sp-search-wrap">
-            <svg class="sp-search-ico" viewBox="0 0 16 16" fill="none">
-              <circle cx="6.5" cy="6.5" r="4.5" stroke="currentColor" stroke-width="1.4"/>
-              <path d="M10 10l3.5 3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
-            </svg>
-            <input
-              type="text"
-              class="sp-input sp-input--search"
-              placeholder="Rechercher une action, un utilisateur…"
-              [(ngModel)]="filterSearch"
-              (ngModelChange)="onFiltersChange()"
-            />
-          </div>
-
-          <div class="sp-select-wrap">
-            <select class="sp-select" [(ngModel)]="filterAction" (ngModelChange)="onFiltersChange()">
-              <option value="">Tous les types</option>
-              <option *ngFor="let g of actionGroups">{{ g.label }}</option>
-              <option *ngFor="let a of allActions" [value]="a">{{ actionLabel(a) }}</option>
-            </select>
-          </div>
-
-          <div class="sp-select-wrap">
-            <select class="sp-select" [(ngModel)]="filterUser" (ngModelChange)="onFiltersChange()">
-              <option value="">Tous les acteurs</option>
-              <option *ngFor="let u of uniqueUsers" [value]="u">{{ u }}</option>
-            </select>
-          </div>
-
+      <div class="filter-bar">
+        <div class="search-box">
+          <mat-icon class="search-icon">search</mat-icon>
           <input
-            type="date"
-            class="sp-input sp-input--date"
-            [(ngModel)]="filterDateFrom"
-            (ngModelChange)="onFiltersChange()"
-          />
-
-          <button type="button" class="sp-btn sp-btn--ghost sp-btn--sm" (click)="resetFilters()">
-            <svg viewBox="0 0 16 16" fill="none">
-              <path d="M2 4h12M5 4V2.5a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 .5.5V4M6 8l4 4M10 8l-4 4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-            Réinitialiser
-          </button>
-
-          <button type="button" class="sp-btn sp-btn--ghost sp-btn--xs" (click)="exportCsv()">
-            <svg viewBox="0 0 16 16" fill="none">
-              <path d="M8 2v9" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
-              <path d="M4.5 8.5L8 12l3.5-3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
-              <path d="M2 13h12" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
-            </svg>
-            Export CSV
-          </button>
+            type="text"
+            placeholder="Rechercher un événement, un utilisateur, un projet..."
+            [(ngModel)]="searchQuery"
+            (input)="applyFilters()">
         </div>
 
-        <div class="sp-inner-divider"></div>
+        <input
+          class="filter-input-date"
+          type="date"
+          [(ngModel)]="selectedDateFrom"
+          (change)="applyFilters()"
+          title="Date de début">
 
-        <!-- ROW 2: filter tabs -->
-        <div class="sp-filter-tabs">
-          <button type="button" class="sp-tab-pill sp-tab-pill--active" (click)="resetFilters()">
-            Tous ({{ allLogs.length }})
-          </button>
-          <button type="button" class="sp-tab-pill" (click)="filterByStatus('FAILED')">
-            <span class="sp-tab-dot sp-tab-dot--red"></span>
-            Critiques ({{ failedCount }})
-          </button>
-          <button type="button" class="sp-tab-pill" (click)="filterByStatus('WARNING')">
-            <span class="sp-tab-dot sp-tab-dot--amber"></span>
-            Vigilance ({{ warningCount }})
-          </button>
-          <button type="button" class="sp-tab-pill" (click)="filterByStatus('SUCCESS')">
-            <span class="sp-tab-dot sp-tab-dot--blue"></span>
-            Info ({{ successCount }})
-          </button>
-        </div>
+        <select class="filter-select" [(ngModel)]="selectedActor" (change)="applyFilters()">
+          <option value="">Tous les utilisateurs</option>
+          <option *ngFor="let u of actorOptions" [value]="u">{{ u }}</option>
+        </select>
 
-        <div class="sp-inner-divider"></div>
+        <select class="filter-select" [(ngModel)]="selectedType" (change)="applyFilters()">
+          <option value="">Tous les types</option>
+          <option *ngFor="let t of TYPE_OPTIONS" [value]="t">{{ traduireTypeEvenement(t) }}</option>
+        </select>
 
-        <!-- TODAY -->
-        <div class="sp-section-hd">AUJOURD'HUI — {{ todayLogs.length }} ÉVÉNEMENT(S)</div>
+        <select class="filter-select" [(ngModel)]="selectedSeverity" (change)="applyFilters()">
+          <option value="">Toutes les gravités</option>
+          <option value="Info">Info</option>
+          <option value="Vigilance">Vigilance</option>
+          <option value="Critique">Critique</option>
+        </select>
 
-        <div class="sp-event-item" *ngFor="let log of (todayLogs | slice:0:timelineLimit); let last = last" [class.sp-event-item--last]="last" (click)="openDetail(log)">
-          <div class="sp-ev-icon" [ngClass]="'sp-ev-icon--' + actionTone(log.action)">
-            <svg viewBox="0 0 16 16" fill="none" [innerHTML]="actionIcon(log.action)"></svg>
-          </div>
-          <div class="sp-ev-body">
-            <div class="sp-ev-title">{{ log.description }}</div>
-            <div class="sp-ev-sub">{{ log.user }} · {{ log.userRole }} · {{ log.ip }}</div>
-          </div>
-          <span class="sp-ev-badge" [ngClass]="'sp-ev-badge--' + actionTone(log.action)">{{ evBadgeLabel(log.action) }}</span>
-          <span class="sp-ev-time">{{ log.date | date:'HH:mm' }}</span>
-        </div>
+        <select class="filter-select" [(ngModel)]="selectedProject" (change)="applyFilters()">
+          <option value="">Tous les projets</option>
+          <option *ngFor="let p of projectOptions" [value]="p">{{ p }}</option>
+        </select>
+      </div>
 
-        <!-- YESTERDAY -->
-        <div class="sp-section-hd sp-section-hd--sep" *ngIf="timelineLimit > todayLogs.length">HIER — {{ yesterdayLogs.length }} ÉVÉNEMENT(S)</div>
+      <div class="sp-tab-row">
+        <button class="sp-tab" type="button" [class.sp-tab--active]="selectedCategory === ''" (click)="selectedCategory = ''; applyFilters()">Toutes catégories</button>
+        <button class="sp-tab" type="button" [class.sp-tab--active]="selectedCategory === 'Sécurité'" (click)="selectedCategory = 'Sécurité'; applyFilters()">Sécurité</button>
+        <button class="sp-tab" type="button" [class.sp-tab--active]="selectedCategory === 'Utilisateurs'" (click)="selectedCategory = 'Utilisateurs'; applyFilters()">Utilisateurs</button>
+        <button class="sp-tab" type="button" [class.sp-tab--active]="selectedCategory === 'Projets'" (click)="selectedCategory = 'Projets'; applyFilters()">Projets</button>
+        <button class="sp-tab" type="button" [class.sp-tab--active]="selectedCategory === 'Système'" (click)="selectedCategory = 'Système'; applyFilters()">Système</button>
+      </div>
 
-        <div class="sp-event-item" *ngFor="let log of (yesterdayLogs | slice:0:(timelineLimit - todayLogs.length)); let last = last" [class.sp-event-item--last]="last" (click)="openDetail(log)">
-          <div class="sp-ev-icon" [ngClass]="'sp-ev-icon--' + actionTone(log.action)">
-            <svg viewBox="0 0 16 16" fill="none" [innerHTML]="actionIcon(log.action)"></svg>
-          </div>
-          <div class="sp-ev-body">
-            <div class="sp-ev-title">{{ log.description }}</div>
-            <div class="sp-ev-sub">{{ log.user }} · {{ log.userRole }} · {{ log.ip }}</div>
-          </div>
-          <span class="sp-ev-badge" [ngClass]="'sp-ev-badge--' + actionTone(log.action)">{{ evBadgeLabel(log.action) }}</span>
-          <span class="sp-ev-time">{{ log.date | date:'HH:mm' }}</span>
-        </div>
+      <div *ngIf="loading" class="state-msg">Chargement des logs…</div>
 
-        <!-- THIS WEEK -->
-        <div *ngIf="recentLogs.length > 0">
-          <div class="sp-section-hd sp-section-hd--sep">CETTE SEMAINE — {{ recentLogs.length }} ÉVÉNEMENT(S)</div>
+      <div *ngIf="error && !loading" class="state-msg state-error">{{ error }}</div>
 
-          <div class="sp-event-item" *ngFor="let log of (recentLogs | slice:0:(timelineLimit - todayLogs.length - yesterdayLogs.length)); let last = last" [class.sp-event-item--last]="last" (click)="openDetail(log)">
-            <div class="sp-ev-icon" [ngClass]="'sp-ev-icon--' + actionTone(log.action)">
-              <svg viewBox="0 0 16 16" fill="none" [innerHTML]="actionIcon(log.action)"></svg>
+      <div *ngIf="!loading" class="log-list">
+
+        <ng-container *ngFor="let group of groupedLogs">
+          <div class="group-header">{{ group.dateLabel }} — {{ group.logs.length }} événement(s)</div>
+
+          <ng-container *ngFor="let category of categoryOrder">
+            <div class="category-block" *ngIf="getGroupCategoryLogs(group, category).length > 0">
+              <div class="category-header" [ngClass]="getCategoryClass(category)">
+                <span>{{ getCategoryTitle(category) }}</span>
+                <span class="category-count">{{ getGroupCategoryLogs(group, category).length }}</span>
+              </div>
+
+              <div class="audit-row" *ngFor="let log of getGroupCategoryLogs(group, category)">
+                <div class="audit-row__left">
+                  <span class="severity-dot" [style.background]="getActionDotColor(log.actionCode)"></span>
+                </div>
+
+                <div class="audit-info">
+                  <div class="audit-info__title-row">
+                    <span class="audit-action">{{ log.summary }}</span>
+                    <span class="event-type">{{ log.eventLabel }}</span>
+                  </div>
+
+                  <span class="audit-description">{{ log.detailedDescription }}</span>
+
+                  <span class="audit-meta">
+                    Utilisateur : {{ log.userDisplay }}
+                    <span class="audit-meta-sep">|</span>
+                    Email : {{ log.userEmailDisplay }}
+                    <span class="audit-meta-sep">|</span>
+                    Rôle : {{ log.actorRoleDisplay }}
+                    <span class="audit-meta-sep">|</span>
+                    Projet : {{ log.projectName }}
+                    <span class="audit-meta-sep">|</span>
+                    IP : {{ log.ipAddress }}
+                  </span>
+                </div>
+
+                <div class="audit-row__right">
+                  <span class="severity-badge" [ngClass]="{
+                    'badge-info':      log.severity === 'Info',
+                    'badge-vigilance': log.severity === 'Vigilance',
+                    'badge-critique':  log.severity === 'Critique'
+                  }">{{ log.severity }}</span>
+
+                  <span class="audit-date">{{ log.createdAtIso | date:'yyyy-MM-dd HH:mm' }}</span>
+
+                  <button class="btn-view" type="button" (click)="openDetail(log)" title="Détail de l'événement">
+                    <mat-icon>visibility</mat-icon>
+                  </button>
+                </div>
+              </div>
             </div>
-            <div class="sp-ev-body">
-              <div class="sp-ev-title">{{ log.description }}</div>
-              <div class="sp-ev-sub">{{ log.user }} · {{ log.userRole }} · {{ log.ip }}</div>
-            </div>
-            <span class="sp-ev-badge" [ngClass]="'sp-ev-badge--' + actionTone(log.action)">{{ evBadgeLabel(log.action) }}</span>
-            <span class="sp-ev-time">{{ log.date | date:'dd MMM, HH:mm' }}</span>
-          </div>
-        </div>
+          </ng-container>
+        </ng-container>
 
-        <button type="button" class="sp-load-more" *ngIf="hasMoreTimeline" (click)="loadMoreTimeline()">Charger plus d'événements</button>
+        <div *ngIf="groupedLogs.length === 0 && !loading" class="empty-state">
+          Aucun événement ne correspond aux filtres.
+        </div>
 
       </div>
 
     </div>
   </div>
 </section>
+
+<div class="modal-backdrop" *ngIf="showModal" (click)="closeModal()"></div>
+
+<div class="modal-card" *ngIf="showModal && selectedLog">
+
+  <div class="modal-header">
+    <h3>Détail de l'événement</h3>
+    <button class="modal-close" type="button" (click)="closeModal()">×</button>
+  </div>
+
+  <div class="event-preview">
+    <span class="severity-dot" [style.background]="getActionDotColor(selectedLog.actionCode)"></span>
+    <div class="event-preview__info">
+      <strong>{{ selectedLog.summary }}</strong>
+      <span class="severity-badge" [ngClass]="{
+        'badge-info':      selectedLog.severity === 'Info',
+        'badge-vigilance': selectedLog.severity === 'Vigilance',
+        'badge-critique':  selectedLog.severity === 'Critique'
+      }">{{ selectedLog.severity }}</span>
+    </div>
+  </div>
+
+  <div class="detail-grid">
+    <span class="detail-label">Action (code)</span>
+    <span class="detail-value">{{ selectedLog.rawAction }}</span>
+
+    <span class="detail-label">Type d'événement</span>
+    <span class="detail-value">{{ selectedLog.eventLabel }}</span>
+
+    <span class="detail-label">Description (audit_log)</span>
+    <span class="detail-value">{{ selectedLog.rawDescription }}</span>
+
+    <span class="detail-label">Description détaillée</span>
+    <span class="detail-value">{{ selectedLog.detailedDescription }}</span>
+
+    <span class="detail-label">Utilisateur concerné</span>
+    <span class="detail-value">{{ selectedLog.userDisplay }}</span>
+
+    <span class="detail-label">Email</span>
+    <span class="detail-value">{{ selectedLog.userEmailDisplay }}</span>
+
+    <span class="detail-label">Rôle</span>
+    <span class="detail-value">{{ selectedLog.actorRoleDisplay }}</span>
+
+    <span class="detail-label">Date et heure</span>
+    <span class="detail-value">{{ selectedLog.createdAtIso | date:'yyyy-MM-dd HH:mm:ss' }}</span>
+
+    <span class="detail-label">Adresse IP</span>
+    <span class="detail-value">{{ selectedLog.ipAddress }}</span>
+
+    <span class="detail-label">Niveau de gravité</span>
+    <span class="detail-value">{{ selectedLog.severity }}</span>
+
+    <span class="detail-label">Statut (audit_log)</span>
+    <span class="detail-value">{{ selectedLog.rawStatus }}</span>
+
+    <span class="detail-label">Projet concerné</span>
+    <span class="detail-value">{{ selectedLog.projectName }}</span>
+
+    <span class="detail-label">Target (audit_log)</span>
+    <span class="detail-value">{{ selectedLog.rawTarget }}</span>
+
+    <span class="detail-label">Details (audit_log)</span>
+    <span class="detail-value">{{ selectedLog.rawDetails }}</span>
+  </div>
+
+  <div class="modified-data" *ngIf="selectedLog.modifiedData.length > 0">
+    <h4>Données modifiées</h4>
+    <div class="modified-data__list">
+      <div class="modified-row" *ngFor="let item of selectedLog.modifiedData">
+        <span class="modified-key">{{ item.key }}</span>
+        <span class="modified-value">{{ item.value }}</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-footer">
+    <button class="btn-fermer" type="button" (click)="closeModal()">Fermer</button>
+  </div>
+
+</div>
+
+
+
+
+

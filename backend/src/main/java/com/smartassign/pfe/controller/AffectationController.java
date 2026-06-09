@@ -66,7 +66,6 @@ public class AffectationController {
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable Long id, Authentication authentication) {
-        AffectationResponse aff = service.getById(id);
         service.delete(id);
         auditLogService.log(authentication.getName(), "ADMIN", "UNASSIGN", "Suppression de l'affectation #" + id, httpRequest.getRemoteAddr(), "SUCCESS", null, "Affectation #" + id);
         return ResponseEntity.noContent().build();

@@ -52,8 +52,8 @@
         <div class="su-step__left">
           <div class="su-step__ico su-step__ico--green"><i class="ti ti-shield-check"></i></div>
           <div class="su-step__body">
-            <div class="su-step__title">Rôle &amp; profil</div>
-            <div class="su-step__sub">Collaborateur, Manager ou Admin</div>
+            <div class="su-step__title">Profil collaborateur</div>
+            <div class="su-step__sub">Compte public sans privileges administrateur</div>
           </div>
         </div>
         <div class="su-step__num">2</div>
@@ -92,7 +92,7 @@
           (click)="goToStep(1)">Infos</button>
         <button type="button" class="su-tab"
           [class.su-tab--active]="currentStep === 2"
-          (click)="goToStep(2)">Rôle</button>
+          (click)="goToStep(2)">Profil</button>
         <button type="button" class="su-tab"
           [class.su-tab--active]="currentStep === 3"
           (click)="goToStep(3)">Compétences</button>
@@ -162,43 +162,19 @@
           </button>
         </ng-container>
 
-        <!-- ── STEP 2 : RÔLE ────────────────────────────────────── -->
+        <!-- ── STEP 2 : PROFIL ────────────────────────────────────── -->
         <ng-container *ngIf="currentStep === 2">
-          <div class="su-section-title">Choisissez votre rôle</div>
+          <div class="su-section-title">Profil d'inscription</div>
 
           <div class="su-roles">
-            <button type="button" class="su-role"
-              [class.su-role--selected]="selectedRole === 'COLLAB'"
-              (click)="selectRole('COLLAB')">
+            <div class="su-role su-role--selected">
               <div class="su-role__ico su-role__ico--blue"><i class="ti ti-user"></i></div>
               <div class="su-role__body">
                 <div class="su-role__title">Collaborateur</div>
-                <div class="su-role__sub">Consultation de vos missions et planning</div>
+                <div class="su-role__sub">L'inscription publique cree uniquement un compte collaborateur.</div>
               </div>
               <div class="su-role__radio"></div>
-            </button>
-
-            <button type="button" class="su-role"
-              [class.su-role--selected]="selectedRole === 'MANAGER'"
-              (click)="selectRole('MANAGER')">
-              <div class="su-role__ico su-role__ico--green"><i class="ti ti-briefcase"></i></div>
-              <div class="su-role__body">
-                <div class="su-role__title">Manager</div>
-                <div class="su-role__sub">Gestion des projets et affectations</div>
-              </div>
-              <div class="su-role__radio"></div>
-            </button>
-
-            <button type="button" class="su-role"
-              [class.su-role--selected]="selectedRole === 'ADMIN'"
-              (click)="selectRole('ADMIN')">
-              <div class="su-role__ico su-role__ico--purple"><i class="ti ti-crown"></i></div>
-              <div class="su-role__body">
-                <div class="su-role__title">Administrateur</div>
-                <div class="su-role__sub">Supervision complète de la plateforme</div>
-              </div>
-              <div class="su-role__radio"></div>
-            </button>
+            </div>
           </div>
 
           <div *ngIf="errorMessage" class="su-alert">{{ errorMessage }}</div>

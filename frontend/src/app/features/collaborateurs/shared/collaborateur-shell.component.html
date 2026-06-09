@@ -1,56 +1,57 @@
 <section class="sp-root" [class.sp-root--plain]="disabled">
   <aside class="sp-sidebar" *ngIf="!disabled">
     <div class="sp-sidebar__brand">
-      <img src="assets/logo sopra.png" alt="Sopra HR" class="app-logo" style="width:34px;height:34px;object-fit:contain;background:none!important;border-radius:0!important;display:block;box-shadow:none!important;padding:0!important;z-index:2;position:relative;" />
+      <img src="assets/logo sopra.png" alt="Sopra HR" class="sp-brand-logo-img" />
       <div class="sp-brand-text">
-        <span class="sp-brand-name">Sopra HR</span>
-        <span class="sp-brand-tag">ESPACE COLLABORATEUR</span>
+        <span class="sp-brand-name">SmartAssign</span>
+        <span class="sp-brand-tag">SOPRA HR SOFTWARE</span>
       </div>
     </div>
 
     <nav class="sp-nav">
       <p class="sp-nav__section">Principal</p>
       <a class="sp-nav__item" [class.sp-nav__item--active]="activeSection === 'dashboard'" routerLink="/collaborateurs/dashboard">
-        <i class="ti ti-layout-dashboard sp-nav__ico"></i>
+        <i class="ti ti-layout-grid sp-nav__ico sp-nav__ico--dashboard"></i>
         Dashboard
       </a>
 
       <p class="sp-nav__section sp-nav__section--spaced">Mon espace</p>
       <a class="sp-nav__item" [class.sp-nav__item--active]="activeSection === 'projets'" routerLink="/mes-projets">
-        <i class="ti ti-folder sp-nav__ico"></i>
+        <i class="ti ti-folder sp-nav__ico sp-nav__ico--projects"></i>
         Mes projets
       </a>
+      <a class="sp-nav__item" [class.sp-nav__item--active]="activeSection === 'affectations'" routerLink="/collaborateur/mes-affectations">
+        <i class="ti ti-clipboard-list sp-nav__ico sp-nav__ico--assignments"></i>
+        Mes affectations
+      </a>
       <a class="sp-nav__item" [class.sp-nav__item--active]="activeSection === 'planning'" routerLink="/planning">
-        <i class="ti ti-calendar sp-nav__ico"></i>
+        <i class="ti ti-calendar sp-nav__ico sp-nav__ico--planning"></i>
         Mon planning
       </a>
       <a class="sp-nav__item" [class.sp-nav__item--active]="activeSection === 'historique'" routerLink="/historique">
-        <i class="ti ti-history sp-nav__ico"></i>
+        <i class="ti ti-clock sp-nav__ico sp-nav__ico--history"></i>
         Historique
       </a>
 
       <p class="sp-nav__section sp-nav__section--spaced">Outils</p>
       <a class="sp-nav__item" [class.sp-nav__item--active]="activeSection === 'notifications'" routerLink="/notifications">
-        <i class="ti ti-bell sp-nav__ico"></i>
+        <i class="ti ti-bell sp-nav__ico sp-nav__ico--notif"></i>
         Notifications
-        <span class="sp-nav__badge">1</span>
+        <span class="sp-nav__badge" *ngIf="unreadNotificationsCount > 0">{{ unreadNotificationsCount }}</span>
       </a>
       <a class="sp-nav__item" [class.sp-nav__item--active]="activeSection === 'profil'" routerLink="/mon-profil">
-        <i class="ti ti-user sp-nav__ico"></i>
+        <i class="ti ti-user sp-nav__ico sp-nav__ico--profile"></i>
         Mon profil
       </a>
     </nav>
 
-    <div class="sp-sidebar__footer">
-      <div class="sp-footer-user">
-        <div class="sp-user-av">{{ userInitials }}</div>
-        <div class="sp-user-info">
-          <span class="sp-user-name">{{ userName }}</span>
-          <span class="sp-user-role">Collaborateur</span>
-        </div>
-      </div>
-      <button type="button" class="sp-logout-btn" (click)="logout()">
-        <i class="ti ti-logout"></i>
+    <div class="sp-user-block">
+      <button type="button" class="sp-user-block__logout sp-logout-btn" (click)="logout()">
+        <svg viewBox="0 0 16 16" fill="none">
+          <path d="M6 14H3a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1h3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+          <path d="M10.5 11l3-3-3-3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M13.5 8H6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+        </svg>
         Déconnexion
       </button>
     </div>

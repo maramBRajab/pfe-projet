@@ -46,14 +46,55 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/auth/register").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/auth/forgot-password").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/auth/renvoyer-identifiants").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.POST, "/api/auth/reset-password").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/auth/reset-password/validate").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/auth/verify-email").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/competences", "/api/competences/*").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/competences").hasAnyRole("MANAGER", "ADMIN")
+                .requestMatchers(HttpMethod.DELETE, "/api/competences/**").hasAnyRole("MANAGER", "ADMIN")
                 .requestMatchers("/ws", "/ws/**", "/error").permitAll()
-                // DEBUG: Autoriser tout le monde sur les routes admin
-                .requestMatchers("/api/chatbot/**").permitAll()
-                .requestMatchers("/api/dashboard/admin/**", "/api/admin/**").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/auth/users").permitAll()
+
+                .requestMatchers("/api/dashboard/admin/**", "/api/admin/**").hasRole("ADMIN")
+                .requestMatchers("/api/manager/ia/**").hasAnyRole("MANAGER", "ADMIN")
+                .requestMatchers("/api/dashboard/manager/**", "/api/manager/**").hasAnyRole("MANAGER", "ADMIN")
+
+                .requestMatchers(HttpMethod.GET, "/api/projets", "/api/projets/**").hasAnyRole("MANAGER", "ADMIN")
+                .requestMatchers(HttpMethod.POST, "/api/projets", "/api/projets/**").hasAnyRole("MANAGER", "ADMIN")
+                .requestMatchers(HttpMethod.PUT, "/api/projets/**").hasAnyRole("MANAGER", "ADMIN")
+                .requestMatchers(HttpMethod.PATCH, "/api/projets/*/statut").hasAnyRole("MANAGER", "ADMIN")
+                .requestMatchers(HttpMethod.DELETE, "/api/projets/**").hasAnyRole("ADMIN", "MANAGER")
+
+                .requestMatchers(HttpMethod.GET, "/api/collaborateurs/search/by-email").hasAnyRole("COLLAB", "MANAGER", "ADMIN")
+                .requestMatchers(HttpMethod.GET,
+                    "/api/collaborateurs/*/dashboard",
+                    "/api/collaborateurs/*/mes-projets",
+                    "/api/collaborateurs/*/historique",
+                    "/api/collaborateurs/*/affectations",
+                    "/api/collaborateurs/*/taches",
+                    "/api/collaborateurs/*/conges",
+                    "/api/collaborateurs/*/notifications"
+                ).hasAnyRole("COLLAB", "MANAGER", "ADMIN")
+                .requestMatchers(HttpMethod.POST,
+                    "/api/collaborateurs/*/notifications/*/dismiss",
+                    "/api/collaborateurs/*/notifications/mark-all-read"
+                ).hasAnyRole("COLLAB", "MANAGER", "ADMIN")
+                .requestMatchers(HttpMethod.GET, "/api/collaborateurs", "/api/collaborateurs/disponibles", "/api/collaborateurs/*").hasAnyRole("MANAGER", "ADMIN")
+                .requestMatchers(HttpMethod.POST, "/api/collaborateurs").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.PUT, "/api/collaborateurs/*").hasAnyRole("COLLAB", "ADMIN")
+                .requestMatchers(HttpMethod.PATCH, "/api/collaborateurs/*/role", "/api/collaborateurs/*/disponibilite").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.POST, "/api/collaborateurs/*/renvoyer-verification").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.DELETE, "/api/collaborateurs/*").hasRole("ADMIN")
+
+                .requestMatchers(HttpMethod.GET, "/api/affectations", "/api/affectations/**").hasAnyRole("MANAGER", "ADMIN")
+                .requestMatchers(HttpMethod.POST, "/api/affectations", "/api/affectations/**").hasAnyRole("MANAGER", "ADMIN")
+                .requestMatchers(HttpMethod.PUT, "/api/affectations/**").hasAnyRole("MANAGER", "ADMIN")
+                .requestMatchers(HttpMethod.DELETE, "/api/affectations/**").hasAnyRole("MANAGER", "ADMIN")
+                .requestMatchers("/api/planning/**", "/api/utilisateurs/*/disponibilite").hasAnyRole("COLLAB", "MANAGER", "ADMIN")
+                .requestMatchers("/api/collaborateur/notifications/**").hasRole("COLLAB")
+                .requestMatchers("/api/jalons/**", "/api/activites/**", "/api/journal/**", "/api/utilisateurs/disponibilite/**", "/api/dashboard-rh/**").hasRole("ADMIN")
+                .requestMatchers("/api/chatbot/**").authenticated()
+                .requestMatchers(HttpMethod.GET, "/api/auth/users").hasRole("ADMIN")
                 .anyRequest().authenticated()
             )
             .exceptionHandling(exceptions -> exceptions

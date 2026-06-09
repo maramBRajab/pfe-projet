@@ -1,414 +1,663 @@
-import { CommonModule, DatePipe } from '@angular/common';
+﻿import { CommonModule, DatePipe } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
+import { MatIconModule } from '@angular/material/icon';
 import { AdminSidebarComponent } from '../shared/admin-sidebar.component';
+import { AdminTopbarComponent } from '../shared/admin-topbar.component';
 import { AdminAuditService } from '../../../services/admin/audit.service';
-
-export type AuditAction =
-  | 'LOGIN' | 'LOGOUT' | 'LOGIN_FAILED'
-  | 'CREATE_USER' | 'UPDATE_USER' | 'DELETE_USER'
-  | 'CREATE_PROJET' | 'UPDATE_PROJET' | 'DELETE_PROJET'
-  | 'ASSIGN' | 'UNASSIGN'
-  | 'ROLE_CHANGE'
-  | 'EXPORT'
-  | 'PARAMETRES';
-
-export type AuditStatus = 'SUCCESS' | 'FAILED' | 'WARNING';
+import { AuthService } from '../../../services/auth';
 
 export interface AuditLog {
   id: number;
-  date: Date;
-  user: string;
-  userRole: string;
-  action: AuditAction;
-  description: string;
-  ip: string;
-  status: AuditStatus;
-  details: string;
+  action: string;
+  actorEmail?: string;
+  actorRole?: string;
+  ipAddress?: string;
+  user?: string;
+  userRole?: string;
+  ip?: string;
+  status?: string;
+  description?: string;
+  details?: string;
   target?: string;
+  date?: string;
+  severity: 'Info' | 'Critique' | 'Vigilance' | 'INFO' | 'WARNING' | 'CRITICAL' | string;
+  createdAt: string;
 }
 
+interface LogGroup {
+  dateLabel: string;
+  logs: AuditLogView[];
+}
+
+type AuditSeverity = 'Info' | 'Vigilance' | 'Critique';
+type AuditCategory = 'Sécurité' | 'Utilisateurs' | 'Projets' | 'Système';
+
+interface AuditLogView {
+  id: number;
+  actionCode: string;
+  rawAction: string;
+  eventLabel: string;
+  category: AuditCategory;
+  summary: string;
+  detailedDescription: string;
+  rawDescription: string;
+  actorEmail: string;
+  actorRole: string;
+  actorRoleDisplay: string;
+  userDisplay: string;
+  userEmailDisplay: string;
+  projectName: string;
+  ipAddress: string;
+  rawStatus: string;
+  rawTarget: string;
+  rawDetails: string;
+  severity: AuditSeverity;
+  createdAtIso: string;
+  createdAtDate: Date;
+  icon: string;
+  modifiedData: Array<{ key: string; value: string }>;
+}
+
+interface ActionMeta {
+  label: string;
+  category: AuditCategory;
+  icon: string;
+  defaultSeverity?: AuditSeverity;
+}
 
 @Component({
   selector: 'app-admin-audit',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, AdminSidebarComponent, DatePipe],
+  imports: [CommonModule, FormsModule, RouterModule, AdminSidebarComponent, AdminTopbarComponent, DatePipe, MatIconModule],
   templateUrl: './audit.component.html',
-  styleUrls: ['./audit.component.scss']
+  styleUrls: ['./audit.component.scss'],
 })
 export class AdminAuditComponent implements OnInit {
-  currentDate = new Date();
-  allLogs: AuditLog[] = [];
+  today = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  adminPhoto: string | null = null;
   loading = false;
   error = '';
-  adminPhoto: string | null = null;
 
-  constructor(private auditService: AdminAuditService) {}
+  logs: AuditLogView[] = [];
+  filteredLogs: AuditLogView[] = [];
+  groupedLogs: LogGroup[] = [];
 
-  // ── Filters ──────────────────────────────────────────────
-  filterSearch  = '';
-  filterUser    = '';
-  filterAction  = '';
-  filterStatus  = '';
-  filterDateFrom = '';
-  filterDateTo   = '';
+  searchQuery = '';
+  selectedDateFrom = '';
+  selectedActor = '';
+  selectedType = '';
+  selectedSeverity: '' | AuditSeverity = '';
+  selectedProject = '';
+  selectedCategory: '' | AuditCategory = '';
 
-  // ── Pagination ───────────────────────────────────────────
-  pageSize     = 25;
-  currentPage  = 1;
+  showModal = false;
+  selectedLog: AuditLogView | null = null;
 
-  // ── Timeline ─────────────────────────────────────────────
-  timelineLimit = 5;
+  actorOptions: string[] = [];
+  projectOptions: string[] = [];
 
-  get hasMoreTimeline(): boolean {
-    return (this.todayLogs.length + this.yesterdayLogs.length + this.recentLogs.length) > this.timelineLimit;
-  }
-
-  loadMoreTimeline(): void {
-    this.timelineLimit += 5;
-  }
-
-  // ── Sort ─────────────────────────────────────────────────
-  sortCol: keyof AuditLog = 'date';
-  sortDir: 'asc' | 'desc' = 'desc';
-
-  // ── Modal ─────────────────────────────────────────────────
-  selectedLog: AuditLog | null = null;
-
-  // ── Unique users for filter dropdown ─────────────────────
-  get uniqueUsers(): string[] {
-    return [...new Set(this.allLogs.map(l => l.user))].sort();
-  }
-
-  readonly actionLabels: Record<AuditAction, string> = {
-    LOGIN:          'Connexion',
-    LOGOUT:         'Déconnexion',
-    LOGIN_FAILED:   'Échec connexion',
-    CREATE_USER:    'Création utilisateur',
-    UPDATE_USER:    'Modification utilisateur',
-    DELETE_USER:    'Suppression utilisateur',
-    CREATE_PROJET:  'Création projet',
-    UPDATE_PROJET:  'Modification projet',
-    DELETE_PROJET:  'Suppression projet',
-    ASSIGN:         'Affectation',
-    UNASSIGN:       'Annulation affectation',
-    ROLE_CHANGE:    'Changement de rôle',
-    EXPORT:         'Export',
-    PARAMETRES:     'Paramètres système',
+  private readonly statusToSeverity: Record<string, AuditSeverity> = {
+    SUCCESS: 'Info',
+    FAILED: 'Critique',
+    WARNING: 'Vigilance',
+    INFO: 'Info',
+    CRITICAL: 'Critique',
   };
 
+  readonly actionMeta: Record<string, ActionMeta> = {
+    LOGIN: { label: 'Connexion', category: 'Sécurité', icon: 'login' },
+    LOGOUT: { label: 'Déconnexion', category: 'Sécurité', icon: 'logout' },
+    LOGIN_FAILED: { label: 'Échec de connexion', category: 'Sécurité', icon: 'gpp_bad', defaultSeverity: 'Critique' },
+    CHANGE_PASSWORD: { label: 'Changement de mot de passe', category: 'Sécurité', icon: 'password' },
+    RESET_PASSWORD: { label: 'Réinitialisation du mot de passe', category: 'Sécurité', icon: 'lock_reset', defaultSeverity: 'Vigilance' },
+    VERIFY_EMAIL: { label: 'Vérification email', category: 'Sécurité', icon: 'verified_user' },
+    RESEND_VERIFICATION: { label: 'Renvoi de l\'email de vérification', category: 'Sécurité', icon: 'mark_email_unread' },
 
-  readonly actionGroups: { label: string; actions: AuditAction[] }[] = [
-    { label: 'Authentification', actions: ['LOGIN', 'LOGOUT', 'LOGIN_FAILED'] },
-    { label: 'Utilisateurs',     actions: ['CREATE_USER', 'UPDATE_USER', 'DELETE_USER', 'ROLE_CHANGE'] },
-    { label: 'Projets',          actions: ['CREATE_PROJET', 'UPDATE_PROJET', 'DELETE_PROJET'] },
-    { label: 'Affectations',     actions: ['ASSIGN', 'UNASSIGN'] },
-    { label: 'Système',          actions: ['EXPORT', 'PARAMETRES'] },
-  ];
+    CREATE_USER: { label: 'Création utilisateur', category: 'Utilisateurs', icon: 'person_add' },
+    UPDATE_USER: { label: 'Modification d\'utilisateur', category: 'Utilisateurs', icon: 'manage_accounts' },
+    USER_UPDATE: { label: 'Modification d\'utilisateur', category: 'Utilisateurs', icon: 'manage_accounts' },
+    DELETE_USER: { label: 'Suppression d\'utilisateur', category: 'Utilisateurs', icon: 'person_remove', defaultSeverity: 'Critique' },
+    ACTIVATION: { label: 'Activation de compte', category: 'Utilisateurs', icon: 'person_check' },
+    SUSPENSION: { label: 'Suspension de compte', category: 'Utilisateurs', icon: 'person_off', defaultSeverity: 'Vigilance' },
+    STATUS_CHANGE: { label: 'Changement de statut', category: 'Utilisateurs', icon: 'sync_alt', defaultSeverity: 'Vigilance' },
+
+    CREATE_PROJET: { label: 'Création projet', category: 'Projets', icon: 'post_add' },
+    UPDATE_PROJET: { label: 'Modification projet', category: 'Projets', icon: 'edit_note' },
+    DELETE_PROJET: { label: 'Suppression projet', category: 'Projets', icon: 'delete_forever', defaultSeverity: 'Critique' },
+    ASSIGN: { label: 'Affectation collaborateur', category: 'Projets', icon: 'assignment_ind', defaultSeverity: 'Vigilance' },
+    UNASSIGN: { label: 'Retrait d\'affectation', category: 'Projets', icon: 'assignment_late', defaultSeverity: 'Vigilance' },
+
+    PARAMETRES: { label: 'Modification des paramètres', category: 'Système', icon: 'tune', defaultSeverity: 'Vigilance' },
+    ROLE_CHANGE: { label: 'Gestion des rôles', category: 'Système', icon: 'admin_panel_settings', defaultSeverity: 'Vigilance' },
+    PERMISSION_CHANGE: { label: 'Gestion des permissions', category: 'Système', icon: 'rule', defaultSeverity: 'Vigilance' },
+    EXPORT: { label: 'Export', category: 'Système', icon: 'download' },
+    GENERATE_TEST_DATA: { label: 'Génération de données de test', category: 'Système', icon: 'science' },
+  };
+
+  readonly AUDIT_ACTIONS = new Set([
+    'LOGIN',
+    'LOGOUT',
+    'LOGIN_FAILED',
+    'CHANGE_PASSWORD',
+    'RESET_PASSWORD',
+    'RESEND_VERIFICATION',
+    'VERIFY_EMAIL',
+    'DELETE_USER',
+    'ACTIVATION',
+    'SUSPENSION',
+    'ROLE_CHANGE',
+    'PERMISSION_CHANGE',
+    'CREATE_PROJET',
+    'UPDATE_PROJET',
+    'DELETE_PROJET',
+    'ASSIGN',
+    'UNASSIGN',
+    'PARAMETRES',
+    'EXPORT',
+    'GENERATE_TEST_DATA',
+  ]);
+
+  readonly TYPE_OPTIONS = Object.keys(this.actionMeta).filter((action) => this.AUDIT_ACTIONS.has(action));
+  readonly categoryOrder: AuditCategory[] = ['Sécurité', 'Utilisateurs', 'Projets', 'Système'];
+
+  constructor(
+    private auditService: AdminAuditService,
+    private readonly authService: AuthService
+  ) {}
+
+  get totalCount():     number { return this.filteredLogs.length; }
+  get critiqueCount():  number { return this.filteredLogs.filter((l) => l.severity === 'Critique').length; }
+  get vigilanceCount(): number { return this.filteredLogs.filter((l) => l.severity === 'Vigilance').length; }
+  get infoCount():      number { return this.filteredLogs.filter((l) => l.severity === 'Info').length; }
 
   ngOnInit(): void {
-    this.adminPhoto = localStorage.getItem('smartassign_admin_photo');
+    this.adminPhoto = this.authService.currentUser?.photoUrl ?? null;
     this.loading = true;
     this.auditService.getAuditLogs().subscribe({
-      next: (logs) => {
-        this.allLogs = logs.map(l => ({
-          ...l,
-          date: new Date(l.date)
-        }));
+      next: (data: AuditLog[]) => {
+        this.logs = data
+          .map((l) => this.toViewModel(l))
+          .filter((log) => this.isAuditAction(log.actionCode));
+        this.actorOptions = this.buildOptions(this.logs.map((l) => l.userDisplay));
+        this.projectOptions = this.buildOptions(this.logs.map((l) => l.projectName).filter((p) => p !== 'Non concerné'));
+        this.applyFilters();
         this.loading = false;
       },
       error: (err) => {
         this.error = 'Impossible de charger les logs.';
         this.loading = false;
         console.error(err);
-      }
-    });
-  }
-
-  fetchAuditLogs(): void {
-    this.loading = true;
-    this.error = '';
-    this.auditService.getAuditLogs().subscribe({
-      next: (logs) => {
-        // Conversion date string -> Date si besoin
-        this.allLogs = logs.map(l => ({ ...l, date: new Date(l.date) }));
-        this.applySort('date');
-        this.loading = false;
       },
-      error: (err) => {
-        this.error = "Erreur lors du chargement des logs d'audit.";
-        this.loading = false;
-      }
     });
   }
 
-  // ── Computed: filtered + sorted ──────────────────────────
-  get filteredLogs(): AuditLog[] {
-    const q = this.filterSearch.trim().toLowerCase();
-    const df = this.filterDateFrom ? new Date(this.filterDateFrom) : null;
-    const dt = this.filterDateTo   ? new Date(this.filterDateTo + 'T23:59:59') : null;
+  applyFilters(): void {
+    let result = [...this.logs];
 
-    return this.allLogs
-      .filter(l => {
-        if (q && !l.user.toLowerCase().includes(q) &&
-                 !l.description.toLowerCase().includes(q) &&
-                 !l.ip.includes(q) &&
-                 !(l.target ?? '').toLowerCase().includes(q)) return false;
-        if (this.filterUser   && l.user   !== this.filterUser)   return false;
-        if (this.filterAction && l.action !== this.filterAction) return false;
-        if (this.filterStatus && l.status !== this.filterStatus) return false;
-        if (df && l.date < df) return false;
-        if (dt && l.date > dt) return false;
-        return true;
-      })
-      .sort((a, b) => {
-        const av = a[this.sortCol];
-        const bv = b[this.sortCol];
-        if (av instanceof Date && bv instanceof Date) {
-          return this.sortDir === 'asc' ? av.getTime() - bv.getTime() : bv.getTime() - av.getTime();
-        }
-        const as = String(av).toLowerCase();
-        const bs = String(bv).toLowerCase();
-        if (as < bs) return this.sortDir === 'asc' ? -1 : 1;
-        if (as > bs) return this.sortDir === 'asc' ? 1 : -1;
-        return 0;
-      });
-  }
-
-  get pagedLogs(): AuditLog[] {
-    const start = (this.currentPage - 1) * this.pageSize;
-    return this.filteredLogs.slice(start, start + this.pageSize);
-  }
-
-  get totalPages(): number {
-    return Math.max(1, Math.ceil(this.filteredLogs.length / this.pageSize));
-  }
-
-  get pages(): number[] {
-    const total = this.totalPages;
-    if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
-    const p = this.currentPage;
-    if (p <= 4) return [1, 2, 3, 4, 5, -1, total];
-    if (p >= total - 3) return [1, -1, total - 4, total - 3, total - 2, total - 1, total];
-    return [1, -1, p - 1, p, p + 1, -1, total];
-  }
-
-  get successCount(): number  { return this.allLogs.filter(l => l.status === 'SUCCESS').length; }
-  get failedCount(): number   { return this.allLogs.filter(l => l.status === 'FAILED').length; }
-  get warningCount(): number  { return this.allLogs.filter(l => l.status === 'WARNING').length; }
-
-  get allActions(): AuditAction[] {
-    return Object.keys(this.actionLabels) as AuditAction[];
-  }
-
-  get todayLogs(): AuditLog[] {
-    const today = new Date();
-    return this.filteredLogs.filter(l =>
-      l.date.getFullYear() === today.getFullYear() &&
-      l.date.getMonth() === today.getMonth() &&
-      l.date.getDate() === today.getDate()
-    );
-  }
-
-  get yesterdayLogs(): AuditLog[] {
-    const yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1);
-    return this.filteredLogs.filter(l =>
-      l.date.getFullYear() === yesterday.getFullYear() &&
-      l.date.getMonth() === yesterday.getMonth() &&
-      l.date.getDate() === yesterday.getDate()
-    );
-  }
-
-  get recentLogs(): AuditLog[] {
-    const now = new Date();
-    const sevenDaysAgo = new Date();
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-
-    // Retourner tous les logs des 7 derniers jours excluant today et yesterday
-    return this.filteredLogs.filter(l => {
-      // Vérifier si le log est dans les 7 derniers jours
-      if (l.date < sevenDaysAgo) return false;
-      
-      // Exclure today
-      if (l.date.getFullYear() === now.getFullYear() &&
-          l.date.getMonth() === now.getMonth() &&
-          l.date.getDate() === now.getDate()) return false;
-      
-      // Exclure yesterday
-      const yesterday = new Date();
-      yesterday.setDate(yesterday.getDate() - 1);
-      if (l.date.getFullYear() === yesterday.getFullYear() &&
-          l.date.getMonth() === yesterday.getMonth() &&
-          l.date.getDate() === yesterday.getDate()) return false;
-      
-      return true;
-    });
-  }
-
-  filterByStatus(status: AuditStatus): void {
-    this.filterStatus = status;
-    this.currentPage = 1;
-  }
-
-  evBadgeLabel(action: AuditAction): string {
-    if (['LOGIN', 'LOGOUT', 'LOGIN_FAILED'].includes(action)) return 'Connexion';
-    if (['CREATE_USER', 'UPDATE_USER', 'DELETE_USER'].includes(action)) return 'Utilisateur';
-    if (['CREATE_PROJET', 'UPDATE_PROJET', 'DELETE_PROJET'].includes(action)) return 'Projet';
-    if (['ASSIGN', 'UNASSIGN'].includes(action)) return 'Projet';
-    if (action === 'ROLE_CHANGE') return 'Rôle';
-    if (action === 'PARAMETRES') return 'Paramètre';
-    if (action === 'EXPORT') return 'Système';
-    return action;
-  }
-
-  // ── Actions ───────────────────────────────────────────────
-  applySort(col: keyof AuditLog): void {
-    if (this.sortCol === col) {
-      this.sortDir = this.sortDir === 'asc' ? 'desc' : 'asc';
-    } else {
-      this.sortCol = col;
-      this.sortDir = col === 'date' ? 'desc' : 'asc';
+    if (this.searchQuery) {
+      const q = this.searchQuery.toLowerCase();
+      result = result.filter(
+        (l) =>
+          l.summary.toLowerCase().includes(q) ||
+          l.detailedDescription.toLowerCase().includes(q) ||
+          l.actorEmail.toLowerCase().includes(q) ||
+          l.userDisplay.toLowerCase().includes(q) ||
+          l.projectName.toLowerCase().includes(q)
+      );
     }
-    this.currentPage = 1;
+
+    if (this.selectedDateFrom) {
+      const from = new Date(`${this.selectedDateFrom}T00:00:00`);
+      const to = new Date(`${this.selectedDateFrom}T23:59:59`);
+      result = result.filter((l) => l.createdAtDate >= from && l.createdAtDate <= to);
+    }
+
+    if (this.selectedActor) {
+      result = result.filter((l) => l.userDisplay === this.selectedActor);
+    }
+
+    if (this.selectedType) {
+      result = result.filter((l) => l.actionCode === this.selectedType);
+    }
+
+    if (this.selectedSeverity) {
+      result = result.filter((l) => l.severity === this.selectedSeverity);
+    }
+
+    if (this.selectedProject) {
+      result = result.filter((l) => l.projectName === this.selectedProject);
+    }
+
+    if (this.selectedCategory) {
+      result = result.filter((l) => l.category === this.selectedCategory);
+    }
+
+    this.filteredLogs = result;
+    this.buildGroups();
   }
 
-  goToPage(p: number): void {
-    if (p < 1 || p > this.totalPages) return;
-    this.currentPage = p;
+  buildGroups(): void {
+    const map: { [key: string]: AuditLogView[] } = {};
+    this.filteredLogs.forEach((log) => {
+      const d = log.createdAtIso.substring(0, 10);
+      if (!map[d]) map[d] = [];
+      map[d].push(log);
+    });
+
+    const today = new Date().toISOString().substring(0, 10);
+    const yesterday = new Date(Date.now() - 86400000).toISOString().substring(0, 10);
+    this.groupedLogs = Object.entries(map)
+      .sort((a, b) => b[0].localeCompare(a[0]))
+      .map(([date, logs]) => ({
+        dateLabel: date === today ? "AUJOURD'HUI" : date === yesterday ? 'HIER' : date,
+        logs,
+      }));
   }
 
-  onFiltersChange(): void {
-    this.currentPage = 1;
-  }
-
-  resetFilters(): void {
-    this.filterSearch   = '';
-    this.filterUser     = '';
-    this.filterAction   = '';
-    this.filterStatus   = '';
-    this.filterDateFrom = '';
-    this.filterDateTo   = '';
-    this.currentPage    = 1;
-  }
-
-  openDetail(log: AuditLog): void {
+  openDetail(log: AuditLogView): void {
     this.selectedLog = log;
+    this.showModal = true;
   }
 
-  closeDetail(): void {
+  closeModal(): void {
+    this.showModal = false;
     this.selectedLog = null;
   }
 
-  // ── Export ────────────────────────────────────────────────
-  exportCsv(): void {
-    const header = ['ID', 'Date', 'Heure', 'Utilisateur', 'Rôle', 'Action', 'Description', 'IP', 'Statut', 'Cible'];
-    const rows = this.filteredLogs.map(l => [
-      l.id,
-      this.fmtDate(l.date),
-      this.fmtTime(l.date),
-      l.user,
-      l.userRole,
-      l.action,
-      l.description,
-      l.ip,
-      l.status,
-      l.target ?? ''
+  resetFilters(): void {
+    this.searchQuery = '';
+    this.selectedDateFrom = '';
+    this.selectedActor = '';
+    this.selectedType = '';
+    this.selectedSeverity = '';
+    this.selectedProject = '';
+    this.selectedCategory = '';
+    this.applyFilters();
+  }
+
+  exportCSV(): void {
+    const headers = ['Catégorie', 'Type', 'Description', 'Utilisateur', 'Email', 'Rôle', 'Projet', 'IP', 'Sévérité', 'Date'];
+    const rows = this.filteredLogs.map((l) => [
+      l.category,
+      l.eventLabel,
+      l.summary,
+      l.userDisplay,
+      l.userEmailDisplay,
+      l.actorRoleDisplay,
+      l.projectName,
+      l.ipAddress,
+      l.severity,
+      l.createdAtIso,
     ]);
-    const csv = [header, ...rows].map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(';')).join('\n');
-    this.download(`journal_audit_${this.isoDate()}.csv`, '\uFEFF' + csv, 'text/csv;charset=utf-8');
-  }
-
-  exportPdf(): void {
-    const win = window.open('', '_blank', 'width=1000,height=700');
-    if (!win) return;
-    const rows = this.filteredLogs.map(l => `
-      <tr>
-        <td>${l.id}</td>
-        <td>${this.fmtDate(l.date)} ${this.fmtTime(l.date)}</td>
-        <td>${l.user}</td>
-        <td><span class="badge badge-${l.action.toLowerCase().replace(/_/g,'-')}">${l.action}</span></td>
-        <td>${l.description}</td>
-        <td>${l.ip}</td>
-        <td><span class="status status-${l.status.toLowerCase()}">${l.status}</span></td>
-      </tr>`).join('');
-
-    win.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8">
-      <title>Journal d'audit – SmartAssign</title>
-      <style>
-        body { font-family: Inter, sans-serif; font-size: 11px; color: #1e293b; padding: 24px; }
-        h1   { font-size: 18px; margin-bottom: 4px; }
-        p    { color: #64748b; margin-bottom: 16px; font-size: 12px; }
-        table{ width: 100%; border-collapse: collapse; }
-        th   { background: #f5f7fb; text-align: left; padding: 7px 10px; font-size: 10px; text-transform: uppercase; letter-spacing: .8px; border-bottom: 2px solid #e6ebf2; }
-        td   { padding: 7px 10px; border-bottom: 1px solid #e6ebf2; vertical-align: middle; }
-        tr:hover td { background: #f8fafc; }
-        .status { padding: 2px 8px; border-radius: 4px; font-weight: 700; font-size: 10px; }
-        .status-success { background:#ecfdf5; color:#059669; }
-        .status-failed  { background:#fef2f2; color:#dc2626; }
-        .status-warning { background:#fffbeb; color:#d97706; }
-        .badge { font-size: 10px; padding: 2px 7px; border-radius: 4px; background: #eff6ff; color: #2563eb; }
-      </style></head><body>
-      <h1>Journal d'Audit — SmartAssign</h1>
-      <p>Généré le ${new Date().toLocaleDateString('fr-FR', { day:'2-digit', month:'long', year:'numeric', hour:'2-digit', minute:'2-digit' })} · ${this.filteredLogs.length} entrées</p>
-      <table><thead><tr><th>#</th><th>Date / Heure</th><th>Utilisateur</th><th>Action</th><th>Description</th><th>IP</th><th>Statut</th></tr></thead>
-      <tbody>${rows}</tbody></table></body></html>`);
-    win.document.close();
-    win.focus();
-    win.print();
-  }
-
-  // ── Helpers ───────────────────────────────────────────────
-  actionLabel(a: AuditAction): string { return this.actionLabels[a] ?? a; }
-
-  actionTone(a: AuditAction): string {
-    if (['LOGIN','LOGOUT'].includes(a))                          return 'blue';
-    if (a === 'LOGIN_FAILED')                                    return 'red';
-    if (['CREATE_USER','CREATE_PROJET'].includes(a))             return 'green';
-    if (['UPDATE_USER','UPDATE_PROJET','PARAMETRES'].includes(a)) return 'amber';
-    if (['DELETE_USER','DELETE_PROJET'].includes(a))             return 'red';
-    if (a === 'ASSIGN')                                          return 'blue';
-    if (a === 'UNASSIGN')                                        return 'amber';
-    if (a === 'ROLE_CHANGE')                                     return 'violet';
-    if (a === 'EXPORT')                                          return 'slate';
-    return 'slate';
-  }
-
-  actionIcon(a: AuditAction): string {
-    const icons: Partial<Record<AuditAction, string>> = {
-      LOGIN:         `<path d="M10 14H13a1 1 0 0 0 1-1V3a1 1 0 0 0-1-1H10" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M5.5 11l3-3-3-3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M2.5 8H8.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>`,
-      LOGOUT:        `<path d="M6 14H3a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1h3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M10.5 11l3-3-3-3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M13.5 8H6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>`,
-      LOGIN_FAILED:  `<circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.4"/><path d="M5.5 5.5l5 5M10.5 5.5l-5 5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>`,
-      CREATE_USER:   `<circle cx="8" cy="5.5" r="2.5" stroke="currentColor" stroke-width="1.4"/><path d="M2 13.5c0-2.761 2.686-5 6-5s6 2.239 6 5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>`,
-      UPDATE_USER:   `<circle cx="8" cy="5.5" r="2.5" stroke="currentColor" stroke-width="1.4"/><path d="M2 13.5c0-2.761 2.686-5 6-5s6 2.239 6 5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M12 12l1.5 1.5-2 2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>`,
-      DELETE_USER:   `<circle cx="8" cy="5.5" r="2.5" stroke="currentColor" stroke-width="1.4"/><path d="M2 13.5c0-2.761 2.686-5 6-5s6 2.239 6 5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M11 11.5l3 3M14 11.5l-3 3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>`,
-      CREATE_PROJET: `<rect x="2" y="2" width="12" height="12" rx="2" stroke="currentColor" stroke-width="1.4"/><path d="M8 5v6M5 8h6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>`,
-      UPDATE_PROJET: `<rect x="2" y="2" width="12" height="12" rx="2" stroke="currentColor" stroke-width="1.4"/><path d="M5 8h6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>`,
-      DELETE_PROJET: `<rect x="2" y="2" width="12" height="12" rx="2" stroke="currentColor" stroke-width="1.4"/><path d="M5.5 5.5l5 5M10.5 5.5l-5 5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>`,
-      ASSIGN:        `<path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>`,
-      UNASSIGN:      `<path d="M13 8H3M7 4l-4 4 4 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>`,
-      ROLE_CHANGE:   `<path d="M8 1.5L14 4v4c0 3.5-2.5 5.5-6 6.5C2.5 13.5 0 11.5 0 8V4l6-2.5Z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/>`,
-      EXPORT:        `<path d="M8 2v8M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 12h12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>`,
-      PARAMETRES:    `<circle cx="8" cy="8" r="2" stroke="currentColor" stroke-width="1.4"/><path d="M8 2v1M8 13v1M2 8h1M13 8h1M3.5 3.5l.7.7M11.8 11.8l.7.7M3.5 12.5l.7-.7M11.8 4.2l.7-.7" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>`,
-    };
-    return icons[a] ?? `<circle cx="8" cy="8" r="5" stroke="currentColor" stroke-width="1.4"/>`;
-  }
-
-  private fmtDate(d: Date): string {
-    return d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
-  }
-  private fmtTime(d: Date): string {
-    return d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-  }
-  private isoDate(): string {
-    return new Date().toISOString().slice(0, 10);
-  }
-  private download(name: string, data: string, mime: string): void {
-    const blob = new Blob([data], { type: mime });
-    const url  = URL.createObjectURL(blob);
-    const a    = document.createElement('a');
-    a.href = url; a.download = name; a.click();
+    const csv = [headers, ...rows]
+      .map((r) => r.map((c) => '"' + String(c).replace(/"/g, '""') + '"').join(','))
+      .join('\n');
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'audit-export.csv';
+    a.click();
     URL.revokeObjectURL(url);
   }
+
+  exportPDF(): void {
+    window.print();
+  }
+
+  getCategoryIcon(category: AuditCategory): string {
+    return {
+      'Sécurité': 'shield',
+      'Utilisateurs': 'groups',
+      'Projets': 'folder_open',
+      'Système': 'settings',
+    }[category];
+  }
+
+  getCategoryClass(category: AuditCategory): string {
+    return {
+      'Sécurité': 'cat-security',
+      'Utilisateurs': 'cat-users',
+      'Projets': 'cat-projects',
+      'Système': 'cat-system',
+    }[category];
+  }
+
+  getActionDotColor(actionCode: string): string {
+    const colorMap: Record<string, string> = {
+      LOGIN: '#0f6cbd',
+      LOGOUT: '#1e8e3e',
+      LOGIN_FAILED: '#d13438',
+      RESEND_VERIFICATION: '#8a5a00',
+      CREATE_USER: '#1e8e3e',
+      UPDATE_USER: '#8a5a00',
+      USER_UPDATE: '#8a5a00',
+      DELETE_USER: '#d13438',
+      ACTIVATION: '#1e8e3e',
+      SUSPENSION: '#8a5a00',
+      STATUS_CHANGE: '#8a5a00',
+      CREATE_PROJET: '#1e8e3e',
+      UPDATE_PROJET: '#8a5a00',
+      DELETE_PROJET: '#d13438',
+      ASSIGN: '#0f6cbd',
+      UNASSIGN: '#8a5a00',
+      PARAMETRES: '#6b46c1',
+      ROLE_CHANGE: '#6b46c1',
+      PERMISSION_CHANGE: '#6b46c1',
+      EXPORT: '#475569',
+      GENERATE_TEST_DATA: '#0f6cbd',
+    };
+
+    return colorMap[actionCode] || '#64748b';
+  }
+
+  getCategoryTitle(category: AuditCategory): string {
+    return {
+      'Sécurité': 'Sécurité',
+      'Utilisateurs': 'Utilisateurs',
+      'Projets': 'Projets',
+      'Système': 'Système',
+    }[category];
+  }
+
+  getGroupCategoryLogs(group: LogGroup, category: AuditCategory): AuditLogView[] {
+    return group.logs.filter((l) => l.category === category);
+  }
+
+  traduireTypeEvenement(type: string): string {
+    const action = this.normalizeAction(type);
+    return this.actionMeta[action]?.label ?? this.toSentenceCase(type ?? 'Événement inconnu');
+  }
+
+  traduireSeverite(severity: string): AuditSeverity {
+    const normalized = (severity ?? '').trim().toUpperCase();
+
+    if (normalized === 'CRITICAL' || normalized === 'CRITIQUE') {
+      return 'Critique';
+    }
+
+    if (normalized === 'WARNING' || normalized === 'VIGILANCE') {
+      return 'Vigilance';
+    }
+
+    return 'Info';
+  }
+
+  private toViewModel(raw: AuditLog): AuditLogView {
+    const actionCode = this.normalizeAction(raw.action);
+    const actionMeta = this.actionMeta[actionCode] ?? {
+      label: this.toSentenceCase(raw.action || 'Événement'),
+      category: 'Système' as AuditCategory,
+      icon: 'event_note',
+    };
+
+    const createdAtIso = raw.date || raw.createdAt || new Date().toISOString();
+    const createdAtDate = new Date(createdAtIso);
+
+    const actorEmail = this.firstNonBlank(raw.user, raw.actorEmail, 'Compte non identifié');
+    const actorRole = this.firstNonBlank(raw.userRole, raw.actorRole, 'INCONNU');
+    const actorRoleDisplay = this.toRoleDisplay(actorRole);
+
+    const severity = this.resolveSeverity(raw, actionMeta.defaultSeverity);
+    const target = this.resolveTarget(raw);
+    const projectName = this.resolveProjectName(raw, actionCode, target);
+    const userDisplay = this.resolveUserDisplay(raw, actionCode, target, actorEmail);
+    const userEmailDisplay = this.resolveUserEmail(raw, actionCode, target, actorEmail);
+
+    return {
+      id: Number(raw.id ?? 0),
+      actionCode,
+      rawAction: this.firstNonBlank(raw.action, actionCode),
+      eventLabel: actionMeta.label,
+      category: actionMeta.category,
+      summary: this.buildSummary(raw, actionCode, actionMeta.label, target, userDisplay, projectName),
+      detailedDescription: this.buildDetailedDescription(raw, actionMeta.label, target, projectName),
+      rawDescription: this.firstNonBlank(raw.description, 'N/A'),
+      actorEmail,
+      actorRole,
+      actorRoleDisplay,
+      userDisplay,
+      userEmailDisplay,
+      projectName,
+      ipAddress: this.formatIpAddress(this.firstNonBlank(raw.ip, raw.ipAddress, 'N/A')),
+      rawStatus: this.firstNonBlank(raw.status, 'N/A'),
+      rawTarget: this.firstNonBlank(raw.target, 'N/A'),
+      rawDetails: this.firstNonBlank(raw.details, 'N/A'),
+      severity,
+      createdAtIso,
+      createdAtDate,
+      icon: actionMeta.icon,
+      modifiedData: this.extractModifiedData(raw),
+    };
+  }
+
+  private resolveSeverity(raw: AuditLog, fallback?: AuditSeverity): AuditSeverity {
+    const fromStatus = this.statusToSeverity[(raw.status || '').toUpperCase()];
+    if (fromStatus) return fromStatus;
+
+    const translated = this.traduireSeverite(raw.severity || '');
+    if (translated !== 'Info' || !fallback) return translated;
+
+    return fallback;
+  }
+
+  private normalizeAction(action?: string): string {
+    return (action ?? '')
+      .trim()
+      .replace(/[\s-]+/g, '_')
+      .toUpperCase();
+  }
+
+  private isAuditAction(actionCode: string): boolean {
+    if (this.AUDIT_ACTIONS.has(actionCode)) {
+      return true;
+    }
+
+    return actionCode.startsWith('AI_') || actionCode.startsWith('IA_') || actionCode.startsWith('SYSTEM_');
+  }
+
+  private toRoleDisplay(role: string): string {
+    const normalized = (role || '').trim().toUpperCase();
+
+    if (!normalized || normalized === 'INCONNU') {
+      return 'Utilisateur non authentifié';
+    }
+
+    return {
+      ADMIN: 'Administrateur',
+      MANAGER: 'Manager',
+      COLLAB: 'Collaborateur',
+      USER: 'Utilisateur',
+    }[normalized] ?? this.toSentenceCase(normalized.toLowerCase());
+  }
+
+  private buildSummary(raw: AuditLog, actionCode: string, label: string, target: string, userDisplay: string, projectName: string): string {
+    const effectiveTarget = target || userDisplay;
+
+    switch (actionCode) {
+      case 'DELETE_USER':
+        return `Suppression de l'utilisateur : ${effectiveTarget}`;
+      case 'UPDATE_USER':
+      case 'USER_UPDATE':
+        return `Modification de l'utilisateur : ${effectiveTarget}`;
+      case 'CREATE_USER':
+        return `Création de l'utilisateur : ${effectiveTarget}`;
+      case 'RESEND_VERIFICATION':
+        return `Renvoi de l'email de vérification pour : ${effectiveTarget}`;
+      case 'LOGIN_FAILED':
+        return `Échec de connexion pour : ${effectiveTarget}`;
+      case 'ACTIVATION':
+        return `Activation du compte utilisateur : ${effectiveTarget}`;
+      case 'SUSPENSION':
+        return `Suspension du compte utilisateur : ${effectiveTarget}`;
+      case 'STATUS_CHANGE':
+        return `Changement de statut utilisateur : ${effectiveTarget}`;
+      case 'ASSIGN':
+        return `Affectation collaborateur sur le projet : ${projectName}`;
+      case 'UNASSIGN':
+        return `Retrait d'affectation sur le projet : ${projectName}`;
+      case 'CREATE_PROJET':
+      case 'UPDATE_PROJET':
+      case 'DELETE_PROJET':
+        return `${label} : ${projectName}`;
+      case 'GENERATE_TEST_DATA':
+        return 'Génération des données de test dashboard RH';
+      default:
+        return target ? `${label} : ${target}` : label;
+    }
+  }
+
+  private buildDetailedDescription(raw: AuditLog, label: string, target: string, projectName: string): string {
+    const fromAudit = this.firstNonBlank(raw.description, raw.details);
+    if (fromAudit) {
+      return fromAudit;
+    }
+
+    if (projectName !== 'Non concerné') {
+      return `${label} sur le projet ${projectName}.`;
+    }
+
+    if (target) {
+      return `${label} concernant ${target}.`;
+    }
+
+    return `${label} enregistré dans le journal d'audit.`;
+  }
+
+  private resolveTarget(raw: AuditLog): string {
+    const fromRaw = this.firstNonBlank(raw.target);
+    if (fromRaw) return fromRaw;
+
+    const details = this.parseDetails(raw.details);
+    const fromDetails = this.firstNonBlank(
+      details?.['target'],
+      details?.['user'],
+      details?.['fullName'],
+      details?.['displayName'],
+      details?.['project'],
+      details?.['projectName']
+    );
+
+    return fromDetails;
+  }
+
+  private resolveProjectName(raw: AuditLog, actionCode: string, target: string): string {
+    const details = this.parseDetails(raw.details);
+    const fromDetails = this.firstNonBlank(details?.['projectName'], details?.['project'], details?.['projet']);
+    if (fromDetails) return fromDetails;
+
+    const source = `${raw.description || ''} ${raw.target || ''}`;
+    const regex = /projet\s*[:\-]?\s*([^,.;]+)/i;
+    const match = source.match(regex);
+    if (match?.[1]) return match[1].trim();
+
+    if (actionCode.includes('PROJET') || actionCode === 'ASSIGN' || actionCode === 'UNASSIGN') {
+      return target || 'Projet non spécifié';
+    }
+
+    return 'Non concerné';
+  }
+
+  private resolveUserDisplay(raw: AuditLog, actionCode: string, target: string, actorEmail: string): string {
+    const details = this.parseDetails(raw.details);
+    const detailsName = this.firstNonBlank(details?.['fullName'], details?.['displayName'], details?.['userName']);
+
+    if (detailsName) return detailsName;
+    if (actionCode.includes('USER') && target) return target;
+    if (target && this.looksLikePersonLabel(target)) return target;
+    if (actorEmail === 'Compte non identifié') return 'Compte non identifié';
+
+    return actorEmail;
+  }
+
+  private resolveUserEmail(raw: AuditLog, actionCode: string, target: string, actorEmail: string): string {
+    const details = this.parseDetails(raw.details);
+    const explicitEmail = this.firstNonBlank(details?.['email'], details?.['userEmail']);
+    if (explicitEmail) return explicitEmail;
+
+    if (this.isEmail(target) && actionCode.includes('USER')) return target;
+
+    return actorEmail;
+  }
+
+  private extractModifiedData(raw: AuditLog): Array<{ key: string; value: string }> {
+    const parsed = this.parseDetails(raw.details);
+    if (parsed) {
+      return Object.entries(parsed)
+        .filter(([key, value]) => !['target', 'project', 'projectName', 'email', 'user', 'userEmail'].includes(key) && value !== null && value !== undefined && `${value}`.trim() !== '')
+        .map(([key, value]) => ({ key: this.toSentenceCase(key.replace(/_/g, ' ')), value: String(value) }));
+    }
+
+    const rawDetails = (raw.details ?? '').trim();
+    if (!rawDetails) return [];
+
+    return [{ key: 'Données', value: rawDetails }];
+  }
+
+  private parseDetails(details?: string): Record<string, any> | null {
+    if (!details) return null;
+
+    const trimmed = details.trim();
+    if (!trimmed.startsWith('{') || !trimmed.endsWith('}')) {
+      return null;
+    }
+
+    try {
+      const parsed = JSON.parse(trimmed);
+      return typeof parsed === 'object' && parsed !== null ? parsed : null;
+    } catch {
+      return null;
+    }
+  }
+
+  private formatIpAddress(ip: string): string {
+    const normalized = (ip || '').trim();
+    const localhostValues = ['::1', '0:0:0:0:0:0:0:1', '127.0.0.1', '::ffff:127.0.0.1'];
+    if (localhostValues.includes(normalized.toLowerCase())) {
+      return 'Localhost';
+    }
+
+    if (normalized.toLowerCase().startsWith('::ffff:')) {
+      return normalized.substring(7);
+    }
+
+    return normalized || 'N/A';
+  }
+
+  private buildOptions(values: string[]): string[] {
+    return [...new Set(values.filter((v) => (v || '').trim() !== ''))].sort((a, b) => a.localeCompare(b, 'fr'));
+  }
+
+  private looksLikePersonLabel(value: string): boolean {
+    return !!value && !value.toLowerCase().includes('projet');
+  }
+
+  private isEmail(value: string): boolean {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value || '');
+  }
+
+  private firstNonBlank(...values: Array<string | undefined | null>): string {
+    for (const value of values) {
+      if (value && value.trim().length > 0) {
+        return value.trim();
+      }
+    }
+    return '';
+  }
+
+  private toSentenceCase(value: string): string {
+    const normalized = (value || '').trim();
+    if (!normalized) return '';
+    return normalized.charAt(0).toUpperCase() + normalized.slice(1);
+  }
 }
+
+
+
+
+
+
+
+

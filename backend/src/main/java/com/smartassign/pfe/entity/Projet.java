@@ -37,6 +37,9 @@ public class Projet {
     private String statut = "en_attente";
     // valeurs : "en_attente" | "en_cours" | "termine"
 
+    @Column(name = "manager_id")
+    private Long managerId;
+
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
         name = "projet_competences",

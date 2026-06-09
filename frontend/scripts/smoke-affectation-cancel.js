@@ -7,7 +7,10 @@ const {
   launchBrowser
 } = require('./smoke-common');
 
-const MANAGER_CREDENTIALS = { email: 'manager@smartassign.tn', motDePasse: 'manager123' };
+const MANAGER_CREDENTIALS = {
+  email: process.env.SMOKE_MANAGER_EMAIL,
+  motDePasse: process.env.SMOKE_MANAGER_PASSWORD
+};
 
 async function loginManager(api) {
   return authenticate(api, MANAGER_CREDENTIALS);

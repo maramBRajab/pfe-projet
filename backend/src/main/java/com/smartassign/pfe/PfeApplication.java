@@ -7,12 +7,18 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
+import com.smartassign.pfe.entity.Collaborateur;
 import com.smartassign.pfe.entity.Competence;
+import com.smartassign.pfe.repository.CollaborateurRepository;
 import com.smartassign.pfe.repository.CompetenceRepository;
 import com.smartassign.pfe.service.AuthService;
+import com.smartassign.pfe.service.NotificationGeneratorService;
+import com.smartassign.pfe.service.RhDashboardService;
 
 @SpringBootApplication
+@EnableScheduling
 public class PfeApplication {
 
     public static void main(String[] args) {
@@ -46,5 +52,58 @@ public class PfeApplication {
                 }
             }
         };
+    }
+
+    @Bean
+    CommandLineRunner ensureNourCompetences(
+        CollaborateurRepository collaborateurRepository,
+        CompetenceRepository competenceRepository
+    ) {
+        return args -> {
+            final Long targetId = 80L;
+            final String targetFullName = "nour ben romdhane";
+            final String fallbackEmail = "nour.ben.romdhane@smartassign.tn";
+
+            Collaborateur nour = collaborateurRepository.findById(targetId)
+                .or(() -> collaborateurRepository.findAll().stream()
+                    .filter(c -> {
+                        String fullName = String.format("%s %s", c.getPrenom(), c.getNom())
+                            .trim()
+                            .toLowerCase();
+                        return targetFullName.equals(fullName);
+                    })
+                    .findFirst())
+                .or(() -> collaborateurRepository.findByEmailIgnoreCase(fallbackEmail))
+                .orElseGet(() -> Collaborateur.builder()
+                    .prenom("Nour")
+                    .nom("Ben Romdhane")
+                    .email(fallbackEmail)
+                    .role("COLLAB")
+                    .experienceAnnees(3)
+                    .disponible(true)
+                    .build());
+
+            nour.setExperienceAnnees(3);
+
+            List<String> requiredSkills = List.of("Angular", "Java", "React Native");
+
+            for (String skillName : requiredSkills) {
+                Competence skill = competenceRepository.findByNomIgnoreCase(skillName)
+                    .orElseGet(() -> competenceRepository.save(Competence.builder().nom(skillName).build()));
+                nour.getCompetences().add(skill);
+            }
+
+            collaborateurRepository.save(nour);
+        };
+    }
+
+    @Bean
+    CommandLineRunner initRhDashboardData(RhDashboardService rhDashboardService) {
+        return args -> rhDashboardService.generateTestData();
+    }
+
+    @Bean
+    CommandLineRunner initSystemNotifications(NotificationGeneratorService notificationGeneratorService) {
+        return args -> notificationGeneratorService.generateSystemNotifications();
     }
 }

@@ -1,0 +1,124 @@
+<section class="aa-root">
+  <app-admin-sidebar></app-admin-sidebar>
+
+  <main class="aa-main">
+    <app-admin-topbar
+      breadcrumb="SmartAssign › Admin › Affectations"
+      [notificationCount]="0">
+    </app-admin-topbar>
+
+    <div class="aa-body">
+      <header class="aa-header">
+        <div>
+          <h1>Affectations</h1>
+          <p>Vue portefeuille globale des affectations, scores IA, conflits, surcharge et historique.</p>
+        </div>
+
+        <div class="aa-actions">
+          <a routerLink="/manager/affectation" class="aa-btn aa-btn--ghost">Analyse IA</a>
+          <button type="button" class="aa-btn aa-btn--primary" (click)="loadAffectations()" [disabled]="loading">
+            Actualiser
+          </button>
+        </div>
+      </header>
+
+      <section class="aa-kpis">
+        <article class="aa-kpi">
+          <span class="aa-kpi__label">Affectations actives</span>
+          <strong>{{ activeCount }}</strong>
+          <span>{{ rows.length }} affectation(s) au total</span>
+        </article>
+
+        <article class="aa-kpi">
+          <span class="aa-kpi__label">Score IA moyen</span>
+          <strong>{{ averageScore }}%</strong>
+          <span>Compatibilite portefeuille</span>
+        </article>
+
+        <article class="aa-kpi aa-kpi--risk">
+          <span class="aa-kpi__label">Conflits detectes</span>
+          <strong>{{ riskCount }}</strong>
+          <span>Score faible, indisponibilite ou projet inactif</span>
+        </article>
+
+        <article class="aa-kpi aa-kpi--warning">
+          <span class="aa-kpi__label">Collaborateurs surcharges</span>
+          <strong>{{ overloadedCount }}</strong>
+          <span>Plus de 2 affectations actives</span>
+        </article>
+      </section>
+
+      <section class="aa-toolbar">
+        <input
+          type="search"
+          placeholder="Rechercher par collaborateur, projet ou manager..."
+          [(ngModel)]="searchQuery">
+
+        <select [(ngModel)]="selectedFilter">
+          <option *ngFor="let filter of filters" [value]="filter.value">{{ filter.label }}</option>
+        </select>
+
+        <select [(ngModel)]="selectedProject">
+          <option value="">Tous les projets</option>
+          <option *ngFor="let projet of projectOptions" [value]="projet">{{ projet }}</option>
+        </select>
+
+        <button type="button" class="aa-btn aa-btn--ghost" (click)="resetFilters()">Reinitialiser</button>
+      </section>
+
+      <div *ngIf="loading" class="aa-state">Chargement des affectations...</div>
+      <div *ngIf="!loading && error" class="aa-state aa-state--error">{{ error }}</div>
+      <div *ngIf="!loading && !error && filteredRows.length === 0" class="aa-state">
+        Aucune affectation ne correspond aux filtres.
+      </div>
+
+      <section class="aa-table" *ngIf="!loading && !error && filteredRows.length > 0">
+        <div class="aa-table__head">
+          <span>Collaborateur</span>
+          <span>Projet</span>
+          <span>Score IA</span>
+          <span>Charge</span>
+          <span>Statut</span>
+          <span>Historique</span>
+          <span>Alertes</span>
+        </div>
+
+        <article class="aa-row" *ngFor="let row of filteredRows; trackBy: trackByAffectation">
+          <span>
+            <strong>{{ row.collaborateurNom }}</strong>
+            <small>{{ row.affectation.collaborateur.email }}</small>
+          </span>
+
+          <span>
+            <strong>{{ row.projetNom }}</strong>
+            <small>{{ row.managerNom }}</small>
+          </span>
+
+          <span class="aa-score" [ngClass]="scoreClass(row.score)">
+            {{ row.score }}%
+          </span>
+
+          <span>
+            <strong>{{ row.loadCount }}</strong>
+            <small>affectation(s) active(s)</small>
+          </span>
+
+          <span class="aa-status" [class.aa-status--inactive]="!row.active">
+            {{ row.statut }}
+          </span>
+
+          <span>
+            {{ row.date | date:'yyyy-MM-dd HH:mm' }}
+          </span>
+
+          <span class="aa-risks" *ngIf="row.risks.length; else noRisk">
+            <span class="aa-risk" *ngFor="let risk of row.risks">{{ risk }}</span>
+          </span>
+          <ng-template #noRisk>
+            <span class="aa-ok">RAS</span>
+          </ng-template>
+        </article>
+      </section>
+    </div>
+  </main>
+</section>

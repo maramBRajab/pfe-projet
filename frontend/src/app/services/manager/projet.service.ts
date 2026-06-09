@@ -13,6 +13,9 @@ export interface Projet {
   dateFin: string;
   statut: string;
   competencesRequises?: Competence[];
+  managerNom?: string;
+  nombreCollabs?: number;
+  progression?: number;
 }
 
 export interface ProjetRequest {

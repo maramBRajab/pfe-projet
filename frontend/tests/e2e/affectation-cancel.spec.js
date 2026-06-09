@@ -1,7 +1,10 @@
 const { test, expect } = require('@playwright/test');
 const { API_URL, loginViaApi, seedSession } = require('./helpers/auth');
 
-const MANAGER_CREDENTIALS = { email: 'manager@smartassign.tn', motDePasse: 'manager123' };
+const MANAGER_CREDENTIALS = {
+  email: process.env.SMOKE_MANAGER_EMAIL,
+  motDePasse: process.env.SMOKE_MANAGER_PASSWORD
+};
 
 async function fetchAffectations(request, token) {
   const response = await request.get(`${API_URL}/affectations`, {

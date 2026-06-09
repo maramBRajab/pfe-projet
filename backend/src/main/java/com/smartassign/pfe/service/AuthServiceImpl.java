@@ -25,12 +25,15 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
+import org.springframework.http.HttpStatus;
 
 import com.smartassign.pfe.dto.AuthRequest;
 import com.smartassign.pfe.dto.AuthResponse;
 import com.smartassign.pfe.dto.ForgotPasswordRequest;
 import com.smartassign.pfe.dto.MessageResponse;
 import com.smartassign.pfe.dto.RegisterRequest;
+import com.smartassign.pfe.dto.ResendCredentialsRequest;
 import com.smartassign.pfe.dto.ResetPasswordRequest;
 import com.smartassign.pfe.dto.UserPreferencesRequest;
 import com.smartassign.pfe.dto.UserPreferencesResponse;
@@ -38,11 +41,11 @@ import com.smartassign.pfe.dto.UtilisateurResponse;
 import com.smartassign.pfe.dto.UpdateProfileRequest;
 import com.smartassign.pfe.dto.UpdateProfileResponse;
 import com.smartassign.pfe.dto.ChangePasswordRequest;
-import org.springframework.security.core.context.SecurityContextHolder;
 import com.smartassign.pfe.entity.Affectation;
 import com.smartassign.pfe.entity.Collaborateur;
 import com.smartassign.pfe.entity.Competence;
 import com.smartassign.pfe.entity.Conge;
+import com.smartassign.pfe.entity.EmailVerificationToken;
 import com.smartassign.pfe.entity.PasswordResetToken;
 import com.smartassign.pfe.entity.Projet;
 import com.smartassign.pfe.entity.Tache;
@@ -53,6 +56,7 @@ import com.smartassign.pfe.repository.AffectationRepository;
 import com.smartassign.pfe.repository.CollaborateurRepository;
 import com.smartassign.pfe.repository.CompetenceRepository;
 import com.smartassign.pfe.repository.CongeRepository;
+import com.smartassign.pfe.repository.EmailVerificationTokenRepository;
 import com.smartassign.pfe.repository.PasswordResetTokenRepository;
 import com.smartassign.pfe.repository.ProjetRepository;
 import com.smartassign.pfe.repository.TacheRepository;
@@ -70,6 +74,10 @@ public class AuthServiceImpl implements AuthService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AuthServiceImpl.class);
     private static final Base64.Encoder TOKEN_ENCODER = Base64.getUrlEncoder().withoutPadding();
+    private static final String RESEND_PASSWORD_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789@#$%!";
+    private static final int RESEND_PASSWORD_LENGTH = 12;
+    private static final String PUBLIC_REGISTRATION_ROLE = "COLLAB";
+    private static final java.security.SecureRandom RESEND_RANDOM = new java.security.SecureRandom();
 
     private final UtilisateurRepository utilisateurRepository;
     private final CollaborateurRepository collaborateurRepository;
@@ -79,7 +87,10 @@ public class AuthServiceImpl implements AuthService {
     private final TacheRepository tacheRepository;
     private final CongeRepository congeRepository;
     private final PasswordResetTokenRepository passwordResetTokenRepository;
+    private final EmailVerificationTokenRepository emailVerificationTokenRepository;
     private final PasswordResetNotificationService passwordResetNotificationService;
+    private final CredentialsMailService credentialsMailService;
+    private final NotificationGeneratorService notificationGeneratorService;
     private final JdbcTemplate jdbcTemplate;
     private final JwtService jwtService;
     private final PasswordEncoder passwordEncoder;
@@ -90,6 +101,27 @@ public class AuthServiceImpl implements AuthService {
 
     @Value("${app.frontend.reset-password-url:http://localhost:4200/reset-password}")
     private String resetPasswordUrl;
+
+    @Value("${app.bootstrap.demo-users.enabled:false}")
+    private boolean demoUsersEnabled;
+
+    @Value("${app.bootstrap.demo.admin.email:}")
+    private String demoAdminEmail;
+
+    @Value("${app.bootstrap.demo.admin.password:}")
+    private String demoAdminPassword;
+
+    @Value("${app.bootstrap.demo.manager.email:}")
+    private String demoManagerEmail;
+
+    @Value("${app.bootstrap.demo.manager.password:}")
+    private String demoManagerPassword;
+
+    @Value("${app.bootstrap.demo.collab.email:}")
+    private String demoCollaborateurEmail;
+
+    @Value("${app.bootstrap.demo.collab.password:}")
+    private String demoCollaborateurPassword;
 
     @Transactional(readOnly = true)
     public List<UtilisateurResponse> getUsers() {
@@ -113,6 +145,16 @@ public class AuthServiceImpl implements AuthService {
                     return new BusinessException("Email ou mot de passe incorrect");
                 });
 
+        if (!Boolean.TRUE.equals(user.getEmailVerifie())) {
+            LOGGER.warn("Connexion refusee — email non verifie : {}", normalizedEmail);
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Adresse email non verifiee");
+        }
+
+        if (Boolean.FALSE.equals(user.getActif())) {
+            LOGGER.warn("Connexion refusee — compte suspendu : {}", normalizedEmail);
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Compte suspendu");
+        }
+
         LOGGER.debug(
                 "Utilisateur trouve : id={}, email={}, role={}",
                 user.getId(),
@@ -135,6 +177,10 @@ public class AuthServiceImpl implements AuthService {
                 .nom(user.getNom())
                 .email(user.getEmail())
                 .role(normalizedRole)
+            .photoUrl(user.getPhotoUrl())
+                .telephone(user.getTelephone())
+                .poste(user.getPoste())
+                .departement(user.getDepartement())
                 .token(jwtService.generateToken(user))
                 .build();
     }
@@ -156,7 +202,7 @@ public class AuthServiceImpl implements AuthService {
                 .nom(normalizedNom)
                 .prenom(normalizedPrenom)
                 .email(normalizedEmail)
-                .role("COLLAB")
+                .role(PUBLIC_REGISTRATION_ROLE)
                 .experienceAnnees(request.getExperienceAnnees())
                 .disponible(request.isDisponible())
                 .competences(resolveCompetences(request.getCompetenceIds()))
@@ -166,7 +212,7 @@ public class AuthServiceImpl implements AuthService {
                 .nom(buildDisplayName(normalizedPrenom, normalizedNom))
                 .email(normalizedEmail)
                 .motDePasse(passwordEncoder.encode(normalizedPassword))
-                .role("COLLAB")
+                .role(PUBLIC_REGISTRATION_ROLE)
                 .build());
 
         return AuthResponse.builder()
@@ -174,6 +220,10 @@ public class AuthServiceImpl implements AuthService {
                 .nom(user.getNom())
                 .email(user.getEmail())
                 .role(user.getRole())
+            .photoUrl(user.getPhotoUrl())
+                .telephone(user.getTelephone())
+                .poste(user.getPoste())
+                .departement(user.getDepartement())
                 .token(jwtService.generateToken(user))
                 .build();
     }
@@ -226,10 +276,84 @@ public class AuthServiceImpl implements AuthService {
                 "Si un compte existe pour cette adresse, un lien de reinitialisation a ete envoye.");
     }
 
+    /**
+     * Renvoie les identifiants d'un compte existant par email.
+     *
+     * <p>Genere un nouveau mot de passe temporaire, met a jour le compte et envoie
+     * un email contenant ces identifiants. Pour empecher l'enumeration de comptes,
+     * la reponse reste generique si l'email est inconnu — mais les echecs d'envoi
+     * SMTP sont remontes au client (pour qu'un admin sache que l'email n'est pas
+     * parti) et journalises au niveau ERROR.
+     */
+    public MessageResponse resendCredentials(ResendCredentialsRequest request) {
+        String normalizedEmail = normalizeEmail(request.getEmail());
+        LOGGER.info("Demande de renvoi d'identifiants recue pour {}", normalizedEmail);
+
+        Optional<Utilisateur> utilisateurOptional = utilisateurRepository.findByEmailIgnoreCase(normalizedEmail);
+
+        if (utilisateurOptional.isEmpty()) {
+            LOGGER.info(
+                    "Aucun compte associe a {} — reponse generique renvoyee (anti-enumeration)",
+                    normalizedEmail);
+            return new MessageResponse(
+                    "Si un compte existe pour cette adresse, un email avec de nouveaux identifiants a ete envoye.");
+        }
+
+        Utilisateur user = utilisateurOptional.get();
+        String temporaryPassword = generateTemporaryPassword();
+        user.setMotDePasse(passwordEncoder.encode(temporaryPassword));
+        utilisateurRepository.save(user);
+
+        // Invalider tout token de reinitialisation en cours pour ce compte.
+        passwordResetTokenRepository.deleteByUtilisateur_Id(user.getId());
+
+        try {
+            credentialsMailService.sendCredentialsEmail(
+                    user.getEmail(),
+                    user.getNom(),
+                    temporaryPassword,
+                    CredentialsMailService.CredentialsMailKind.RESEND);
+        } catch (BusinessException exception) {
+            LOGGER.error(
+                    "Echec d'envoi des identifiants pour l'utilisateur id={} : {}",
+                    user.getId(), exception.getMessage());
+            throw exception;
+        }
+
+        LOGGER.info("Identifiants renvoyes avec succes pour l'utilisateur id={}", user.getId());
+        return new MessageResponse(
+                "Si un compte existe pour cette adresse, un email avec de nouveaux identifiants a ete envoye.");
+    }
+
+    private String generateTemporaryPassword() {
+        StringBuilder password = new StringBuilder(RESEND_PASSWORD_LENGTH);
+        for (int index = 0; index < RESEND_PASSWORD_LENGTH; index++) {
+            password.append(RESEND_PASSWORD_CHARS.charAt(RESEND_RANDOM.nextInt(RESEND_PASSWORD_CHARS.length())));
+        }
+        return password.toString();
+    }
+
     @Transactional(readOnly = true)
     public MessageResponse validatePasswordResetToken(String token) {
         resolveActiveResetToken(token);
         return new MessageResponse("Lien de reinitialisation valide.");
+    }
+
+    public MessageResponse verifyEmail(String token) {
+        EmailVerificationToken verificationToken = resolveActiveEmailVerificationToken(token);
+        Utilisateur user = verificationToken.getUtilisateur();
+
+        LocalDateTime verificationDate = LocalDateTime.now();
+        user.setEmailVerifie(true);
+        user.setEmailVerifieLe(verificationDate);
+        user.setActif(true);
+        utilisateurRepository.save(user);
+        notificationGeneratorService.createUserEmailVerifiedNotification(user.getEmail());
+
+        verificationToken.setUsedAt(verificationDate);
+        emailVerificationTokenRepository.save(verificationToken);
+
+        return new MessageResponse("Adresse email verifiee avec succes.");
     }
 
     public MessageResponse resetPassword(ResetPasswordRequest request) {
@@ -278,9 +402,18 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public UpdateProfileResponse getProfile(String currentEmail) {
+        Utilisateur user = utilisateurRepository.findByEmailIgnoreCase(currentEmail)
+            .orElseThrow(() -> new BusinessException("Utilisateur introuvable"));
+        return toUpdateProfileResponse(user);
+    }
+
+    @Override
     public UpdateProfileResponse updateProfile(String currentEmail, UpdateProfileRequest request) {
         Utilisateur user = utilisateurRepository.findByEmailIgnoreCase(currentEmail)
             .orElseThrow(() -> new BusinessException("Utilisateur introuvable"));
+        String previousEmail = user.getEmail();
         if (request.getNom() != null && !request.getNom().isBlank())
             user.setNom(request.getNom().trim());
         if (request.getEmail() != null && !request.getEmail().isBlank())
@@ -291,11 +424,40 @@ public class AuthServiceImpl implements AuthService {
             user.setPoste(request.getPoste().trim());
         if (request.getDepartement() != null)
             user.setDepartement(request.getDepartement().trim());
+        if (request.getPhotoUrl() != null)
+            user.setPhotoUrl(request.getPhotoUrl().trim());
         utilisateurRepository.save(user);
+        synchronizeCollaborateurProfile(user, previousEmail);
+        return toUpdateProfileResponse(user);
+    }
+
+    private UpdateProfileResponse toUpdateProfileResponse(Utilisateur user) {
         return UpdateProfileResponse.builder()
-            .id(user.getId()).nom(user.getNom())
-            .email(user.getEmail()).role(user.getRole())
+            .id(user.getId())
+            .nom(user.getNom())
+            .email(user.getEmail())
+            .role(user.getRole())
+            .photoUrl(user.getPhotoUrl())
+            .telephone(user.getTelephone())
+            .poste(user.getPoste())
+            .departement(user.getDepartement())
             .build();
+    }
+
+    private void synchronizeCollaborateurProfile(Utilisateur user, String previousEmail) {
+        collaborateurRepository.findByEmailIgnoreCase(previousEmail)
+                .or(() -> collaborateurRepository.findByEmailIgnoreCase(user.getEmail()))
+                .ifPresent(collaborateur -> {
+            String displayName = normalizeNamePart(user.getNom());
+            String[] parts = displayName.split("\\s+", 2);
+            collaborateur.setPrenom(parts[0]);
+            collaborateur.setNom(parts.length > 1 ? parts[1] : parts[0]);
+            collaborateur.setEmail(user.getEmail());
+            collaborateur.setTelephone(user.getTelephone());
+            collaborateur.setDepartement(user.getDepartement());
+            collaborateur.setPhotoUrl(user.getPhotoUrl());
+            collaborateurRepository.save(collaborateur);
+        });
     }
 
     @Override
@@ -324,11 +486,34 @@ public class AuthServiceImpl implements AuthService {
 
     public void initAdminSiAbsent() {
         ensureUtilisateurRoleConstraint();
-        syncDemoUser("Admin Principal", "admin@smartassign.tn", "Admin123", "ADMIN");
-        syncDemoUser("Manager SmartAssign", "manager@smartassign.tn", "Manager123", "MANAGER");
-        syncDemoUser("Collaborateur Demo", "collab@smartassign.tn", "Collab123", "COLLAB");
-        syncDemoCollaborateur("Demo", "Collaborateur", "collab@smartassign.tn", 4, true);
-        syncDemoPlanningData("collab@smartassign.tn");
+
+        if (!demoUsersEnabled) {
+            LOGGER.info("Bootstrap des comptes demo desactive (app.bootstrap.demo-users.enabled=false).");
+            return;
+        }
+
+        syncConfiguredDemoUser("Admin Principal", demoAdminEmail, demoAdminPassword, "ADMIN", "admin");
+        syncConfiguredDemoUser("Manager SmartAssign", demoManagerEmail, demoManagerPassword, "MANAGER", "manager");
+        syncConfiguredDemoUser("Collaborateur Demo", demoCollaborateurEmail, demoCollaborateurPassword, "COLLAB", "collab");
+        syncDemoCollaborateur("Demo", "Collaborateur", normalizeDemoValue(demoCollaborateurEmail, "collab.email"), 4, true);
+        syncDemoPlanningData(normalizeDemoValue(demoCollaborateurEmail, "collab.email"));
+    }
+
+    private void syncConfiguredDemoUser(String nom, String email, String password, String role, String keyPrefix) {
+        syncDemoUser(
+                nom,
+                normalizeDemoValue(email, keyPrefix + ".email"),
+                normalizeDemoValue(password, keyPrefix + ".password"),
+                role);
+    }
+
+    private String normalizeDemoValue(String value, String propertySuffix) {
+        String normalized = value == null ? "" : value.trim();
+        if (normalized.isBlank()) {
+            throw new IllegalStateException(
+                    "Configuration demo invalide: app.bootstrap.demo." + propertySuffix + " est obligatoire quand BOOTSTRAP_DEMO_USERS_ENABLED=true.");
+        }
+        return normalized;
     }
 
     private Utilisateur resolveUtilisateurByEmail(String email) {
@@ -373,7 +558,6 @@ public class AuthServiceImpl implements AuthService {
                 && Objects.equals(storedPassword, motDePasse);
 
         boolean hasChanged = isNew
-                || !nom.equals(user.getNom())
                 || !normalizedEmail.equalsIgnoreCase(user.getEmail())
                 || !normalizedRole.equals(RoleNormalizer.normalize(user.getRole()))
                 || shouldSetDemoPassword
@@ -383,9 +567,15 @@ public class AuthServiceImpl implements AuthService {
             return;
         }
 
-        user.setNom(nom);
+        if (isNew) {
+            user.setNom(nom);
+        }
         user.setEmail(normalizedEmail);
         user.setRole(normalizedRole);
+        user.setEmailVerifie(true);
+        if (user.getEmailVerifieLe() == null) {
+            user.setEmailVerifieLe(LocalDateTime.now());
+        }
 
         if (shouldSetDemoPassword || shouldUpgradePlainDemoPassword) {
             user.setMotDePasse(passwordEncoder.encode(motDePasse));
@@ -524,6 +714,27 @@ public class AuthServiceImpl implements AuthService {
         }
 
         return resetToken;
+    }
+
+    private EmailVerificationToken resolveActiveEmailVerificationToken(String rawToken) {
+        String normalizedToken = rawToken == null ? "" : rawToken.trim();
+
+        if (normalizedToken.isBlank()) {
+            throw new BusinessException("Le lien de verification est invalide.");
+        }
+
+        EmailVerificationToken verificationToken = emailVerificationTokenRepository.findByTokenHash(hashToken(normalizedToken))
+                .orElseThrow(() -> new BusinessException("Le lien de verification est invalide."));
+
+        if (verificationToken.getUsedAt() != null) {
+            throw new BusinessException("Ce lien de verification a deja ete utilise.");
+        }
+
+        if (verificationToken.getExpiresAt().isBefore(LocalDateTime.now())) {
+            throw new BusinessException("Ce lien de verification a expire.");
+        }
+
+        return verificationToken;
     }
 
     private void syncDemoCollaborateur(String nom, String prenom, String email, int experienceAnnees, boolean disponible) {

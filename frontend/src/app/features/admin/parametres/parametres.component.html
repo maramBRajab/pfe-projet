@@ -2,162 +2,161 @@
   <app-admin-sidebar></app-admin-sidebar>
 
   <div class="sp-main">
+    <app-admin-topbar
+      breadcrumb="SmartAssign › Admin › Paramètres"
+      [notificationCount]="0">
+    </app-admin-topbar>
 
-    <!-- -- TOPBAR -------------------------------------------- -->
-    <header class="sp-topbar">
-      <div class="sp-topbar__left">
-        <nav class="sp-topbar__breadcrumb">
-          <span>SmartAssign</span>
-          <span class="sp-topbar__sep">›</span>
-          <span>Admin</span>
-          <span class="sp-topbar__sep">›</span>
-          <span class="sp-topbar__current">Paramètres</span>
-        </nav>
-        <h1 class="sp-topbar__title">Paramètres</h1>
-      </div>
-      <div class="sp-topbar__right">
-        <div class="sp-status-pill">
-          <span class="sp-status-dot"></span>
-          Plateforme saine
-        </div>
-        <button type="button" class="sp-btn sp-btn--ghost sp-btn--pill" (click)="exporterCSV()">
-          <svg viewBox="0 0 16 16" fill="none">
-            <path d="M8 2v9" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
-            <path d="M4.5 8.5L8 12l3.5-3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
-            <path d="M2 13h12" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
-          </svg>
-          Exporter
-        </button>
-        <button type="button" class="sp-btn sp-btn--primary sp-btn--pill" (click)="exporterPDF()">
-          <svg viewBox="0 0 16 16" fill="none">
-            <path d="M3 2h7l3 3v9a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1Z" stroke="currentColor" stroke-width="1.4"/>
-            <path d="M10 2v4h4M6 9h4M6 12h2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
-          </svg>
-          Export PDF
-        </button>
-        <div class="sp-av-sm" routerLink="/admin/profil" style="cursor:pointer;overflow:hidden" title="Mon profil">
-          <img *ngIf="adminPhoto" [src]="adminPhoto" 
-               style="width:100%;height:100%;object-fit:cover;border-radius:50%;" alt="">
-          <span *ngIf="!adminPhoto">AP</span>
-        </div>
-      </div>
-    </header>
-
-    <!-- -- BODY ---------------------------------------------- -->
     <div class="sp-body">
+      <section class="sp-page-header">
+        <div class="sp-page-header__copy">
+          <h1 class="sp-page-header__title">Paramètres système</h1>
+          <p class="sp-page-header__subtitle">
+            Configuration de la plateforme — {{ currentDate | date:'EEEE d MMMM y':'':'fr' }}
+          </p>
+        </div>
 
-      <!-- Toast -->
-      <div class="sp-toast"
-           [class.sp-toast--success]="toast.type === 'success'"
-           [class.sp-toast--error]="toast.type === 'error'"
-           *ngIf="toast.visible">
+        <div class="sp-page-header__actions">
+          <button type="button" class="sp-btn sp-btn--ghost sp-btn--header" (click)="exporterCSV()">
+            <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <path d="M8 2v9" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+              <path d="M4.5 8.5L8 12l3.5-3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M2 13h12" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+            </svg>
+            Exporter config
+          </button>
+        </div>
+      </section>
+
+      <div class="sp-toast" *ngIf="toast.visible" [class.sp-toast--success]="toast.type === 'success'" [class.sp-toast--error]="toast.type === 'error'">
         {{ toast.message }}
       </div>
 
-      <!-- Action row -->
-      <div class="sp-action-row">
-        <button type="button" class="sp-btn sp-btn--ghost sp-btn--pill" (click)="reinitialiserTout()">
-          Réinitialiser
-        </button>
-        <button type="button" class="sp-btn sp-btn--primary sp-btn--pill" (click)="sauvegarder()">
-          <i class="ti ti-check"></i>
-          Sauvegarder les modifications
-        </button>
+      <div class="sp-error-banner" *ngIf="loadError && !loading">
+        <svg viewBox="0 0 20 20" fill="none" width="20" height="20" aria-hidden="true">
+          <circle cx="10" cy="10" r="9" stroke="#ef4444" stroke-width="1.5"/>
+          <path d="M10 6v5M10 13.5v.5" stroke="#ef4444" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+        {{ loadError }}
+        <button type="button" class="sp-btn sp-btn--ghost sp-btn--sm" (click)="loadSettings()">Réessayer</button>
       </div>
 
-      <!-- -- KPI Cards ---------------------------------------- -->
-      <div class="sp-kpi-grid">
-
-        <div class="sp-kcard">
-          <div class="sp-kcard__bar" style="background:#3b82f6"></div>
-          <span class="sp-kcard__badge sp-kcard__badge--green">Actif</span>
-          <div class="sp-kcard__label">SEUIL COMPATIBILITé</div>
-          <div class="sp-kcard__val" style="color:#3b82f6">{{ affectations.seuilCompatibilite }}%</div>
-          <div class="sp-kcard__sub">Score minimum requis</div>
-        </div>
-
-        <div class="sp-kcard">
-          <div class="sp-kcard__bar" style="background:#10b981"></div>
-          <span class="sp-kcard__badge sp-kcard__badge--neutral">Auto</span>
-          <div class="sp-kcard__label">PROFILS MAX RECOMMANDéS</div>
-          <div class="sp-kcard__val" style="color:#10b981">{{ affectations.nbProfilsMax }}</div>
-          <div class="sp-kcard__sub">Matching automatique</div>
-        </div>
-
-        <div class="sp-kcard">
-          <div class="sp-kcard__bar" style="background:#ef4444"></div>
-          <span class="sp-kcard__badge sp-kcard__badge--neutral">Normal</span>
-          <div class="sp-kcard__label">MODE MAINTENANCE</div>
-          <div class="sp-kcard__val">{{ general.modeMaintenance ? 'ON' : 'OFF' }}</div>
-          <div class="sp-kcard__sub">{{ general.modeMaintenance ? 'Accès restreint' : 'Plateforme accessible' }}</div>
-        </div>
-
+      <div class="sp-warning-banner" *ngIf="settings?.maintenanceMode">
+        <svg viewBox="0 0 20 20" fill="none" width="18" height="18" aria-hidden="true">
+          <path d="M10 3.5 17 16H3L10 3.5Z" stroke="#c2410c" stroke-width="1.5" stroke-linejoin="round"/>
+          <path d="M10 7.2v4.1M10 13.9v.6" stroke="#c2410c" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+        Mode maintenance activé. L’accès des utilisateurs non-admin est restreint.
       </div>
 
-      <!-- -- Main 2-col grid ---------------------------------- -->
-      <div class="sp-main-grid">
+      <ng-container *ngIf="loading">
+        <div class="sp-skeleton-grid">
+          <div class="sp-skeleton sp-skeleton--kpi"></div>
+          <div class="sp-skeleton sp-skeleton--kpi"></div>
+          <div class="sp-skeleton sp-skeleton--kpi"></div>
+        </div>
+        <div class="sp-skeleton-grid sp-skeleton-grid--config">
+          <div class="sp-skeleton sp-skeleton--card"></div>
+          <div class="sp-skeleton sp-skeleton--card"></div>
+        </div>
+      </ng-container>
 
-        <!-- Left column -->
-        <div class="sp-col">
+      <ng-container *ngIf="!loading && !loadError && settings">
+        <div class="sp-kpi-row">
+          <app-kpi-card label="Seuil compatibilité" [value]="settings.compatibilityThreshold + '%'" subtitle="Score minimum requis" badge="Actif" tone="green" valueTone="green"></app-kpi-card>
+          <app-kpi-card label="Profils max recommandés" [value]="settings.maxProfiles" subtitle="Matching automatique" badge="Auto" tone="blue"></app-kpi-card>
+          <app-kpi-card label="Mode maintenance" [value]="maintenanceLabel" [subtitle]="maintenanceSubtext" badge="Normal" [tone]="settings.maintenanceMode ? 'red' : 'green'" [valueTone]="settings.maintenanceMode ? 'red' : 'green'"></app-kpi-card>
+        </div>
 
-          <!-- Card A: Affectations -->
-          <div class="sp-card">
-            <div class="sp-card__section-lbl">Configuration — Affectations</div>
+        <div class="config-grid">
+          <section class="config-section">
+            <span class="sp-kicker">AFFECTATIONS</span>
+            <div class="config-section__title">Configuration — Affectations</div>
 
-            <div class="sp-field">
-              <label class="sp-field__lbl">Seuil de compatibilité minimum (%)</label>
-              <input type="number" min="0" max="100"
-                     [(ngModel)]="affectations.seuilCompatibilite"
-                     (ngModelChange)="markUnsaved()">
-              <span class="sp-field__hint">Score minimum pour qu'un profil soit recommandé</span>
+            <div class="field">
+              <label class="field__label">SEUIL DE COMPATIBILITÉ MINIMUM (%)</label>
+              <input
+                type="number"
+                min="0"
+                max="100"
+                [(ngModel)]="settings.compatibilityThreshold"
+                (ngModelChange)="markDirty()"
+                [class.field__input--error]="errors['compatibilityThreshold']"
+                aria-label="Seuil de compatibilité minimum"
+              />
+              <span class="field__error" *ngIf="errors['compatibilityThreshold']">{{ errors['compatibilityThreshold'] }}</span>
+              <span class="field__hint" *ngIf="!errors['compatibilityThreshold']">Score minimum pour qu'un profil soit recommandé</span>
             </div>
 
-            <div class="sp-field sp-field--mt">
-              <label class="sp-field__lbl">Nombre max de profils recommandés</label>
-              <input type="number" min="1" max="20"
-                     [(ngModel)]="affectations.nbProfilsMax"
-                     (ngModelChange)="markUnsaved()">
+            <div class="field field--spaced">
+              <label class="field__label">NOMBRE MAX DE PROFILS RECOMMANDÉS</label>
+              <input
+                type="number"
+                min="1"
+                max="20"
+                [(ngModel)]="settings.maxProfiles"
+                (ngModelChange)="markDirty()"
+                [class.field__input--error]="errors['maxProfiles']"
+                aria-label="Nombre max de profils recommandés"
+              />
+              <span class="field__error" *ngIf="errors['maxProfiles']">{{ errors['maxProfiles'] }}</span>
+              <span class="field__hint">Matching automatique</span>
             </div>
 
-            <div class="sp-toggle-row">
-              <div class="sp-toggle-row__info">
+            <div class="toggle-row">
+              <div class="toggle-row__copy">
                 <strong>Activer le matching automatique</strong>
                 <span>Lance l'analyse automatiquement lors de la création d'un projet</span>
               </div>
-              <button type="button" class="sp-toggle"
-                      [class.sp-toggle--on]="affectations.matchingAuto"
-                      (click)="affectations.matchingAuto = !affectations.matchingAuto; markUnsaved()">
-              </button>
+              <label class="toggle">
+                <input type="checkbox" [(ngModel)]="settings.autoMatching" (ngModelChange)="markDirty()" />
+                <span class="slider"></span>
+              </label>
             </div>
-          </div>
+          </section>
 
-          <!-- Card B: Plateforme -->
-          <div class="sp-card">
-            <div class="sp-card__section-lbl">Configuration — Plateforme</div>
+          <section class="config-section">
+            <span class="sp-kicker">PLATEFORME</span>
+            <div class="config-section__title">Configuration — Plateforme</div>
 
-            <div class="sp-field">
-              <label class="sp-field__lbl">Nom de la plateforme</label>
-              <input type="text"
-                     [(ngModel)]="general.nomPlateforme"
-                     (ngModelChange)="markUnsaved()">
+            <div class="field">
+              <label class="field__label">NOM DE LA PLATEFORME</label>
+              <input
+                type="text"
+                [(ngModel)]="settings.platformName"
+                (ngModelChange)="markDirty()"
+                (blur)="onPlatformNameBlur()"
+                maxlength="50"
+                [class.field__input--error]="errors['platformName']"
+                aria-label="Nom de la plateforme"
+              />
+              <span class="field__error" *ngIf="errors['platformName']">{{ errors['platformName'] }}</span>
             </div>
 
-            <div class="sp-toggle-row">
-              <div class="sp-toggle-row__info">
+            <div class="toggle-row toggle-row--danger">
+              <div class="toggle-row__copy">
                 <strong>Mode maintenance</strong>
                 <span>Désactive l'accès aux utilisateurs non-admin</span>
               </div>
-              <button type="button" class="sp-toggle"
-                      [class.sp-toggle--on]="general.modeMaintenance"
-                      (click)="general.modeMaintenance = !general.modeMaintenance; markUnsaved()">
-              </button>
+              <label class="toggle toggle--danger">
+                <input type="checkbox" [(ngModel)]="settings.maintenanceMode" (ngModelChange)="markDirty()" />
+                <span class="slider"></span>
+              </label>
             </div>
-          </div>
+          </section>
+        </div>
 
-        </div><!-- /col -->
-
-      </div><!-- /main-grid -->
-
-    </div><!-- /sp-body -->
-  </div><!-- /sp-main -->
+        <div class="settings-footer">
+          <button type="button" class="btn-reset" [disabled]="resetting" (click)="resetSettings()">
+            <span *ngIf="resetting" class="sp-spinner sp-spinner--sm"></span>
+            Réinitialiser
+          </button>
+          <button type="button" class="btn-save" [disabled]="saving" (click)="saveSettings()">
+            <span *ngIf="saving" class="sp-spinner sp-spinner--sm sp-spinner--white"></span>
+            <span *ngIf="!saving">✓ Sauvegarder les modifications</span>
+          </button>
+        </div>
+      </ng-container>
+    </div>
+  </div>
 </section>

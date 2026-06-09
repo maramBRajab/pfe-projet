@@ -2,18 +2,32 @@ import { CommonModule, DatePipe } from '@angular/common';
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
+import {
+  LucideAward,
+  LucideCalendar,
+  LucideFileText,
+  LucideGitBranch,
+  LucideTrendingUp
+} from '@lucide/angular';
 
 import { Affectation, AffectationService } from '../../../services/manager';
 import { ManagerShellComponent } from '../shared/manager-shell.component';
+import { ManagerTopbarComponent } from '../shared/manager-topbar.component';
 
+import { KpiCardComponent } from '../../../shared/kpi-card/kpi-card.component';
 @Component({
   selector: 'app-historique-affectations',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, DatePipe, ManagerShellComponent],
+  imports: [CommonModule, FormsModule, RouterLink, DatePipe, KpiCardComponent, ManagerShellComponent, ManagerTopbarComponent],
   templateUrl: './historique-affectations.component.html',
   styleUrl: './historique-affectations.component.scss'
 })
 export class ManagerHistoriqueAffectationsComponent implements OnInit {
+  readonly gitBranchIcon = LucideGitBranch;
+  readonly trendingUpIcon = LucideTrendingUp;
+  readonly calendarIcon = LucideCalendar;
+  readonly awardIcon = LucideAward;
+  readonly fileTextIcon = LucideFileText;
 
   affectations: Affectation[] = [];
   searchTerm = '';
@@ -101,22 +115,44 @@ export class ManagerHistoriqueAffectationsComponent implements OnInit {
     return '#ef4444';
   }
 
-  getPotentiel(score: number): string {
+  getPotentiel(affectation: Affectation): string {
+    const potentiel = affectation.potentiel?.trim();
+    if (potentiel) {
+      return potentiel;
+    }
+
+    return this.getPotentielFromScore(affectation.score);
+  }
+
+  getPotentielClass(affectation: Affectation): string {
+    switch (this.getPotentiel(affectation)) {
+      case 'Excellent':
+        return 'ha-potentiel--green';
+      case 'Bon':
+      case 'Moyen':
+        return 'ha-potentiel--amber';
+      default:
+        return 'ha-potentiel--red';
+    }
+  }
+
+  getPotentielIcon(affectation: Affectation): string {
+    switch (this.getPotentiel(affectation)) {
+      case 'Excellent':
+        return 'ti-circle-check';
+      case 'Bon':
+      case 'Moyen':
+        return 'ti-eye';
+      default:
+        return 'ti-alert-triangle';
+    }
+  }
+
+  private getPotentielFromScore(score: number): string {
     if (score >= 75) return 'Excellent';
-    if (score >= 50) return 'À surveiller';
-    return 'À confirmer';
-  }
-
-  getPotentielClass(score: number): string {
-    if (score >= 75) return 'ha-potentiel--green';
-    if (score >= 50) return 'ha-potentiel--amber';
-    return 'ha-potentiel--red';
-  }
-
-  getPotentielIcon(score: number): string {
-    if (score >= 75) return 'ti-circle-check';
-    if (score >= 50) return 'ti-eye';
-    return 'ti-alert-triangle';
+    if (score >= 50) return 'Bon';
+    if (score >= 25) return 'Moyen';
+    return 'Faible';
   }
 
   logout(): void { this.router.navigate(['/login']); }

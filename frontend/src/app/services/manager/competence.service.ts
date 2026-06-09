@@ -22,4 +22,10 @@ export class CompetenceService {
   getById(id: number): Observable<Competence> {
     return this.http.get<Competence>(`${this.url}/${id}`);
   }
+
+  create(nom: string): Observable<Competence> {
+    return this.http.post<Competence>(this.url, null, {
+      params: { nom }
+    });
+  }
 }

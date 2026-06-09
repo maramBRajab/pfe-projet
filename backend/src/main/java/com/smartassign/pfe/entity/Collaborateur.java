@@ -30,14 +30,21 @@ public class Collaborateur {
     @Column(unique = true)
     private String email;
 
+    private String telephone;
+
     @Builder.Default
     private String role = "COLLAB";
+
+    private String departement;
 
     @Min(value = 0, message = "L'expérience doit être positive")
     private int experienceAnnees;
 
     @Builder.Default
     private boolean disponible = true;
+
+    @Column(name = "photo_url", columnDefinition = "TEXT")
+    private String photoUrl;
 
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(

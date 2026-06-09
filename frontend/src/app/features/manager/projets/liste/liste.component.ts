@@ -1,17 +1,18 @@
 import { Component, OnInit, NgZone } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import { ProjetService, Projet, AffectationService, Affectation, ResultatAffectation } from '../../../../services/manager';
 import { AuthService } from '../../../../services/auth';
 import { ManagerFormulaireProjetComponent } from '../formulaire/formulaire.component';
-import { ManagerNotificationsPanelComponent } from '../../notifications/notifications-panel.component';
 import { ManagerNotificationsPanelService } from '../../shared/manager-notifications-panel.service';
+import { ManagerShellComponent } from '../../shared/manager-shell.component';
+import { ManagerTopbarComponent } from '../../shared/manager-topbar.component';
 
 @Component({
   selector: 'app-liste-projets',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ManagerFormulaireProjetComponent, ManagerNotificationsPanelComponent],
+  imports: [CommonModule, FormsModule, ManagerFormulaireProjetComponent, ManagerShellComponent, ManagerTopbarComponent],
   templateUrl: './liste.component.html',
   styleUrl: './liste.component.scss'
 })
@@ -19,7 +20,6 @@ export class ManagerListeProjetsComponent implements OnInit {
 
   projets: Projet[] = [];
   searchTerm = '';
-  statutFilter = 'all';
   viewMode: 'table' | 'cards' = 'table';
   isLoading = false;
   errorMessage = '';
@@ -64,10 +64,7 @@ export class ManagerListeProjetsComponent implements OnInit {
         projet.description.toLowerCase().includes(term) ||
         this.statutLabel(projet.statut).toLowerCase().includes(term);
 
-      const matchesStatut =
-        this.statutFilter === 'all' || projet.statut === this.statutFilter;
-
-      return matchesSearch && matchesStatut;
+      return matchesSearch;
     });
   }
 
@@ -91,6 +88,18 @@ export class ManagerListeProjetsComponent implements OnInit {
 
   get terminesCount(): number {
     return this.countStatut('termine');
+  }
+
+  get totalProjetsCount(): number {
+    return this.projets.length;
+  }
+
+  get enCoursCount(): number {
+    return this.countStatut('en_cours');
+  }
+
+  get enAttenteCount(): number {
+    return this.countStatut('en_attente');
   }
 
   charger(): void {
@@ -157,7 +166,6 @@ export class ManagerListeProjetsComponent implements OnInit {
 
   clearFilters(): void {
     this.searchTerm = '';
-    this.statutFilter = 'all';
   }
 
   openCreateModal(): void {
@@ -221,7 +229,12 @@ export class ManagerListeProjetsComponent implements OnInit {
 
     this.affectationService.affecter(this.viewedProjet.id).subscribe({
       next: (data) => this.zone.run(() => {
-        this.recommandations = data ?? [];
+        const affectesIds = new Set(
+          this.affectationsExistantes
+            .map(a => a.collaborateur?.id)
+            .filter(id => id != null)
+        );
+        this.recommandations = (data ?? []).filter(r => !affectesIds.has(r.id));
         this.loadingRecommandations = false;
       }),
       error: () => this.zone.run(() => {
@@ -325,7 +338,9 @@ export class ManagerListeProjetsComponent implements OnInit {
     const map: Record<string, string> = {
       en_attente: 'amber',
       en_cours: 'blue',
-      termine: 'green'
+      termine: 'green',
+      en_retard: 'red',
+      en_pause: 'gray'
     };
     return map[statut] ?? 'amber';
   }
@@ -334,13 +349,19 @@ export class ManagerListeProjetsComponent implements OnInit {
     const map: Record<string, string> = {
       en_attente: 'En attente',
       en_cours: 'En cours',
-      termine: 'Terminé'
+      termine: 'Terminé',
+      en_retard: 'En retard',
+      en_pause: 'En pause'
     };
     return map[statut] ?? statut;
   }
 
   countStatut(statut: string): number {
-    return this.projets.filter(p => p.statut === statut).length;
+    const expected = (statut ?? '').toLowerCase();
+    return this.projets.filter((p) => {
+      const current = (p.statut ?? '').toLowerCase();
+      return current === expected || (expected === 'en_retard' && current.includes('retard'));
+    }).length;
   }
 
   // ── Design v2 helpers ────────────────────────────────
@@ -361,6 +382,8 @@ export class ManagerListeProjetsComponent implements OnInit {
       en_cours:   'pj-status--active',
       en_attente: 'pj-status--pending',
       termine:    'pj-status--done',
+      en_retard:  'pj-status--danger',
+      en_pause:   'pj-status--paused',
     };
     return map[statut] ?? 'pj-status--pending';
   }

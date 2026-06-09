@@ -229,3 +229,55 @@
 .btn--primary { background: #1565c0; }
 .btn--ghost { background: #f7fbff; border-color: #c8dcef; color: #4a6b8a; }
 .btn--danger { background: #fee2e2; color: #7f1d1d; border-color: rgba(220, 38, 38, 0.16); }
+
+.confirm-overlay {
+	position: fixed;
+	inset: 0;
+	z-index: 1000;
+	display: grid;
+	place-items: center;
+	padding: 24px;
+	background: rgba(10, 31, 61, 0.48);
+	backdrop-filter: blur(4px);
+}
+
+.confirm-dialog {
+	width: min(440px, 100%);
+	border: 1px solid #c8dcef;
+	border-radius: 8px;
+	background: #ffffff;
+	box-shadow: 0 24px 70px rgba(10, 31, 61, 0.22);
+	padding: 24px;
+	color: #0a1f3d;
+}
+
+.confirm-icon {
+	width: 40px;
+	height: 40px;
+	border-radius: 999px;
+	display: grid;
+	place-items: center;
+	background: #fee2e2;
+	color: #b91c1c;
+	font-weight: 800;
+	margin-bottom: 14px;
+}
+
+.confirm-dialog h2 {
+	margin: 0;
+	font-size: 20px;
+	line-height: 1.25;
+}
+
+.confirm-dialog p {
+	margin: 10px 0 22px;
+	color: #4a6b8a;
+	line-height: 1.55;
+}
+
+.confirm-actions {
+	display: flex;
+	justify-content: flex-end;
+	gap: 10px;
+	flex-wrap: wrap;
+}

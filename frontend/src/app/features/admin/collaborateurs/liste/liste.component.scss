@@ -1,4 +1,4 @@
-﻿// ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════
 // SMARTASSIGN — Gestion des collaborateurs — Design System 2026
 // ═══════════════════════════════════════════════════════════════
 
@@ -600,4 +600,305 @@
       font-weight: 600;
     }
   }
+}
+
+
+// ═══════════════════════════════════════════════════════════════
+// PIXEL-PERFECT OVERRIDES — Collaborateurs (capture v2)
+// ═══════════════════════════════════════════════════════════════
+$sa-red: #D50032;
+
+// ── KPI cards : pas de bandeau, badge pill couleur, valeur 36px ─
+.sp-kcard {
+  border: 1px solid #F0F0F0 !important;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  padding: 16px 18px;
+  min-height: 132px;
+  position: relative;
+
+  &__bar { display: none !important; }
+
+  &__badge {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    left: auto;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 11px;
+    border-radius: 999px;
+
+    &--neutral { background: #F1F5F9 !important; color: #475569 !important; }
+    &--green   { background: #DCFCE7 !important; color: #166534 !important; }
+    &--warn    { background: #FEF3C7 !important; color: #92400E !important; }
+  }
+
+  &:nth-child(4) .sp-kcard__badge {
+    background: #EDE9FE !important;
+    color: #6D28D9 !important;
+  }
+
+  &__label {
+    font-size: 11px !important;
+    color: #6B7280 !important;
+    margin-top: 28px;
+  }
+
+  &__val {
+    font-size: 36px !important;
+    font-weight: 700 !important;
+    line-height: 1.1;
+  }
+
+  &__sub {
+    font-size: 13px !important;
+    color: #6B7280 !important;
+    margin-top: 6px;
+  }
+}
+
+// ── Filter stack : chaque filtre sur sa propre ligne ────────────
+.sp-filter-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.sp-search-wrap--full,
+.sp-select-wrap--full { width: 100%; }
+.sp-select-wrap--full .sp-select { width: 100%; min-width: 0; }
+.sp-action-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+// ── Onglets : pills, actif rouge SmartAssign ────────────────────
+.sp-tab {
+  background: #FFFFFF !important;
+  color: #374151 !important;
+  border: 1px solid #E2E4EA !important;
+  border-radius: 20px !important;
+  padding: 6px 16px !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  cursor: pointer;
+  transition: background .15s, color .15s, border-color .15s;
+
+  &:hover { background: #F9FAFB !important; }
+
+  &--active {
+    background: $sa-red !important;
+    color: #fff !important;
+    border-color: $sa-red !important;
+  }
+}
+
+// ── Avatars : tous rouges (uniforme) ────────────────────────────
+.sp-avatar,
+.sp-avatar.avatar-amber,
+.sp-avatar.avatar-cyan,
+.sp-avatar.avatar-red {
+  width: 36px;
+  height: 36px;
+  background: $sa-red !important;
+  color: #fff !important;
+  font-size: 13px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+}
+.sp-avatar--lg { width: 56px !important; height: 56px !important; font-size: 18px !important; }
+.sp-avatar--xl { width: 64px !important; height: 64px !important; font-size: 22px !important; }
+
+// ── Action buttons : Consulter | Modifier | Supprimer ───────────
+.sp-td--actions {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.btn-action {
+  width: 32px;
+  height: 32px;
+  border: 1px solid #E2E4EA;
+  border-radius: 8px;
+  background: #FFFFFF;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: all 0.15s;
+
+  i { font-size: 16px; line-height: 1; }
+
+  &.consulter {
+    i { color: #0066B3; }
+    &:hover { background: #EFF6FF; border-color: #0066B3; }
+  }
+  &.modifier {
+    i { color: #F28C00; }
+    &:hover { background: #FFF7ED; border-color: #F28C00; }
+  }
+  &.supprimer {
+    i { color: $sa-red; }
+    &:hover { background: #FFF0F3; border-color: $sa-red; }
+  }
+}
+
+// ── Badges (rôle / statut / disponibilité) ──────────────────────
+.sp-badge {
+  font-size: 12px;
+  font-weight: 500;
+  padding: 3px 10px;
+  border-radius: 6px;
+  display: inline-block;
+  line-height: 1.4;
+
+  &--green   { background: #F0FDF4 !important; color: #16A34A !important; }
+  &--blue    { background: #EFF6FF !important; color: #1D4ED8 !important; }
+  &--violet  { background: #F5F3FF !important; color: #7C3AED !important; }
+  &--slate,
+  &--neutral { background: #F3F4F6 !important; color: #374151 !important; }
+  &--amber   { background: #FFF7ED !important; color: #C2410C !important; border-radius: 20px; }
+}
+
+// ── Topbar : "Plateforme saine" sans bordure ────────────────────
+.sp-status-pill {
+  border: none !important;
+  background: transparent !important;
+  padding: 5px 8px;
+  color: #166534 !important;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+// ── Boutons primary / danger : rouge SmartAssign ────────────────
+.sp-btn--primary {
+  background: $sa-red !important;
+  border-color: $sa-red !important;
+  color: #fff !important;
+  &:hover { background: #B81830 !important; border-color: #B81830 !important; }
+}
+.sp-btn--danger {
+  background: $sa-red !important;
+  border-color: $sa-red !important;
+  color: #fff !important;
+  &:hover { background: #B81830 !important; }
+}
+
+// ── Modal Confirm (Suppression) ─────────────────────────────────
+.sp-modal--confirm {
+  text-align: center;
+  padding: 28px 24px;
+  max-width: 420px;
+}
+.sp-confirm-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: #FFF0F3;
+  color: $sa-red;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 14px;
+
+  i { font-size: 24px; }
+}
+.sp-modal__danger-title {
+  text-align: center;
+  font-size: 18px;
+  font-weight: 700;
+  color: #111827;
+  margin: 0 0 8px;
+}
+.sp-modal__danger-msg {
+  text-align: center;
+  font-size: 14px;
+  color: #6B7280;
+  margin: 0 0 20px;
+  line-height: 1.5;
+}
+.sp-modal__ft--center {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+}
+
+// ── Modal View : entête centrée ─────────────────────────────────
+.sp-view-hd-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 28px 20px 18px;
+  border-bottom: 1px solid #F3F4F6;
+  position: relative;
+
+  .sp-modal__name {
+    margin: 12px 0 4px;
+    font-size: 16px;
+    font-weight: 600;
+    color: #111827;
+  }
+}
+.sp-view-hd__email {
+  font-size: 13px;
+  color: #6B7280;
+  margin: 0 0 12px;
+}
+.sp-view-hd__badges {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+.sp-modal__close--abs {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: transparent;
+  border: none;
+  font-size: 22px;
+  color: #9CA3AF;
+  cursor: pointer;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  &:hover { background: #F3F4F6; color: #111827; }
+}
+.sp-detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px 20px;
+  padding: 16px 4px 4px;
+}
+.sp-detail-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  &__label {
+    font-size: 11px;
+    color: #6B7280;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  &__val {
+    font-size: 14px;
+    color: #111827;
+    font-weight: 500;
+  }
+}
+
+.sp-chip {
+  background: #EFF6FF;
+  color: #1D4ED8;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 4px 10px;
+  border-radius: 20px;
+  display: inline-block;
 }

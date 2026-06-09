@@ -1,14 +1,16 @@
-import { CommonModule, DatePipe } from '@angular/common';
+﻿import { CommonModule, DatePipe } from '@angular/common';
 import { Component, EventEmitter, HostListener, Input, OnDestroy, OnInit, Output } from '@angular/core';
 import { Subscription } from 'rxjs';
 
 import { Notification } from '../../../shared/models/notification.model';
+import { formatNotificationType } from '../../../shared/utils/notification-type.utils';
 import { NotificationService } from '../../../services/manager';
 
+import { KpiCardComponent } from '../../../shared/kpi-card/kpi-card.component';
 @Component({
   selector: 'app-admin-notifications-panel',
   standalone: true,
-  imports: [CommonModule, DatePipe],
+  imports: [CommonModule, DatePipe, KpiCardComponent],
   templateUrl: './notifications-panel.component.html',
   styleUrl: './notifications-panel.component.scss'
 })
@@ -173,5 +175,9 @@ export class AdminNotificationsPanelComponent implements OnInit, OnDestroy {
   private parseNotificationDate(notification: Notification): Date {
     const parsedDate = new Date(notification.dateCreation);
     return Number.isNaN(parsedDate.getTime()) ? new Date() : parsedDate;
+  }
+
+  formatNotificationType(type: string): string {
+    return formatNotificationType(type);
   }
 }

@@ -125,35 +125,6 @@
 // ══════════════════════════════════════════════════════
 .mp-main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
 
-// ── TOPBAR ────────────────────────────────────────────
-.mp-topbar {
-  height: 56px; min-height: 56px;
-  background: #fff; border-bottom: 1px solid var(--border);
-  padding: 0 28px;
-  display: flex; align-items: center; justify-content: space-between;
-  flex-shrink: 0;
-}
-.mp-topbar__left  { display: flex; flex-direction: column; gap: 1px; }
-.mp-topbar__bc    { font-size: 12.5px; color: var(--text2); }
-.mp-topbar__title { font-size: 20px; font-weight: 600; color: var(--text); margin: 0; line-height: 1.2; }
-.mp-topbar__right { display: flex; align-items: center; gap: 10px; margin-left: auto; }
-
-.mp-status-pill {
-  display: flex; align-items: center; gap: 7px;
-  border: 1px solid var(--border); border-radius: 20px; padding: 5px 12px;
-  font-size: 12px; font-weight: 500; color: var(--green);
-}
-.mp-status-dot {
-  width: 7px; height: 7px; border-radius: 50%;
-  background: var(--green); flex-shrink: 0;
-}
-.mp-topbar__av {
-  width: 36px; height: 36px; border-radius: 50%;
-  background: var(--green);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 13px; font-weight: 600; color: #fff; flex-shrink: 0;
-}
-
 // ── BUTTONS ───────────────────────────────────────────
 .mp-btn {
   display: inline-flex; align-items: center; gap: 6px;
@@ -164,16 +135,21 @@
   i { font-size: 14px; }
 }
 .mp-btn--ghost {
-  border: 1px solid var(--border); background: transparent; color: var(--text2);
-  &:hover { background: var(--bg); }
+  border: none; background: transparent; color: var(--text2); padding-left: 2px; padding-right: 2px;
+  &:hover { background: transparent; color: var(--text); }
 }
 .mp-btn--primary {
-  background: var(--accent); color: #fff; border: none;
-  &:hover { background: #2563eb; }
+  background: #c41e3a; color: #fff; border: none;
+  &:hover { background: #ab1832; }
+}
+
+.mp-btn--block {
+  width: 100%;
+  justify-content: center;
 }
 
 // ── CONTENT ───────────────────────────────────────────
-.mp-content { flex: 1; overflow-y: auto; padding: 28px; display: flex; flex-direction: column; }
+.mp-content { flex: 1; overflow-y: auto; padding: 14px 16px 18px; display: flex; flex-direction: column; }
 
 // ══════════════════════════════════════════════════════
 //  KPI GRID
@@ -211,16 +187,45 @@
   box-shadow: 0 1px 3px rgba(0,0,0,.06);
 }
 .mp-identity__avatar {
-  width: 72px; height: 72px; border-radius: 16px;
+  width: 72px; height: 72px; border-radius: 50%;
   background: var(--green);
   display: flex; align-items: center; justify-content: center;
   font-size: 22px; font-weight: 700; color: #fff; flex-shrink: 0;
 }
 .mp-identity__info { flex: 1; }
-.mp-identity__name  { font-size: 20px; font-weight: 700; color: var(--text); }
+.mp-identity__name  { font-size: 30px; font-weight: 800; color: var(--text); line-height: 1.1; }
 .mp-identity__role  { font-size: 13.5px; color: var(--text2); margin-top: 2px; }
 .mp-identity__email { font-size: 13px; color: var(--text3); margin-top: 2px; }
-.mp-identity__badges { display: flex; gap: 8px; margin-top: 10px; }
+
+.mp-identity__avatar-wrapper {
+  position: relative;
+  width: 72px;
+  height: 72px;
+  flex-shrink: 0;
+}
+
+.mp-identity__photo {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.mp-identity__upload-btn {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  background: white;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 12px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+}
 
 .mp-badge {
   display: inline-flex; align-items: center; gap: 5px;
@@ -304,10 +309,12 @@
   display: flex; justify-content: space-between; align-items: flex-start;
   margin-bottom: 16px;
 }
-.mp-perm-count {
-  font-size: 12px; font-weight: 600;
-  background: #dcfce7; color: #166534;
-  padding: 4px 12px; border-radius: 20px; white-space: nowrap;
+
+.mp-perm-badges {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
 }
 
 .mp-perm-grid {
@@ -319,13 +326,28 @@
   border: 1px solid #bbf7d0; border-radius: 10px;
   padding: 14px 16px; background: #f0fdf4;
 }
+
+.mp-perm-tile--denied {
+  border-color: #e5e7eb;
+  background: #f9fafb;
+}
+
 .mp-perm-icon {
   font-size: 16px; color: var(--green); flex-shrink: 0; margin-top: 1px;
 }
+
+.mp-perm-tile--denied .mp-perm-icon {
+  color: #6b7280;
+}
+
 .mp-perm-name   { font-size: 13px; font-weight: 500; color: var(--text); }
 .mp-perm-status {
   font-size: 10px; font-weight: 700; text-transform: uppercase;
   letter-spacing: .06em; color: var(--green); margin-top: 3px;
+}
+
+.mp-perm-tile--denied .mp-perm-status {
+  color: #6b7280;
 }
 
 // ══════════════════════════════════════════════════════
@@ -337,4 +359,71 @@
 }
 @media (max-width: 800px) {
   .mp-sidebar { display: none; }
+}
+
+.pf-photo-header {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 24px;
+  background: var(--card, #fff);
+  border-radius: 12px;
+  margin-bottom: 24px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+.pf-photo-wrapper {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  flex-shrink: 0;
+}
+.pf-photo-img {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+.pf-photo-initials {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: #dc2626;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+.pf-photo-overlay {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: rgba(0,0,0,0.45);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.2s;
+  font-size: 20px;
+}
+.pf-photo-wrapper:hover .pf-photo-overlay {
+  opacity: 1;
+}
+.pf-photo-name {
+  font-size: 20px;
+  font-weight: 600;
+}
+.pf-photo-role {
+  font-size: 14px;
+  color: #666;
+  margin-top: 2px;
+}
+.pf-photo-email {
+  font-size: 13px;
+  color: #999;
+  margin-top: 2px;
 }

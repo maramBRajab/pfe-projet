@@ -136,6 +136,13 @@ html, body {
   min-height: 100%;
 }
 
+.shell-content > router-outlet + app-admin-audit {
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+}
+
 app-admin-dashboard,
 app-liste-collaborateurs,
 app-liste-projets,
@@ -148,7 +155,8 @@ app-manager-shell,
 app-manager-dashboard,
 app-manager-collaborateurs-liste,
 app-manager-projets-liste,
-app-historique-affectations {
+app-historique-affectations,
+app-admin-audit {
   flex: 1 1 auto;
   display: flex;
   min-height: 0;

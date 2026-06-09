@@ -8,12 +8,25 @@ import {
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Subscription } from 'rxjs';
+import { catchError, of } from 'rxjs';
 
 import {
-  ChatbotService,
-  ChatMessage,
-  ChatMessageType
+  ChatbotService
 } from '../../services/manager/chatbot.service';
+
+import {
+  ManagerIaService
+} from '../../services/manager/manager-ia.service';
+
+type PanelMessageRole = 'user' | 'assistant';
+
+interface PanelMessage {
+  id: string;
+  role: PanelMessageRole;
+  content: string;
+  timestamp: Date;
+  isLoading?: boolean;
+}
 
 @Component({
   selector:    'app-chatbot',
@@ -26,27 +39,33 @@ export class ChatbotComponent implements OnInit, AfterViewChecked {
 
   @ViewChild('messagesContainer') messagesContainer!: ElementRef<HTMLDivElement>;
 
-  messages:     ChatMessage[] = [];
+  messages:     PanelMessage[] = [];
   isOpen        = false;
   inputMessage  = '';
   isTyping      = false;
-  suggestions:  string[] = [];
+  suggestions:  string[] = ['Qui est disponible ?', 'Surchargés ?', 'Stats globales'];
   unreadCount   = 0;
 
   private subs: Subscription[] = [];
   private shouldScroll = false;
 
-  constructor(private readonly chatbotService: ChatbotService) {}
+  constructor(
+    private readonly managerIaService: ManagerIaService,
+    private readonly chatbotService: ChatbotService
+  ) {}
 
   ngOnInit(): void {
+    this.messages = [
+      {
+        id: '0',
+        role: 'assistant',
+        content: 'Bonjour. Je suis votre assistant IA SmartAssign. Posez une question ou utilisez une commande rapide.',
+        timestamp: new Date()
+      }
+    ];
+
     this.subs.push(
-      this.chatbotService.messages$.subscribe(msgs => {
-        this.messages = msgs;
-        this.shouldScroll = true;
-      })
-    );
-    this.subs.push(
-      this.chatbotService.isOpen$.subscribe(open => {
+      this.chatbotService.isOpen$.subscribe((open) => {
         this.isOpen = open;
         if (open) {
           this.unreadCount = 0;
@@ -54,10 +73,6 @@ export class ChatbotComponent implements OnInit, AfterViewChecked {
         }
       })
     );
-    this.chatbotService.getSuggestions().subscribe({
-      next: s => (this.suggestions = s || []),
-      error: () => (this.suggestions = [])
-    });
   }
 
   ngAfterViewChecked(): void {
@@ -72,48 +87,77 @@ export class ChatbotComponent implements OnInit, AfterViewChecked {
     if (el) el.scrollTop = el.scrollHeight;
   }
 
-  toggleChat(): void { this.chatbotService.toggleChat(); }
-  closeChat():  void { this.chatbotService.closeChat(); }
+  toggleChat(): void {
+    this.chatbotService.toggleChat();
+  }
+
+  closeChat(): void {
+    this.chatbotService.closeChat();
+  }
 
   sendMessage(text?: string): void {
     const msg = (text ?? this.inputMessage).trim();
     if (!msg || this.isTyping) return;
     this.inputMessage = '';
 
-    this.chatbotService.addMessage({
-      id:        Date.now().toString(),
-      role:      'user',
-      content:   msg,
-      timestamp: new Date()
-    });
-
-    this.chatbotService.addMessage({
-      id:        (Date.now() + 1).toString(),
-      role:      'bot',
-      content:   '',
-      type:      'info',
-      timestamp: new Date(),
-      isLoading: true
-    });
-
+    this.messages = [
+      ...this.messages,
+      {
+        id: Date.now().toString(),
+        role: 'user',
+        content: msg,
+        timestamp: new Date()
+      },
+      {
+        id: (Date.now() + 1).toString(),
+        role: 'assistant',
+        content: '',
+        timestamp: new Date(),
+        isLoading: true
+      }
+    ];
+    this.shouldScroll = true;
     this.isTyping = true;
 
-    this.chatbotService.envoyerMessage(msg).subscribe({
+    this.managerIaService.analyse(msg).pipe(
+      catchError(() => of({ reponse: '❌ Analyse IA indisponible pour le moment. Merci de réessayer.' }))
+    ).subscribe({
       next: response => {
-        this.chatbotService.updateLastBotMessage(
-          response.message,
-          (response.type as ChatMessageType) ?? 'info',
-          response.resultats
-        );
+        const msgs = [...this.messages];
+        for (let i = msgs.length - 1; i >= 0; i--) {
+          if (msgs[i].role === 'assistant' && msgs[i].isLoading) {
+            msgs[i] = {
+              ...msgs[i],
+              content: response.reponse,
+              isLoading: false,
+              timestamp: new Date()
+            };
+            break;
+          }
+        }
+        this.messages = msgs;
         this.isTyping = false;
-        if (!this.isOpen) this.unreadCount++;
+        this.shouldScroll = true;
+        if (!this.isOpen) {
+          this.unreadCount++;
+        }
       },
       error: () => {
-        this.chatbotService.updateLastBotMessage(
-          '❌ Erreur de connexion. Vérifiez que le backend est démarré.',
-          'erreur'
-        );
+        const msgs = [...this.messages];
+        for (let i = msgs.length - 1; i >= 0; i--) {
+          if (msgs[i].role === 'assistant' && msgs[i].isLoading) {
+            msgs[i] = {
+              ...msgs[i],
+              content: '❌ Erreur de connexion. Vérifiez que le backend est démarré.',
+              isLoading: false,
+              timestamp: new Date()
+            };
+            break;
+          }
+        }
+        this.messages = msgs;
         this.isTyping = false;
+        this.shouldScroll = true;
       }
     });
   }
@@ -125,21 +169,27 @@ export class ChatbotComponent implements OnInit, AfterViewChecked {
     }
   }
 
-  clearHistory(): void { this.chatbotService.clearHistory(); }
+  clearHistory(): void {
+    this.messages = [{
+      id: '0',
+      role: 'assistant',
+      content: 'Conversation effacée. Comment puis-je vous aider ?',
+      timestamp: new Date()
+    }];
+  }
 
   renderHtml(text: string): string {
-    return this.chatbotService.markdownToHtml(text);
+    const escaped = (text || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+    return escaped
+      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\n/g, '<br>');
   }
 
   getTypeIcon(type?: string): string {
-    const icons: Record<string, string> = {
-      analyse: '🤖',
-      info:    '💡',
-      stats:   '📊',
-      aide:    '❓',
-      erreur:  '❌'
-    };
-    return type ? (icons[type] ?? '💬') : '💬';
+    return type === 'assistant' ? '🤖' : '💬';
   }
 
   ngOnDestroy(): void {

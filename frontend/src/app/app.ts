@@ -2,8 +2,10 @@ import { Component, HostListener, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
-import { Subscription, filter } from 'rxjs';
+import { Subscription, filter, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 import { AuthService, AuthUser, NavbarPreferencesPayload } from './services/auth';
+import { NotificationService } from './services/collaborateur';
 import { ChatbotComponent } from './shared/chatbot/chatbot.component';
 
 interface NavItem {
@@ -63,12 +65,9 @@ export class AppComponent implements OnInit, OnDestroy {
   private readonly collabPreferencesStorageKey = 'smartassign-collab-navbar-preferences';
   private readonly collabExportStorageKey = 'smartassign-collab-export-options';
   private notificationSub?: Subscription;
+  private collabNotificationLoadSub?: Subscription;
   private hasLoadedRemoteCollabPreferences = false;
-  private collabNotificationSource?: {
-    notifications$: { subscribe: (callback: (notification: CollabNotificationPayload) => void) => Subscription };
-    getSnapshot: () => CollabNotificationPayload[];
-    ngOnDestroy?: () => void;
-  };
+  private collabNotificationSource?: NotificationService;
 
   userName      = '';
   userInitiales = '';
@@ -98,7 +97,8 @@ export class AppComponent implements OnInit, OnDestroy {
 
   constructor(
     private authService: AuthService,
-    private router: Router
+    private router: Router,
+    private notificationService: NotificationService
   ) {}
 
   get isLoggedIn(): boolean {
@@ -233,7 +233,7 @@ export class AppComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.notificationSub?.unsubscribe();
-    this.collabNotificationSource?.ngOnDestroy?.();
+    this.collabNotificationLoadSub?.unsubscribe();
   }
 
   @HostListener('document:click')
@@ -270,7 +270,8 @@ export class AppComponent implements OnInit, OnDestroy {
     this.sidebarSections = [];
     this.notificationSub?.unsubscribe();
     this.notificationSub = undefined;
-    this.collabNotificationSource?.ngOnDestroy?.();
+    this.collabNotificationLoadSub?.unsubscribe();
+    this.collabNotificationLoadSub = undefined;
     this.collabNotificationSource = undefined;
     this.collabNotificationFeed = [];
     this.hasLoadedRemoteCollabPreferences = false;
@@ -446,11 +447,24 @@ export class AppComponent implements OnInit, OnDestroy {
       return;
     }
 
-    const module = await import('./services/manager/notification.service');
-    const notificationSource = new module.NotificationService();
+    const notificationSource = this.notificationService;
 
     this.collabNotificationSource = notificationSource;
     this.collabNotificationFeed = notificationSource.getSnapshot();
+    this.collabNotificationLoadSub?.unsubscribe();
+    this.collabNotificationLoadSub = notificationSource.listForCurrentCollaborateur().pipe(
+      catchError(err => {
+        console.warn('Notifications indisponibles:', err);
+        return of([]);
+      })
+    ).subscribe({
+      next: (notifications) => {
+        this.collabNotificationFeed = notifications;
+      },
+      error: () => {
+        this.collabNotificationFeed = [];
+      }
+    });
     this.notificationSub = notificationSource.notifications$.subscribe((notification: CollabNotificationPayload) => {
       this.collabNotificationFeed = [notification, ...this.collabNotificationFeed].slice(0, 100);
     });

@@ -1,0 +1,59 @@
+<section class="jr-root">
+  <app-admin-sidebar></app-admin-sidebar>
+
+  <main class="jr-main">
+    <app-admin-topbar
+      breadcrumb="SmartAssign › Admin › Journal RH"
+      [notificationCount]="0">
+    </app-admin-topbar>
+
+    <div class="jr-body">
+      <header class="jr-header">
+        <div>
+          <h1>Journal RH</h1>
+          <p>Historique des événements liés à la gestion des ressources humaines.</p>
+        </div>
+
+        <button type="button" class="jr-btn" (click)="loadJournal()" [disabled]="loading">
+          Actualiser
+        </button>
+      </header>
+
+      <section class="jr-toolbar">
+        <input
+          type="search"
+          placeholder="Rechercher par action, utilisateur ou détail..."
+          [(ngModel)]="searchQuery">
+
+        <select [(ngModel)]="selectedAction">
+          <option value="">Tous les événements RH</option>
+          <option *ngFor="let action of actionOptions" [value]="action">{{ getActionLabel(action) }}</option>
+        </select>
+
+        <span>{{ filteredJournal.length }} entrée(s)</span>
+      </section>
+
+      <div *ngIf="loading" class="jr-state">Chargement du journal RH...</div>
+      <div *ngIf="!loading && error" class="jr-state jr-state--error">{{ error }}</div>
+      <div *ngIf="!loading && !error && filteredJournal.length === 0" class="jr-state">
+        Aucune entrée RH à afficher.
+      </div>
+
+      <section class="jr-table" *ngIf="!loading && !error && filteredJournal.length > 0">
+        <div class="jr-table__head">
+          <span>Action</span>
+          <span>Utilisateur</span>
+          <span>Date</span>
+          <span>Détails</span>
+        </div>
+
+        <article class="jr-row" *ngFor="let entry of filteredJournal; trackBy: trackById">
+          <span class="jr-action">{{ getActionLabel(entry.action) }}</span>
+          <span>{{ entry.utilisateur || 'Non renseigné' }}</span>
+          <span>{{ entry.date | date:'yyyy-MM-dd HH:mm' }}</span>
+          <span class="jr-details">{{ entry.details || 'Aucun détail' }}</span>
+        </article>
+      </section>
+    </div>
+  </main>
+</section>

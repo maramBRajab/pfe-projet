@@ -404,18 +404,16 @@ export class ManagerDashboardComponent implements OnInit, OnDestroy {
   }
 
   viewAffectations(project: Project): void {
-    this.router.navigate(['/manager/affectations'], { queryParams: { project: project.id } });
+    this.router.navigate(['/manager/affectations-en-cours'], { queryParams: { project: project.id } });
   }
 
   deleteProject(project: Project): void {
-    if (confirm(`Supprimer le projet "${project.name}" ?`)) {
-      this.projects = this.projects.filter(p => p.id !== project.id);
-      this.updateKpiCards();
-    }
+    this.projects = this.projects.filter(p => p.id !== project.id);
+    this.updateKpiCards();
   }
 
   assignCollaborator(project: Project): void {
-    this.router.navigate(['/manager/affectations/new'], { queryParams: { project: project.id } });
+    this.router.navigate(['/manager/affectations/nouveau'], { queryParams: { project: project.id } });
   }
 
   // ── Collaborator actions ──────────────────────────────────
@@ -424,7 +422,7 @@ export class ManagerDashboardComponent implements OnInit, OnDestroy {
   }
 
   assignToProject(collab: Collaborator): void {
-    this.router.navigate(['/manager/affectations/new'], { queryParams: { collaborateur: collab.id } });
+    this.router.navigate(['/manager/affectations/nouveau'], { queryParams: { collaborateur: collab.id } });
   }
 
   viewFullAnalysis(): void {
@@ -437,7 +435,7 @@ export class ManagerDashboardComponent implements OnInit, OnDestroy {
   }
 
   applyRecommendation(rec: Recommendation): void {
-    this.router.navigate(['/manager/affectations/new'], {
+    this.router.navigate(['/manager/affectations/nouveau'], {
       queryParams: { collaborateur: rec.collaboratorId, project: rec.projectId },
     });
   }
@@ -471,10 +469,8 @@ export class ManagerDashboardComponent implements OnInit, OnDestroy {
   }
 
   cancelAffectation(entry: AffectationHistory): void {
-    if (confirm(`Annuler l'affectation de ${entry.collaboratorName} sur ${entry.project} ?`)) {
-      this.affectationHistory = this.affectationHistory.filter(h => h.id !== entry.id);
-      this.updateKpiCards();
-    }
+    this.affectationHistory = this.affectationHistory.filter(h => h.id !== entry.id);
+    this.updateKpiCards();
   }
 
   // ── Helpers ───────────────────────────────────────────────

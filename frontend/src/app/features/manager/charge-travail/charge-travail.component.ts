@@ -1,195 +1,225 @@
-import { CommonModule } from '@angular/common';
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+﻿import { CommonModule } from '@angular/common';
+import { ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { RouterLink, Router } from '@angular/router';
-import { combineLatest } from 'rxjs';
-
+import { forkJoin } from 'rxjs';
+import {
+  LucideActivity,
+  LucideAlertTriangle,
+  LucideFolderOpen,
+  LucideUserCheck,
+  LucideUsers
+} from '@lucide/angular';
+import { ManagerShellComponent } from '../shared/manager-shell.component';
+import { ManagerTopbarComponent } from '../shared/manager-topbar.component';
 import { Affectation, AffectationService, Collaborateur, CollaborateurService } from '../../../services/manager';
+import { KpiCardComponent } from '../../../shared/kpi-card/kpi-card.component';
 
-interface ChargeCard {
+interface ChargeProjet {
   id: number;
   nom: string;
-  initiales: string;
-  disponible: boolean;
-  charge: number;
-  projetsCount: number;
-  competences: string[];
+  statut: string;
+}
+
+interface ChargeCollaborateur {
+  id: number;
+  prenom: string;
+  nom: string;
+  initials: string;
+  disponibilite: 'Disponible' | 'Occupé';
+  chargeOccupation: number;
+  projets: ChargeProjet[];
+  avatarColor: string;
 }
 
 @Component({
   selector: 'app-charge-travail',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [
+    CommonModule,
+    FormsModule,
+    KpiCardComponent,
+    ManagerShellComponent,
+    ManagerTopbarComponent
+  ],
   templateUrl: './charge-travail.component.html',
   styleUrl: './charge-travail.component.scss'
 })
-export class ManagerChargeTravailComponent implements OnInit {
-  currentDate = new Date();
-  searchTerm = '';
-  availabilityFilter: 'all' | 'available' | 'busy' = 'all';
-  chargeFilter: 'all' | 'ok' | 'warn' | 'over' = 'all';
+export class ManagerChargeTravailComponent implements OnInit, OnDestroy {
+  collaborateurs: ChargeCollaborateur[] = [];
 
-  collaborateurs: ChargeCard[] = [];
-  isLoading = true;
+  searchTerm = '';
+  filterDisponibilite = '';
+  filterCharge = '';
+  filteredCollaborateurs: any[] = [];
+
+  isLoading = false;
   errorMessage = '';
+
+  private readonly avatarPalette = [
+    '#3b82f6', '#10b981', '#8b5cf6', '#f59e0b',
+    '#ef4444', '#06b6d4', '#14b8a6', '#d946ef'
+  ];
+
+  readonly usersIcon = LucideUsers;
+  readonly userCheckIcon = LucideUserCheck;
+  readonly alertTriangleIcon = LucideAlertTriangle;
+  readonly activityIcon = LucideActivity;
+  readonly folderOpenIcon = LucideFolderOpen;
 
   constructor(
     private readonly collaborateurService: CollaborateurService,
     private readonly affectationService: AffectationService,
-    private readonly router: Router,
-    private cdr: ChangeDetectorRef
+    private readonly cdr: ChangeDetectorRef
   ) {}
 
-  get overloadCount(): number {
-    return this.collaborateurs.filter((item) => item.charge > 90).length;
+  ngOnInit(): void {
+    this.loadData();
   }
 
-  get availabilityCount(): number {
-    return this.collaborateurs.filter((item) => item.disponible).length;
+  ngOnDestroy(): void {}
+
+  get totalCollaborateurs() { return this.collaborateurs?.length || 0; }
+
+  get capaciteLibre() {
+    return this.collaborateurs?.filter(c => c.disponibilite === 'Disponible').length || 0;
   }
 
-  get engagedCount(): number {
-    return this.collaborateurs.filter((item) => !item.disponible).length;
+  get surcharges() {
+    return this.collaborateurs?.filter(c => c.chargeOccupation > 90).length || 0;
   }
 
-  get averageCharge(): number {
-    if (!this.collaborateurs.length) return 0;
-    const total = this.collaborateurs.reduce((sum, item) => sum + item.charge, 0);
-    return Math.round(total / this.collaborateurs.length);
+  get chargeMoyenne() {
+    if (!this.collaborateurs?.length) return 0;
+    const avg = this.collaborateurs.reduce((s, c) => s + c.chargeOccupation, 0)
+      / this.collaborateurs.length;
+    return Math.round(avg);
   }
 
-  get activeProjectsCount(): number {
-    return this.collaborateurs.reduce((sum, item) => sum + item.projetsCount, 0);
+  get engagedCount() {
+    return this.collaborateurs?.filter(c => c.projets.length > 0).length || 0;
   }
 
-  get filteredCollaborateurs(): ChargeCard[] {
-    const search = this.searchTerm.trim().toLowerCase();
+  get projetsActifs(): number {
+    const ids = new Set(this.collaborateurs.flatMap(c => c.projets.map(p => p.id)));
+    return ids.size;
+  }
 
-    return this.collaborateurs.filter((item) => {
-      const matchesSearch = !search || [
-        item.nom,
-        ...item.competences,
-      ].some((value) => value.toLowerCase().includes(search));
-
-      const matchesAvailability =
-        this.availabilityFilter === 'all' ||
-        (this.availabilityFilter === 'available' && item.disponible) ||
-        (this.availabilityFilter === 'busy' && !item.disponible);
-
-      const tone = this.chargeTone(item.charge);
-      const matchesCharge = this.chargeFilter === 'all' || tone === this.chargeFilter;
-
-      return matchesSearch && matchesAvailability && matchesCharge;
+  applyFilters() {
+    this.filteredCollaborateurs = this.collaborateurs.filter(c => {
+      const matchSearch = !this.searchTerm ||
+        (c.prenom + ' ' + c.nom).toLowerCase()
+          .includes(this.searchTerm.toLowerCase());
+      const matchDispo = !this.filterDisponibilite ||
+        c.disponibilite === this.filterDisponibilite;
+      const matchCharge = !this.filterCharge ||
+        (this.filterCharge === 'low' && c.chargeOccupation <= 30) ||
+        (this.filterCharge === 'medium' && c.chargeOccupation > 30 && c.chargeOccupation <= 70) ||
+        (this.filterCharge === 'high' && c.chargeOccupation > 70);
+      return matchSearch && matchDispo && matchCharge;
     });
   }
 
-  ngOnInit(): void {
-    combineLatest([
-      this.collaborateurService.getAll(),
-      this.affectationService.getAll()
-    ]).subscribe({
-      next: ([collaborateurs, affectations]) => {
-        try {
-          this.collaborateurs = this.buildCards(collaborateurs, affectations);
-        } catch {
-          this.errorMessage = 'Erreur traitement données.';
-        } finally {
-          this.isLoading = false;
+  resetFilters() {
+    this.searchTerm = '';
+    this.filterDisponibilite = '';
+    this.filterCharge = '';
+    this.applyFilters();
+  }
 
-          // 🔥 FIX PRINCIPAL (supprime le blocage)
-          this.cdr.detectChanges();
-        }
+  private loadData(): void {
+    this.isLoading = true;
+    this.errorMessage = '';
+
+    forkJoin({
+      collaborateurs: this.collaborateurService.getAll(),
+      affectations: this.affectationService.getAll()
+    }).subscribe({
+      next: ({ collaborateurs, affectations }) => {
+        const normalizedCollaborateurs = this.normalizeCollaborateurs(collaborateurs);
+        this.collaborateurs = this.buildRows(normalizedCollaborateurs, affectations);
+        this.applyFilters();
+        this.isLoading = false;
+        this.cdr.detectChanges();
       },
       error: () => {
         this.errorMessage = 'Impossible de charger la charge de travail des collaborateurs.';
         this.isLoading = false;
-
-        // 🔥 IMPORTANT aussi ici
         this.cdr.detectChanges();
       }
     });
   }
 
-  trackByCollaborateur(_: number, collaborateur: ChargeCard): number {
-    return collaborateur.id;
+  private normalizeCollaborateurs(collaborateurs: Collaborateur[]): Collaborateur[] {
+    if (!Array.isArray(collaborateurs)) {
+      return [];
+    }
+
+    return collaborateurs.filter((collaborateur) => this.isCollaborateurRole(collaborateur.role));
   }
 
-  clearFilters(): void {
-    this.searchTerm = '';
-    this.availabilityFilter = 'all';
-    this.chargeFilter = 'all';
+  private isCollaborateurRole(role: string | undefined): boolean {
+    const normalizedRole = (role ?? 'COLLAB').trim().toUpperCase();
+    return normalizedRole === 'COLLAB' || normalizedRole === 'COLLABORATEUR';
   }
 
-  refreshData(): void {
-    this.isLoading = true;
-    this.errorMessage = '';
-    this.ngOnInit();
-  }
+  private buildRows(collaborateurs: Collaborateur[], affectations: Affectation[]): ChargeCollaborateur[] {
+    return collaborateurs.map((collab) => {
+      const actifs = affectations.filter((a) => {
+        const s = this.normalizeStatut(a.projet?.statut);
+        return a.collaborateur.id === collab.id && s !== 'termine' && s !== 'en_attente' && s !== 'en attente';
+      });
 
-  chargeTone(charge: number): 'ok' | 'warn' | 'over' {
-    if (charge > 90) return 'over';
-    if (charge > 70) return 'warn';
-    return 'ok';
-  }
+      const projetsActifsMap = new Map<number, ChargeProjet>();
+      for (const a of actifs) {
+        const projetId = a.projet?.id;
+        if (projetId == null) continue;
+        projetsActifsMap.set(projetId, {
+          id: projetId,
+          nom: a.projet?.nom ?? 'Projet sans nom',
+          statut: this.toProjetStatutLabel(a.projet?.statut)
+        });
+      }
+      const projets = Array.from(projetsActifsMap.values());
 
-  // ── Design v2 helpers ────────────────────────────────
-
-  chargeColor(charge: number): string {
-    if (charge >= 90) return '#ef4444';
-    if (charge > 40)  return '#f59e0b';
-    return '#10b981';
-  }
-
-  private readonly _avPalette: Record<string, string> = {
-    a: '#3b82f6', b: '#3b82f6', c: '#3b82f6',
-    d: '#10b981', e: '#10b981', f: '#10b981',
-    g: '#8b5cf6', h: '#8b5cf6', i: '#8b5cf6',
-    j: '#f59e0b', k: '#f59e0b', l: '#f59e0b',
-    m: '#8b5cf6', n: '#ef4444', o: '#ef4444',
-    p: '#ef4444', q: '#06b6d4', r: '#06b6d4',
-    s: '#06b6d4', t: '#f59e0b', u: '#10b981',
-    v: '#10b981', w: '#3b82f6', x: '#8b5cf6',
-    y: '#ef4444', z: '#f59e0b',
-  };
-
-  avatarColor(nom: string): string {
-    const first = (nom?.[0] ?? 'a').toLowerCase();
-    return this._avPalette[first] ?? '#64748b';
-  }
-
-  logout(): void {
-    this.router.navigate(['/login']);
-  }
-
-  private buildCards(collaborateurs: Collaborateur[], affectations: Affectation[]): ChargeCard[] {
-    return collaborateurs.map((collaborateur) => {
-
-      const active = affectations.filter(
-        (affectation) =>
-          affectation.collaborateur.id === collaborateur.id &&
-          affectation.projet.statut !== 'termine'
-      );
-
-      const charge = Math.min(100, active.length * 35 + (collaborateur.disponible ? 10 : 30));
-
-      const fullName = `${collaborateur.prenom} ${collaborateur.nom}`.trim();
+      // Charge basée uniquement sur les affectations actives.
+      // Sans projet actif : disponible et 0%.
+      const chargeOccupation = actifs.length === 0
+        ? 0
+        : Math.min(100, Math.round(actifs.reduce((sum, a) => sum + (a.score ?? 0), 0) / actifs.length));
+      const disponibilite = actifs.length === 0 ? 'Disponible' : 'Occupé';
+      const prenom = collab.prenom ?? '';
+      const nom = collab.nom ?? '';
+      const initials = `${prenom.charAt(0)}${nom.charAt(0)}`.toUpperCase();
+      const idx = Math.abs((collab.id ?? 0) % this.avatarPalette.length);
 
       return {
-        id: collaborateur.id ?? 0,
-        nom: fullName,
-        initiales: fullName
-          .split(' ')
-          .map((p) => p[0] ?? '')
-          .join('')
-          .slice(0, 2)
-          .toUpperCase(),
-        disponible: collaborateur.disponible,
-        charge,
-        projetsCount: active.length,
-        competences: (collaborateur.competences ?? [])
-          .map((c) => c.nom)
-          .slice(0, 4)
+        id: collab.id ?? 0,
+        prenom,
+        nom,
+        initials,
+        disponibilite,
+        chargeOccupation,
+        projets,
+        avatarColor: this.avatarPalette[idx]
       };
-    }).sort((a, b) => b.charge - a.charge);
+    });
+  }
+
+  private toProjetStatutLabel(statut: string | undefined): string {
+    const normalized = this.normalizeStatut(statut);
+    if (normalized === 'en cours' || normalized === 'en_cours') return 'En cours';
+    if (normalized === 'termine') return 'Terminé';
+    if (normalized === 'en attente' || normalized === 'en_attente') return 'En attente';
+    return 'En attente';
+  }
+
+  private normalizeStatut(statut: string | undefined): string {
+    return (statut ?? '')
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .trim();
   }
 }
+
+

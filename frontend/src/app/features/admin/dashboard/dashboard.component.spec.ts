@@ -8,6 +8,7 @@ import { AdminDashboardComponent } from './dashboard.component';
 // ── Stubs ──────────────────────────────────────────────────────────
 const emptyStats = {
   projetsActifs:         0,
+  totalProjets:          0,
   totalCollaborateurs:   0,
   tauxAffectation:       0,
   managersActifs:        0,
@@ -20,6 +21,7 @@ const emptyStats = {
 
 const filledStats = {
   projetsActifs:         5,
+  totalProjets:          7,
   totalCollaborateurs:   20,
   tauxAffectation:       80,
   managersActifs:         3,
@@ -48,8 +50,24 @@ const alertesStub = [
 ];
 
 const activitesStub = [
-  { initiales: 'MA', action: 'Nouveau collaborateur ajouté : Malek Amari', temps: 'il y a 15 min', categorie: 'collab' },
-  { initiales: 'SB', action: 'Projet "App Mobile" créé',                   temps: 'il y a 1h',     categorie: 'projet' },
+  {
+    initiales: 'MA',
+    action: 'Nouveau collaborateur ajouté : Malek Amari',
+    temps: 'il y a 15 min',
+    categorie: 'collab',
+    createdAt: '2026-06-01T10:15:00',
+    role: 'ADMIN',
+    level: 'Info'
+  },
+  {
+    initiales: 'SB',
+    action: 'Projet "App Mobile" créé',
+    temps: 'il y a 1h',
+    categorie: 'projet',
+    createdAt: '2026-06-01T09:30:00',
+    role: 'MANAGER',
+    level: 'Warning'
+  },
 ];
 
 const insightsStub = {
@@ -261,11 +279,12 @@ describe('AdminDashboardComponent', () => {
     expect(component.searchResults.some((item: { type: string }) => item.type === 'Utilisateur')).toBeTrue();
   });
 
-  it('should group activity into timeline buckets', async () => {
+  it('should expose activity type helpers', async () => {
     const { component } = await configure({ activitesData: activitesStub });
 
-    expect(component.timelineGroups.length).toBeGreaterThan(0);
-    expect(component.timelineGroups[0].items.length).toBeGreaterThan(0);
+    expect(component.getTypeClass('CONNEXION')).toBe('connexion');
+    expect(component.getTypeIcon('SUPPRESSION')).toBe('ti-trash');
+    expect(component.getTypeLabel('ERREUR')).toBe('Erreur');
   });
 
   it('should compute donut dash correctly', async () => {

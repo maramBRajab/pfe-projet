@@ -57,6 +57,11 @@ public class BearerTokenAuthenticationFilter extends OncePerRequestFilter {
             return;
         }
 
+        if (Boolean.FALSE.equals(utilisateur.getActif())) {
+            unauthorized(response, "Compte suspendu");
+            return;
+        }
+
         UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
             utilisateur.getEmail(),
             null,

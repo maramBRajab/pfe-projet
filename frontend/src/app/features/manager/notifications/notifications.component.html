@@ -1,126 +1,38 @@
-<section class="db-root">
+<app-manager-shell activeSection="notifications" [projectBadge]="3" [collaboratorBadge]="11">
+  <app-manager-topbar
+    breadcrumb="SmartAssign › Manager › Notifications"
+    [notificationCount]="notifCount">
+  </app-manager-topbar>
 
-  <!-- ══ SIDEBAR ═════════════════════════════════════════════ -->
-  <aside class="db-sidebar">
-    <div class="db-sidebar__brand">
-      <div class="db-logo">SA</div>
-      <div>
-        <div class="db-brand-name">SmartAssign</div>
-        <div class="db-brand-tag">ESPACE MANAGER</div>
-      </div>
-    </div>
-
-    <nav class="db-nav">
-      <p class="db-nav__section">Principal</p>
-      <a class="db-nav__item" routerLink="/manager/dashboard">
-        <i class="ti ti-layout-dashboard db-nav__ico"></i>
-        Dashboard
-      </a>
-
-      <p class="db-nav__section db-nav__section--spaced">Gestion</p>
-      <a class="db-nav__item" routerLink="/manager/projets">
-        <i class="ti ti-folder db-nav__ico"></i>
-        Projets
-      </a>
-      <a class="db-nav__item" routerLink="/manager/collaborateurs">
-        <i class="ti ti-users db-nav__ico"></i>
-        Collaborateurs
-      </a>
-      <a class="db-nav__item" routerLink="/manager/charge-travail">
-        <i class="ti ti-chart-bar db-nav__ico"></i>
-        Charge de travail
-      </a>
-
-      <p class="db-nav__section db-nav__section--spaced">Affectations</p>
-      <a class="db-nav__item" routerLink="/manager/affectation">
-        <i class="ti ti-arrow-right db-nav__ico"></i>
-        Affectations IA
-      </a>
-      <a class="db-nav__item" routerLink="/manager/historique-affectations">
-        <i class="ti ti-history db-nav__ico"></i>
-        Historique
-      </a>
-
-      <a class="db-nav__item db-nav__item--active" routerLink="/manager/notifications">
-        <i class="ti ti-bell db-nav__ico"></i>
-        Notifications
-        <span class="db-nav__badge db-nav__badge--blue">{{ notifCount }}</span>
-      </a>
-    </nav>
-
-    <div class="db-sidebar__footer">
-      <div class="db-user-block">
-        <div class="db-av db-av--green db-av--md">MS</div>
-        <div class="db-user-info">
-          <div class="db-user-name">Manager SmartAssign</div>
-          <div class="db-user-role">Manager</div>
-        </div>
-      </div>
-      <button type="button" class="db-logout" (click)="logout()">
-        <i class="ti ti-logout"></i>
-        Déconnexion
-      </button>
-    </div>
-  </aside>
-
-  <!-- ══ MAIN AREA ═══════════════════════════════════════════ -->
   <div class="main-area">
-
-    <!-- TOPBAR -->
-    <div class="topbar">
-      <div class="topbar-left">
-        <div class="breadcrumb">SmartAssign › Manager › Notifications</div>
-        <h1 class="page-title">Centre de notifications</h1>
-      </div>
-      <div class="topbar-right">
-        <div class="status-pill green">
-          <span class="dot"></span>
-          Flux normal
-        </div>
-        <button class="btn-ghost" type="button" (click)="refresh()">
-          <i class="ti ti-refresh"></i> Actualiser
-        </button>
-        <button class="btn-primary" type="button" (click)="markAllRead()">
-          <i class="ti ti-check"></i> Tout marquer lu
-        </button>
-        <div class="avatar">MS</div>
-      </div>
-    </div>
-
-    <!-- CONTENT -->
     <div class="content">
-
-      <!-- KPI CARDS -->
-      <div class="kpi-grid">
-        <div class="kpi-card">
-          <div class="kpi-bar blue"></div>
-          <div class="kpi-label">TOTAL ALERTES</div>
-          <div class="kpi-value blue">{{ stats.total }}</div>
-        </div>
-        <div class="kpi-card">
-          <div class="kpi-bar amber"></div>
-          <div class="kpi-label">VIGILANCES</div>
-          <div class="kpi-value amber">{{ stats.vigilances }}</div>
-        </div>
-        <div class="kpi-card">
-          <div class="kpi-bar green"></div>
-          <div class="kpi-label">INFORMATIONS</div>
-          <div class="kpi-value green">{{ stats.informations }}</div>
-        </div>
-        <div class="kpi-card">
-          <div class="kpi-bar red"></div>
-          <div class="kpi-label">CRITIQUES</div>
-          <div class="kpi-value dark">{{ stats.critiques }}</div>
-        </div>
-      </div>
-
-      <!-- NOTIFICATIONS CARD -->
-      <div class="notif-card">
-        <div class="notif-header">
-          <h2>Flux des notifications IA</h2>
-          <button class="btn-ghost small" type="button" (click)="markAllRead()">
+      <div class="title-row">
+        <h1 class="title-row__title">Centre de notifications</h1>
+        <div class="title-row__actions">
+          <span class="status-pill"><span class="dot"></span> Flux normal</span>
+          <button class="btn-ghost" type="button" (click)="refresh()">
+            <i class="ti ti-refresh"></i> Actualiser
+          </button>
+          <button class="btn-success-outline" type="button" (click)="markAllRead()">
             <i class="ti ti-check"></i> Tout marquer lu
           </button>
+        </div>
+      </div>
+
+      <div class="kpi-grid">
+        <app-kpi-card label="Total alertes" [value]="stats.total" subtitle="Toutes notifications actives" [badge]="stats.total + ' total'" tone="neutral"></app-kpi-card>
+        <app-kpi-card label="Vigilances" [value]="stats.vigilances" subtitle="Nécessitent attention" badge="Vigilance" tone="amber" valueTone="amber"></app-kpi-card>
+        <app-kpi-card label="Informations" [value]="stats.informations" subtitle="Mises à jour système" badge="Info" tone="blue" valueTone="blue"></app-kpi-card>
+        <app-kpi-card label="Critiques" [value]="stats.critiques" subtitle="Actions immédiates requises" badge="Critique" tone="red" valueTone="red"></app-kpi-card>
+      </div>
+
+      <div class="notif-card">
+        <div class="notif-header">
+          <div class="notif-header__title-wrap">
+            <h2>Flux des notifications IA</h2>
+            <span class="notif-header__count">{{ notifCount }}</span>
+          </div>
+          <button class="notif-mark-read-link" type="button" (click)="markAllRead()">✓ Tout marquer lu</button>
         </div>
 
         <div class="notif-list">
@@ -129,17 +41,19 @@
                [class.vigilance]="notif.type === 'VIGILANCE'"
                [class.unread]="!notif.lu">
 
-            <div class="notif-icon" [ngClass]="notif.iconBg">
-              <i class="ti" [ngClass]="notif.icon"></i>
+            <div class="notif-icon" [class.notif-icon--vigilance]="notif.type === 'VIGILANCE'">
+              <i class="ti" [ngClass]="notif.type === 'VIGILANCE' ? 'ti-alert-triangle' : notif.icon"></i>
             </div>
 
             <div class="notif-content">
               <div class="notif-title-row">
                 <span class="notif-title">{{ notif.titre }}</span>
-                <span class="notif-badge" [ngClass]="notif.badgeClass">{{ notif.type }}</span>
+                <span class="notif-badge" [ngClass]="notif.type === 'VIGILANCE' ? 'badge-vigilance' : notif.badgeClass">
+                  {{ notif.type === 'VIGILANCE' ? 'VIGILANCE' : notif.type }}
+                </span>
               </div>
               <div class="notif-sub">{{ notif.description }}</div>
-              <div class="notif-time">{{ notif.temps }}</div>
+              <div class="notif-time">Échéance : {{ notif.temps }}</div>
             </div>
           </div>
 
@@ -152,4 +66,4 @@
 
     </div>
   </div>
-</section>
+</app-manager-shell>

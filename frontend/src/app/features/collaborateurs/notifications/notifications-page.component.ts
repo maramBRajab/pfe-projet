@@ -2,91 +2,76 @@ import { CommonModule, DatePipe } from '@angular/common';
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { Subscription } from 'rxjs';
 
-import { Notification } from '../../../shared/models/notification.model';
-import { NotificationService } from '../../../services/collaborateur';
+import {
+  CollaborateurNotificationDto,
+  CollaborateurService,
+} from '../../../services/collaborateur';
+import { AuthService } from '../../../services/auth';
 import { CollaborateurShellComponent } from '../shared/collaborateur-shell.component';
+import { CollabTopbarComponent } from '../shared/collab-topbar.component';
+
+const NOTIFICATION_LABELS: Record<string, string> = {
+  MODIFICATION_PROFIL: 'Modification du profil',
+  MISE_A_JOUR_PROFIL: 'Mise à jour du profil',
+  CONNEXION: 'Connexion réussie',
+  DECONNEXION: 'Déconnexion',
+  CREATION_COMPTE: 'Création de compte',
+  SUPPRESSION_COMPTE: 'Suppression du compte',
+  CHANGEMENT_MOT_DE_PASSE: 'Changement de mot de passe',
+  ASSIGNATION_ROLE: "Attribution d'un rôle",
+};
 
 @Component({
   selector: 'app-collab-notifications-page',
   standalone: true,
-  imports: [CommonModule, DatePipe, CollaborateurShellComponent],
+  imports: [CommonModule, DatePipe, CollaborateurShellComponent, CollabTopbarComponent],
   templateUrl: './notifications-page.component.html',
   styleUrl: './notifications-page.component.scss',
 })
 export class CollaborateurNotificationsPageComponent implements OnInit, OnDestroy {
   currentDate = new Date();
   lastUpdated = new Date();
-  notifications: Notification[] = [];
-  activeFilter: 'all' | 'danger' | 'warning' | 'info' = 'all';
+  notifications: CollaborateurNotificationDto[] = [];
+  activeFilter: 'all' | 'CRITIQUE' | 'VIGILANCE' | 'INFO' = 'all';
   readIds = new Set<string>();
 
-  private subscription?: Subscription;
+  totalAlertes = 0;
+  informations = 0;
+  vigilances = 0;
+  critiques = 0;
 
-  constructor(private readonly notificationService: NotificationService) {}
+  private collaborateurId?: number;
+
+  private loadSubscription?: Subscription;
+  private actionSubscription?: Subscription;
+
+  constructor(
+    private readonly authService: AuthService,
+    private readonly collaborateurService: CollaborateurService
+  ) {}
 
   ngOnInit(): void {
-    this.notifications = this.notificationService.getSnapshot();
-    if (this.notifications.length === 0) {
-      this.notifications = this.buildDemoNotifications();
-    }
-    this.subscription = this.notificationService.notifications$.subscribe((n) => {
-      this.notifications = [n, ...this.notifications];
-      this.lastUpdated = new Date();
-    });
-  }
-
-  private buildDemoNotifications(): Notification[] {
-    const now = Date.now();
-    return [
-      {
-        type: 'AFFECTATION',
-        titre: 'Nouvelle affectation proposée',
-        message: 'Le projet « Migration ERP » attend votre confirmation.',
-        niveau: 'WARNING',
-        dateCreation: new Date(now - 1000 * 60 * 60 * 2).toISOString()
-      },
-      {
-        type: 'PLANNING',
-        titre: 'Charge de travail élevée cette semaine',
-        message: 'Vous êtes planifié à 95% sur la semaine du 25 mai.',
-        niveau: 'WARNING',
-        dateCreation: new Date(now - 1000 * 60 * 60 * 6).toISOString()
-      },
-      {
-        type: 'PROJET',
-        titre: 'Mise à jour du projet Clôture Q2',
-        message: 'Le manager a ajouté une nouvelle compétence requise.',
-        niveau: 'INFO',
-        dateCreation: new Date(now - 1000 * 60 * 60 * 24).toISOString()
-      }
-    ];
+    this.initializeAndLoad();
   }
 
   ngOnDestroy(): void {
-    this.subscription?.unsubscribe();
+    this.loadSubscription?.unsubscribe();
+    this.actionSubscription?.unsubscribe();
   }
 
   // ── Counts ─────────────────────────────────────────────────
 
-  get totalCount(): number { return this.notifications.length; }
+  get totalCount(): number { return this.totalAlertes; }
 
-  get infoCount(): number {
-    return this.notifications.filter(n => this.tone(n) === 'info').length;
-  }
+  get infoCount(): number { return this.informations; }
 
-  get warningCount(): number {
-    return this.notifications.filter(n => this.tone(n) === 'warning').length;
-  }
+  get warningCount(): number { return this.vigilances; }
 
-  get dangerCount(): number {
-    return this.notifications.filter(n => this.tone(n) === 'danger').length;
-  }
+  get dangerCount(): number { return this.critiques; }
 
-  get filteredNotifications(): Notification[] {
+  get filteredNotifications(): CollaborateurNotificationDto[] {
     if (this.activeFilter === 'all')    return this.notifications;
-    if (this.activeFilter === 'danger') return this.notifications.filter(n => this.tone(n) === 'danger');
-    if (this.activeFilter === 'warning')return this.notifications.filter(n => this.tone(n) === 'warning');
-    return this.notifications.filter(n => this.tone(n) === 'info');
+    return this.notifications.filter(n => n.type === this.activeFilter);
   }
 
   get headerStatusLabel(): string {
@@ -102,40 +87,74 @@ export class CollaborateurNotificationsPageComponent implements OnInit, OnDestro
   // ── Actions ────────────────────────────────────────────────
 
   refresh(): void {
-    this.notifications = this.notificationService.getSnapshot();
-    this.lastUpdated = new Date();
+    this.loadFromApi();
   }
 
   markAllRead(): void {
-    this.notifications.forEach(n => this.readIds.add(this.trackId(n)));
+    if (!this.collaborateurId) {
+      return;
+    }
+
+    this.actionSubscription?.unsubscribe();
+    this.actionSubscription = this.collaborateurService.markAllNotificationsRead(this.collaborateurId).subscribe({
+      next: () => {
+        this.notifications.forEach((notification) => this.readIds.add(this.trackId(notification)));
+        this.loadFromApi();
+      }
+    });
   }
 
-  markRead(n: Notification): void {
-    this.readIds.add(this.trackId(n));
+  markRead(n: CollaborateurNotificationDto): void {
+    if (!this.collaborateurId || !n.notificationKey) {
+      return;
+    }
+
+    this.actionSubscription?.unsubscribe();
+    this.actionSubscription = this.collaborateurService.dismissNotification(this.collaborateurId, n.notificationKey).subscribe({
+      next: () => {
+        this.readIds.add(this.trackId(n));
+        this.loadFromApi();
+      }
+    });
   }
 
-  isRead(n: Notification): boolean {
+  isRead(n: CollaborateurNotificationDto): boolean {
     return this.readIds.has(this.trackId(n));
   }
 
   // ── Helpers ────────────────────────────────────────────────
 
-  tone(n: Notification): 'info' | 'warning' | 'danger' {
-    const lvl = (n.niveau ?? '').toLowerCase();
-    if (lvl.includes('danger') || lvl.includes('error') || lvl.includes('crit')) return 'danger';
-    if (lvl.includes('warn')   || lvl.includes('attention'))                       return 'warning';
+  tone(n: CollaborateurNotificationDto): 'info' | 'warning' | 'danger' {
+    if (n.type === 'CRITIQUE') {
+      return 'danger';
+    }
+
+    if (n.type === 'VIGILANCE') {
+      return 'warning';
+    }
+
     return 'info';
   }
 
-  label(n: Notification): string {
-    switch (this.tone(n)) {
-      case 'danger':  return 'CRITIQUE';
-      case 'warning': return 'VIGILANCE';
-      default:        return 'INFO';
-    }
+  label(n: CollaborateurNotificationDto): string {
+    return this.formatLabel(n.type);
   }
 
-  iconClass(n: Notification): string {
+  formatLabel(key: string): string {
+    return NOTIFICATION_LABELS[key]
+      ?? key.toLowerCase().replace(/_/g, ' ').replace(/^\w/, (c) => c.toUpperCase());
+  }
+
+  displayTitle(n: CollaborateurNotificationDto): string {
+    const raw = (n.titre ?? '').trim();
+    if (!raw) {
+      return this.formatLabel(n.type);
+    }
+
+    return /^[A-Z0-9_]+$/.test(raw) ? this.formatLabel(raw) : raw;
+  }
+
+  iconClass(n: CollaborateurNotificationDto): string {
     switch (this.tone(n)) {
       case 'danger':  return 'ti ti-alert-octagon';
       case 'warning': return 'ti ti-alert-triangle';
@@ -143,7 +162,7 @@ export class CollaborateurNotificationsPageComponent implements OnInit, OnDestro
     }
   }
 
-  accentColor(n: Notification): string {
+  accentColor(n: CollaborateurNotificationDto): string {
     switch (this.tone(n)) {
       case 'danger':  return '#ef4444';
       case 'warning': return '#f59e0b';
@@ -151,7 +170,7 @@ export class CollaborateurNotificationsPageComponent implements OnInit, OnDestro
     }
   }
 
-  bgColor(n: Notification): string {
+  bgColor(n: CollaborateurNotificationDto): string {
     switch (this.tone(n)) {
       case 'danger':  return '#fff5f5';
       case 'warning': return '#fffbeb';
@@ -159,7 +178,7 @@ export class CollaborateurNotificationsPageComponent implements OnInit, OnDestro
     }
   }
 
-  borderColor(n: Notification): string {
+  borderColor(n: CollaborateurNotificationDto): string {
     switch (this.tone(n)) {
       case 'danger':  return '#fecaca';
       case 'warning': return '#fde68a';
@@ -167,7 +186,7 @@ export class CollaborateurNotificationsPageComponent implements OnInit, OnDestro
     }
   }
 
-  badgeBg(n: Notification): string {
+  badgeBg(n: CollaborateurNotificationDto): string {
     switch (this.tone(n)) {
       case 'danger':  return '#fee2e2';
       case 'warning': return '#fef9c3';
@@ -175,7 +194,7 @@ export class CollaborateurNotificationsPageComponent implements OnInit, OnDestro
     }
   }
 
-  badgeColor(n: Notification): string {
+  badgeColor(n: CollaborateurNotificationDto): string {
     switch (this.tone(n)) {
       case 'danger':  return '#991b1b';
       case 'warning': return '#92400e';
@@ -183,15 +202,68 @@ export class CollaborateurNotificationsPageComponent implements OnInit, OnDestro
     }
   }
 
-  parseDate(n: Notification): Date {
-    return n.dateCreation ? new Date(n.dateCreation) : new Date();
+  parseDate(n: CollaborateurNotificationDto): Date {
+    return n.date ? new Date(n.date) : new Date();
   }
 
-  trackId(n: Notification): string {
-    return `${n.type}-${n.dateCreation}`;
+  trackId(n: CollaborateurNotificationDto): string {
+    return `${n.id ?? ''}-${n.notificationKey ?? ''}-${n.type}-${n.date ?? ''}`;
   }
 
-  trackByNotification = (_index: number, n: Notification): string => {
+  trackByNotification = (_index: number, n: CollaborateurNotificationDto): string => {
     return this.trackId(n);
   };
+
+  private initializeAndLoad(): void {
+    const email = this.authService.currentUser?.email?.trim();
+    if (!email) {
+      this.notifications = [];
+      this.totalAlertes = 0;
+      this.informations = 0;
+      this.vigilances = 0;
+      this.critiques = 0;
+      return;
+    }
+
+    this.loadSubscription?.unsubscribe();
+    this.loadSubscription = this.collaborateurService.getByEmail(email).subscribe({
+      next: (collaborateur) => {
+        this.collaborateurId = collaborateur.id;
+        this.loadFromApi();
+      },
+      error: () => {
+        this.notifications = [];
+        this.totalAlertes = 0;
+        this.informations = 0;
+        this.vigilances = 0;
+        this.critiques = 0;
+      }
+    });
+  }
+
+  private loadFromApi(): void {
+    if (!this.collaborateurId) {
+      return;
+    }
+
+    this.loadSubscription?.unsubscribe();
+    this.loadSubscription = this.collaborateurService.getNotifications(this.collaborateurId).subscribe({
+      next: (summary) => {
+        this.totalAlertes = summary.totalAlertes;
+        this.informations = summary.informations;
+        this.vigilances = summary.vigilances;
+        this.critiques = summary.critiques;
+        this.notifications = summary.notifications ?? [];
+        this.lastUpdated = new Date();
+      },
+      error: () => {
+        this.totalAlertes = 0;
+        this.informations = 0;
+        this.vigilances = 0;
+        this.critiques = 0;
+        this.notifications = [];
+        this.lastUpdated = new Date();
+      }
+    });
+  }
 }

@@ -1,10 +1,23 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
-import { CommonModule, DatePipe }        from '@angular/common';
+import { CommonModule }                  from '@angular/common';
 import { Router, RouterLink }             from '@angular/router';
-import { Subject }                        from 'rxjs';
+import { Subject, forkJoin }              from 'rxjs';
 import { catchError, of }                 from 'rxjs';
 import { ManagerShellComponent }          from '../shared/manager-shell.component';
-import { Affectation, AffectationService, ProjetService, Projet as ApiProjet } from '../../../services/manager';
+import { ManagerTopbarComponent }         from '../shared/manager-topbar.component';
+import { KpiCardComponent }               from '../../../shared/kpi-card/kpi-card.component';
+import {
+  Affectation,
+  AffectationService,
+  Collaborateur as ApiCollaborateur,
+  CollaborateurService,
+  ChatbotService,
+  ManagerDashboardService,
+  ManagerDashboardStats,
+  ManagerIaService,
+  ProjetService,
+  Projet as ApiProjet
+} from '../../../services/manager';
 
 // ─── Interfaces ──────────────────────────────────────────────
 
@@ -18,6 +31,12 @@ export interface KpiCard {
   color:      'blue' | 'green' | 'orange' | 'purple' | 'red' | 'cyan';
   valueColor: 'blue' | 'green' | 'orange' | 'purple' | 'red' | 'default' | 'muted';
   type?:      string;
+}
+
+export interface AssistantAiStats {
+  loading: boolean;
+  error: string;
+  snapshot: string;
 }
 
 export interface MembreEquipe {
@@ -84,6 +103,13 @@ export interface HistoriqueAffectation {
   date:                Date;
 }
 
+interface ConfirmationDialog {
+  visible: boolean;
+  title: string;
+  message: string;
+  confirmLabel: string;
+  action: (() => void) | null;
+}
 // ─── Component ───────────────────────────────────────────────
 
 @Component({
@@ -91,7 +117,7 @@ export interface HistoriqueAffectation {
   templateUrl: './dashboard.component.html',
   styleUrls:   ['./dashboard.component.scss'],
   standalone:  true,
-  imports:     [CommonModule, DatePipe, RouterLink],
+  imports:     [CommonModule, RouterLink, KpiCardComponent, ManagerShellComponent, ManagerTopbarComponent],
 })
 export class ManagerDashboardComponent implements OnInit, OnDestroy {
 
@@ -102,42 +128,46 @@ export class ManagerDashboardComponent implements OnInit, OnDestroy {
   isFluxMaitrise = true;
   userMenuOpen   = false;
   historyFilter: 'all' | 'month' | 'modified' = 'all';
+  deletingProjectIds = new Set<number>();
+  deletingAffectationIds = new Set<number>();
+  assistantAiStats: AssistantAiStats = {
+    loading: true,
+    error: '',
+    snapshot: ''
+  };
+  confirmationDialog: ConfirmationDialog = {
+    visible: false,
+    title: '',
+    message: '',
+    confirmLabel: 'Confirmer',
+    action: null
+  };
 
   // ── KPI Cards ─────────────────────────────────────────────
   kpiCards: KpiCard[] = [
     { label: 'PROJETS ACTIFS',        value: 3,     sub: '2 prioritaire(s)',               badge: 'Pilotage', badgeType: 'pilotage', icon: 'folder',         color: 'blue',   valueColor: 'blue',   type: 'primary'   },
     { label: 'RESSOURCES DISPONIBLES',value: 2,     sub: 'sur 3 collaborateurs',           badge: 'Stable',   badgeType: 'stable',   icon: 'users',          color: 'green',  valueColor: 'green',  type: 'secondary' },
     { label: 'AFFECTATIONS EN COURS', value: 6,     sub: 'pilotage des engagements',        badge: 'Pilotage', badgeType: 'pilotage', icon: 'arrow-right',    color: 'orange', valueColor: 'orange', type: 'primary'   },
-    { label: 'TAUX D\'AFFECTATION',   value: '67%', sub: 'Cible recommandée : 72%',         badge: 'Vigilance',badgeType: 'warning',  icon: 'activity',       color: 'purple', valueColor: 'purple', type: 'primary'   },
+    { label: 'TAUX D\'AFFECTATION',   value: '67%', sub: '',                                  badge: 'Vigilance',badgeType: 'warning',  icon: 'activity',       color: 'purple', valueColor: 'purple', type: 'primary'   },
     { label: 'ALERTES PRIORITAIRES',  value: 1,     sub: '1 alerte(s) active(s)',           badge: 'Pilotage', badgeType: 'pilotage', icon: 'alert-triangle', color: 'red',    valueColor: 'default',type: 'warning'   },
-    { label: 'COMPATIBILITÉ IA',      value: '51%', sub: 'score moyen recommandations',     badge: 'IA',       badgeType: 'ai',       icon: 'cpu',            color: 'cyan',   valueColor: 'muted',  type: 'ai'        },
+    { label: 'COMPATIBILITÉ IA',      value: '51%', sub: 'score moyen des dernières affectations', badge: 'IA',       badgeType: 'ai',       icon: 'cpu',            color: 'cyan',   valueColor: 'muted',  type: 'ai'        },
   ];
 
   // ── Projets ───────────────────────────────────────────────
   projets: Projet[] = [];
 
   // ── Collaborateurs ────────────────────────────────────────
-  collaborateurs: Collaborateur[] = [
-    { id: 'c1', name: 'Collaborateur Demo', initials: 'CD', role: 'Consultant technique', color: '#10b981', loadPercent: 72, loadClass: 'medium', status: 'Occupé',     statusClass: 'occupied',  projectCount: 2 },
-    { id: 'c2', name: 'maram ben rajab',    initials: 'MB', role: 'Consultant technique', color: '#ef4444', loadPercent: 68, loadClass: 'medium', status: 'Disponible', statusClass: 'available', projectCount: 2 },
-    { id: 'c3', name: 'Nour Ghorbel',       initials: 'NG', role: 'Consultant technique', color: '#10b981', loadPercent: 66, loadClass: 'medium', status: 'Disponible', statusClass: 'available', projectCount: 2 },
-  ];
+  collaborateurs: Collaborateur[] = [];
 
   // ── Recommandations ───────────────────────────────────────
   recommandations: Recommandation[] = [];
 
   // ── Alertes ───────────────────────────────────────────────
   alertes: Alerte[] = [];
+  managerStats: ManagerDashboardStats | null = null;
 
   // ── Affectations ──────────────────────────────────────────
-  affectations: HistoriqueAffectation[] = [
-    { id: 1, collaborateurNom: 'Collaborateur Demo', collaborateurInit: 'CD', collaborateurColor: '#10b981', projet: 'DSN',    profil: 'Consultant technique', score: 20, date: new Date('2026-04-20') },
-    { id: 2, collaborateurNom: 'maram ben rajab',    collaborateurInit: 'MB', collaborateurColor: '#ef4444', projet: 'DSN',    profil: 'Consultant technique', score: 10, date: new Date('2026-04-20') },
-    { id: 3, collaborateurNom: 'Nour Ghorbel',       collaborateurInit: 'NG', collaborateurColor: '#10b981', projet: 'DSN',    profil: 'Consultant technique', score: 5,  date: new Date('2026-04-20') },
-    { id: 4, collaborateurNom: 'maram ben rajab',    collaborateurInit: 'MB', collaborateurColor: '#ef4444', projet: 'azzeer', profil: 'Consultant technique', score: 10, date: new Date('2026-04-15') },
-    { id: 5, collaborateurNom: 'Nour Ghorbel',       collaborateurInit: 'NG', collaborateurColor: '#10b981', projet: 'azzeer', profil: 'Consultant technique', score: 5,  date: new Date('2026-04-15') },
-    { id: 6, collaborateurNom: 'Collaborateur Demo', collaborateurInit: 'CD', collaborateurColor: '#10b981', projet: 'azzeer', profil: 'Consultant technique', score: 20, date: new Date('2026-04-15') },
-  ];
+  affectations: HistoriqueAffectation[] = [];
 
   get filteredHistory(): HistoriqueAffectation[] {
     const now = new Date();
@@ -148,42 +178,181 @@ export class ManagerDashboardComponent implements OnInit, OnDestroy {
     }
   }
 
-  constructor(private router: Router, private affectationService: AffectationService, private projetService: ProjetService) {}
+  get subtitleDate(): string {
+    return this.currentDate.toLocaleDateString('fr-FR', {
+      weekday: 'long',
+      day: '2-digit',
+      month: 'long',
+      year: 'numeric'
+    });
+  }
+
+  get activeProjectsCount(): number {
+    return this.projets.filter(p => p.statusClass !== 'paused').length;
+  }
+
+  get priorityProjectsCount(): number {
+    return this.projets.filter(p => p.statusClass === 'pending').length;
+  }
+
+  get availableResourcesCount(): number {
+    return this.collaborateurs.filter(c => c.statusClass === 'available').length;
+  }
+
+  get allocationRateValue(): number {
+    const rate = Number.parseInt(this.tauxAffectation.replace('%', ''), 10);
+    return Number.isFinite(rate) ? rate : 0;
+  }
+
+  get allocationRateClass(): 'high' | 'normal' {
+    return this.allocationRateValue > 90 ? 'high' : 'normal';
+  }
+
+  get averageIaScore(): number {
+    const fromRecommandations = this.recommandations.map(r => r.score);
+    if (fromRecommandations.length) {
+      return Math.round(fromRecommandations.reduce((a, b) => a + b, 0) / fromRecommandations.length);
+    }
+
+    const fromHistory = this.affectations.map(a => a.score);
+    if (!fromHistory.length) return 0;
+    return Math.round(fromHistory.reduce((a, b) => a + b, 0) / fromHistory.length);
+  }
+
+  get iaTotalCount(): number {
+    return this.recommandations.length || this.affectations.length;
+  }
+
+  get assistantAiAvailableCount(): number {
+    return this.extractAssistantAiNumber(/nb_collaborateurs_disponibles=(\d+)/) ?? this.availableResourcesCount;
+  }
+
+  get assistantAiAllocationRate(): number {
+    return this.extractAssistantAiNumber(/taux_affectation=(\d+)/) ?? this.allocationRateValue;
+  }
+
+  get assistantAiOverloadedCount(): number {
+    return this.extractAssistantAiNumber(/collaborateurs_surcharges=(\d+)/) ?? this.overloadedCollaboratorsCount;
+  }
+
+  get assistantAiLastSyncLabel(): string {
+    if (this.assistantAiStats.loading) {
+      return 'Mise à jour des indicateurs IA';
+    }
+
+    return this.assistantAiStats.snapshot
+      ? 'Données synchronisées via /manager/ia/analyse'
+      : 'Indicateurs calculés à partir des données manager';
+  }
+
+  get assistantAiLoading(): boolean {
+    return this.assistantAiStats.loading;
+  }
+
+  get assistantAiError(): string {
+    return this.assistantAiStats.error;
+  }
+
+  private readonly avatarPalette = ['#3b82f6', '#10b981', '#8b5cf6', '#f59e0b', '#ef4444', '#06b6d4', '#14b8a6', '#d946ef'];
+
+  constructor(
+    private router: Router,
+    private affectationService: AffectationService,
+    private projetService: ProjetService,
+    private collaborateurService: CollaborateurService,
+    private managerDashboardService: ManagerDashboardService,
+    private managerIaService: ManagerIaService,
+    private chatbotService: ChatbotService
+  ) {}
 
   ngOnInit(): void {
-    this.updateKpiCards();
+    this.loadManagerStats();
+    this.loadPriorityAlerts();
+    this.loadAssistantAiStats();
 
     // Charger les vrais projets (les plus récents en premier)
     this.projetService.getAll().pipe(catchError(() => of([] as ApiProjet[]))).subscribe(list => {
-      const sorted = [...list].sort((a, b) => (b.id ?? 0) - (a.id ?? 0)).slice(0, 5);
+      const sorted = [...list].sort((a, b) => (b.id ?? 0) - (a.id ?? 0));
       this.projets = sorted.map(p => this.mapProjet(p));
       this.apiProjetsById = new Map(sorted.map(p => [`proj-${p.id}`, p]));
       this.refreshResourceCounts();
-      this.recomputeAlertes();
       this.updateKpiCards();
     });
 
-    this.affectationService.getAll().pipe(catchError(() => of([] as Affectation[]))).subscribe(list => {
-      if (list.length) {
-        this.affectations = list.map(a => ({
-          id:                 a.id,
-          collaborateurNom:   `${a.collaborateur.prenom} ${a.collaborateur.nom}`,
-          collaborateurInit:  `${a.collaborateur.prenom?.[0] ?? ''}${a.collaborateur.nom?.[0] ?? ''}`.toUpperCase(),
-          collaborateurColor: '#10b981',
-          projet:             a.projet?.nom ?? '—',
-          profil:             'Consultant',
-          score:              a.score,
-          date:               new Date(a.dateAffectation)
-        }));
-        this.rawAffectations = list;
-        this.refreshResourceCounts();
-        this.recomputeAlertes();
-        this.updateKpiCards();
-      }
+    forkJoin({
+      affectations: this.affectationService.getAll().pipe(catchError(() => of([] as Affectation[]))),
+      collaborateurs: this.collaborateurService.getAll().pipe(catchError(() => of([] as ApiCollaborateur[])))
+    }).subscribe(({ affectations, collaborateurs }) => {
+      this.rawAffectations = affectations;
+      this.rawCollaborateurs = collaborateurs;
+      this.affectations = affectations.map(a => ({
+        id: a.id,
+        collaborateurNom: a.collaborateur.prenom + ' ' + a.collaborateur.nom,
+        collaborateurInit: ((a.collaborateur.prenom?.[0] ?? '') + (a.collaborateur.nom?.[0] ?? '')).toUpperCase(),
+        collaborateurColor: '#10b981',
+        projet: a.projet?.nom ?? '—',
+        profil: 'Consultant',
+        score: a.score,
+        date: new Date(a.dateAffectation)
+      }));
+      this.rebuildCollaborateursFromApi();
+      this.refreshResourceCounts();
+      this.updateKpiCards();
     });
   }
 
   private rawAffectations: Affectation[] = [];
+  private rawCollaborateurs: ApiCollaborateur[] = [];
+
+  private rebuildCollaborateursFromApi(): void {
+    if (!this.rawCollaborateurs.length) {
+      this.collaborateurs = [];
+      return;
+    }
+
+    const computed = this.rawCollaborateurs.map((collab) => {
+      const actifs = this.rawAffectations.filter((a) =>
+        a.collaborateur.id === collab.id && a.projet.statut !== 'termine'
+      );
+
+      // Charge basée uniquement sur les affectations actives.
+      // Sans projet actif : disponible et 0%.
+      let charge: number;
+      if (actifs.length === 0) {
+        charge = 0;
+      } else {
+        const avgScore = actifs.reduce((sum, a) => sum + (a.score ?? 0), 0) / actifs.length;
+        charge = Math.min(100, Math.round(avgScore));
+      }
+
+      const prenom = (collab.prenom ?? '').trim();
+      const nom = (collab.nom ?? '').trim();
+      const name = `${prenom} ${nom}`.trim() || collab.email || 'Collaborateur';
+      const initials = `${prenom.charAt(0)}${nom.charAt(0)}`.toUpperCase() || name.slice(0, 2).toUpperCase();
+      const id = collab.id ?? 0;
+      const color = this.avatarPalette[Math.abs(id) % this.avatarPalette.length];
+      const loadClass: Collaborateur['loadClass'] = charge <= 30 ? 'low' : charge <= 70 ? 'medium' : 'high';
+      const statusClass: Collaborateur['statusClass'] = collab.disponible ? 'available' : 'occupied';
+
+      return {
+        id: `c${id}`,
+        name,
+        initials,
+        role: 'Collaborateur',
+        color,
+        loadPercent: charge,
+        loadClass,
+        status: collab.disponible ? 'Disponible' : 'Occupé',
+        statusClass,
+        projectCount: actifs.length,
+      } satisfies Collaborateur;
+    });
+
+    this.collaborateurs = computed
+      .filter(c => c.role !== 'Manager' && c.role !== 'Admin')
+      .sort((a, b) => b.loadPercent - a.loadPercent)
+      .slice(0, 3);
+  }
 
   private refreshResourceCounts(): void {
     if (!this.projets.length) return;
@@ -213,41 +382,32 @@ export class ManagerDashboardComponent implements OnInit, OnDestroy {
     return (parts[0][0] + parts[1][0]).toUpperCase();
   }
 
-  private recomputeAlertes(): void {
-    const alerts: Alerte[] = [];
-
-    // Projets sans ressource affectée
-    for (const p of this.projets) {
-      if (p.resourceCount === 0 && p.statusClass !== 'paused') {
-        const start = p.deadline; // fallback
-        const projetApi = this.apiProjetsById.get(p.id);
-        const dateDebut = projetApi ? new Date(projetApi.dateDebut) : start;
-        const dStr = isNaN(dateDebut.getTime())
-          ? '—'
-          : dateDebut.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' });
-        alerts.push({
-          id: `np-${p.id}`,
-          message: `${p.name} — aucune ressource`,
-          sub: `Démarrage prévu le ${dStr}`,
-          type: 'danger',
-          actionUrl: `/manager/projets`
-        });
-      }
-    }
-
-    // Collaborateurs disponibles
-    const dispos = this.collaborateurs.filter(c => c.statusClass === 'available').length;
-    if (dispos > 0) {
-      alerts.push({
-        id: 'dispo',
-        message: `${dispos} collaborateur${dispos > 1 ? 's' : ''} disponible${dispos > 1 ? 's' : ''} pour analyse IA`,
-        sub: 'Lancer une recommandation pour les affecter',
-        type: 'info',
-        actionUrl: '/manager/affectation'
+  private loadManagerStats(): void {
+    this.managerDashboardService.getStats()
+      .pipe(catchError(() => of(null)))
+      .subscribe((stats) => {
+        this.managerStats = stats;
+        this.updateKpiCards();
       });
-    }
+  }
 
-    this.alertes = alerts;
+  private loadPriorityAlerts(): void {
+    this.managerDashboardService.getPriorityAlerts()
+      .pipe(catchError(() => of(null)))
+      .subscribe((response) => {
+        if (!response) {
+          return;
+        }
+
+        this.alertes = response.items.map((item, index) => ({
+          id: `priority-${index}`,
+          message: item.title,
+          sub: item.description,
+          type: item.type === 'danger' ? 'danger' : item.type === 'warning' ? 'warning' : 'info',
+          actionUrl: item.link
+        }));
+        this.updateKpiCards();
+      });
   }
 
   private apiProjetsById = new Map<string, ApiProjet>();
@@ -258,15 +418,12 @@ export class ManagerDashboardComponent implements OnInit, OnDestroy {
     let statusClass: 'pending' | 'active' | 'paused' | 'danger' = 'pending';
     if (statut.includes('COURS')) { status = 'En cours'; statusClass = 'active'; }
     else if (statut.includes('ATTENTE')) { status = 'En attente'; statusClass = 'pending'; }
+    else if (statut.includes('RETARD')) { status = 'En retard'; statusClass = 'danger'; }
+    else if (statut.includes('PAUSE')) { status = 'En pause'; statusClass = 'paused'; }
     else if (statut.includes('TERMIN')) { status = 'Terminé'; statusClass = 'paused'; }
 
-    const start = new Date(p.dateDebut).getTime();
-    const end = new Date(p.dateFin).getTime();
-    const now = Date.now();
-    let progress = 0;
-    if (end > start) {
-      progress = Math.max(0, Math.min(100, Math.round(((now - start) / (end - start)) * 100)));
-    }
+    // Utiliser la progression calculée côté backend (basée sur les tâches terminées)
+    let progress = typeof p.progression === 'number' ? p.progression : 0;
     if (statut.includes('TERMIN')) progress = 100;
 
     const progressColor: 'blue' | 'green' | 'orange' | 'red' =
@@ -290,22 +447,93 @@ export class ManagerDashboardComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void { this.destroy$.next(); this.destroy$.complete(); }
 
   private updateKpiCards(): void {
-    this.kpiCards[0].value = this.projets.filter(p => p.statusClass !== 'paused').length;
-    this.kpiCards[0].sub   = `${this.projets.filter(p => p.statusClass === 'pending').length} prioritaire(s)`;
-    this.kpiCards[1].value = this.collaborateurs.filter(c => c.statusClass === 'available').length;
-    this.kpiCards[1].sub   = `sur ${this.collaborateurs.length} collaborateurs`;
-    this.kpiCards[2].value = this.affectations.length;
+    const stats = this.managerStats;
+    
+    // Projets actifs = projets EN_COURS
+    const projetsActifs = this.projets.filter(p => 
+      p.statusClass === 'active').length;
+    const projetsEnRetard = this.projets.filter(p => 
+      p.statusClass === 'danger').length;
+      
+    // Ressources disponibles
+    const disponibles = this.rawCollaborateurs.filter(c => 
+      c.disponible === true).length;
+    const total = this.rawCollaborateurs.length;
+    
+    // Taux affectation
+    const affectesIds = new Set(
+      this.rawAffectations
+        .filter(a => a.projet?.statut !== 'termine')
+        .map(a => a.collaborateur?.id)
+        .filter(id => id != null)
+    );
+    const taux = total > 0 ? Math.round((affectesIds.size / total) * 100) : 0;
+    
+    // Compatibilité IA
+    const scores = this.rawAffectations.map(a => a.score ?? 0);
+    const compatIa = scores.length > 0
+      ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length)
+      : 0;
+
+    this.kpiCards[0].value = projetsActifs;
+    this.kpiCards[0].sub = projetsEnRetard + ' en retard';
+    this.kpiCards[1].value = disponibles;
+    this.kpiCards[1].sub = 'sur ' + total + ' collaborateurs';
+    this.kpiCards[2].value = this.rawAffectations.length;
+    this.kpiCards[3].value = taux + '%';
+    this.kpiCards[3].sub = 'Cible recommandée : 72%';
     this.kpiCards[4].value = this.alertes.length;
-    this.kpiCards[4].sub   = this.alertes.length === 0 ? 'aucune alerte critique' : `${this.alertes.length} alerte(s) active(s)`;
-    const scores = this.recommandations.map(r => r.score);
-    if (scores.length) {
-      const avg = Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
-      this.kpiCards[5].value = `${avg}%`;
+    this.kpiCards[4].sub = this.alertes.length + ' active(s)';
+    this.kpiCards[5].value = compatIa + '%';
+
+    this.managerStats = {
+      projetsActifs: stats?.projetsActifs ?? projetsActifs,
+      projetsEnRetard: stats?.projetsEnRetard ?? projetsEnRetard,
+      ressourcesDisponibles: stats?.ressourcesDisponibles ?? disponibles,
+      totalCollaborateurs: stats?.totalCollaborateurs ?? total,
+      tauxAffectation: stats?.tauxAffectation ?? taux,
+      alertesPrioritaires: stats?.alertesPrioritaires ?? this.alertes.length,
+      affectationsEnCours: stats?.affectationsEnCours ?? this.rawAffectations.length,
+      collaborateursSurcharges: stats?.collaborateursSurcharges ?? this.overloadedCollaboratorsCount,
+      compatibiliteIa: stats?.compatibiliteIa ?? compatIa
+    };
+  }
+
+  private loadAssistantAiStats(): void {
+    this.assistantAiStats = {
+      ...this.assistantAiStats,
+      loading: true,
+      error: ''
+    };
+
+    this.managerIaService.analyse('stats globales').pipe(
+      catchError(() => of({ reponse: '' }))
+    ).subscribe((result) => {
+      const snapshot = result?.reponse ?? '';
+      this.assistantAiStats = {
+        loading: false,
+        error: snapshot ? '' : 'Analyse IA indisponible pour le moment.',
+        snapshot
+      };
+    });
+  }
+
+  private extractAssistantAiNumber(pattern: RegExp): number | null {
+    const match = this.assistantAiStats.snapshot.match(pattern);
+    if (!match) {
+      return null;
     }
+
+    const value = Number.parseInt(match[1] ?? '', 10);
+    return Number.isFinite(value) ? value : null;
+  }
+
+  get overloadedCollaboratorsCount(): number {
+    return this.collaborateurs.filter((collaborateur) => collaborateur.loadPercent >= 80).length;
   }
 
   // ── Navigation & actions ──────────────────────────────────
-  refresh(): void                              { this.updateKpiCards(); this.lastUpdated = new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }); }
+  refresh(): void                              { this.loadManagerStats(); this.loadPriorityAlerts(); this.updateKpiCards(); this.loadAssistantAiStats(); this.lastUpdated = new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }); }
   refreshData(): void                          { this.refresh(); }
   toggleUserMenu(): void                       { this.userMenuOpen = !this.userMenuOpen; }
   navigateTo(path: string): void               { this.userMenuOpen = false; this.router.navigate([path]); }
@@ -314,21 +542,64 @@ export class ManagerDashboardComponent implements OnInit, OnDestroy {
   viewAllProjects(): void                      { this.router.navigate(['/manager/projets']); }
 
   editProject(p: Projet): void                { this.router.navigate(['/manager/projets/edit', p.id]); }
-  viewAffectations(p: Projet): void           { this.router.navigate(['/manager/affectations'], { queryParams: { project: p.id } }); }
-  assignCollaborator(p: Projet): void         { this.router.navigate(['/manager/affectations/new'], { queryParams: { project: p.id } }); }
+  viewAffectations(p: Projet): void           { this.router.navigate(['/manager/affectations-en-cours'], { queryParams: { project: p.id } }); }
+  assignCollaborator(p: Projet): void         { this.router.navigate(['/manager/affectations/nouveau'], { queryParams: { project: p.id } }); }
   deleteProject(p: Projet): void {
-    if (confirm(`Supprimer le projet "${p.name}" ?`)) {
-      this.projets = this.projets.filter(x => x.id !== p.id);
-      this.updateKpiCards();
+    const apiProjectId = this.resolveProjetNumericId(p);
+    if (apiProjectId == null) {
+      window.alert('Impossible de supprimer ce projet : identifiant backend introuvable.');
+      return;
     }
+
+    this.openConfirmation({
+      title: 'Supprimer le projet',
+      message: `Supprimer le projet "${p.name}" ? Cette action le supprimera definitivement de la base de donnees.`,
+      confirmLabel: 'Supprimer',
+      action: () => {
+        if (this.deletingProjectIds.has(apiProjectId)) {
+          return;
+        }
+
+        this.deletingProjectIds.add(apiProjectId);
+        this.projetService.delete(apiProjectId).subscribe({
+          next: () => {
+            this.projets = this.projets.filter(x => x.id !== p.id);
+            this.apiProjetsById.delete(p.id);
+            this.rawAffectations = this.rawAffectations.filter(a => a.projet?.id !== apiProjectId);
+            this.affectations = this.affectations.filter(a => a.projet !== p.name);
+            this.refreshResourceCounts();
+            this.rebuildCollaborateursFromApi();
+            this.updateKpiCards();
+            this.deletingProjectIds.delete(apiProjectId);
+          },
+          error: (err) => {
+            this.deletingProjectIds.delete(apiProjectId);
+            const message = (err?.error?.message as string | undefined) || 'Impossible de supprimer ce projet.';
+            window.alert(message);
+          }
+        });
+      }
+    });
+  }
+
+  private resolveProjetNumericId(projet: Projet): number | null {
+    const fromMap = this.apiProjetsById.get(projet.id)?.id;
+    if (typeof fromMap === 'number') {
+      return fromMap;
+    }
+
+    const parsed = Number.parseInt(projet.id.replace(/^proj-/, ''), 10);
+    return Number.isFinite(parsed) ? parsed : null;
   }
 
   viewCollaboratorProfile(c: Collaborateur): void { this.router.navigate(['/manager/collaborateurs', c.id]); }
-  assignToProject(c: Collaborateur): void         { this.router.navigate(['/manager/affectations/new'], { queryParams: { collaborateur: c.id } }); }
+  assignToProject(c: Collaborateur): void         { this.router.navigate(['/manager/affectations/nouveau'], { queryParams: { collaborateur: c.id } }); }
   viewFullAnalysis(): void                        { this.router.navigate(['/manager/charge-travail']); }
 
   openRecommendations(): void                      { this.router.navigate(['/manager/recommandations']); }
-  applyRecommendation(r: Recommandation): void    { this.router.navigate(['/manager/affectations/new'], { queryParams: { collaborateur: r.collaborateurId, project: r.projetId } }); }
+  exportDashboard(): void                         { this.refreshData(); }
+  exportDashboardPdf(): void                      { window.print(); }
+  applyRecommendation(r: Recommandation): void    { this.router.navigate(['/manager/affectations/nouveau'], { queryParams: { collaborateur: r.collaborateurId, project: r.projetId } }); }
   dismissRecommendation(r: Recommandation): void  { this.recommandations = this.recommandations.filter(x => x.id !== r.id); this.updateKpiCards(); }
 
   openAlertAction(a: Alerte): void  { if (a.actionUrl) this.router.navigateByUrl(a.actionUrl); }
@@ -338,10 +609,61 @@ export class ManagerDashboardComponent implements OnInit, OnDestroy {
   openHistoryPage(): void                                   { this.router.navigate(['/manager/historique-affectations']); }
   editAffectation(e: HistoriqueAffectation): void          { this.router.navigate(['/manager/affectations', e.id, 'edit']); }
   cancelAffectation(e: HistoriqueAffectation): void {
-    if (confirm(`Annuler l'affectation de ${e.collaborateurNom} sur ${e.projet} ?`)) {
-      this.affectations = this.affectations.filter(x => x.id !== e.id);
-      this.updateKpiCards();
+    if (this.deletingAffectationIds.has(e.id)) {
+      return;
     }
+
+    this.openConfirmation({
+      title: 'Annuler l’affectation',
+      message: `Annuler l'affectation de ${e.collaborateurNom} sur ${e.projet} ?`,
+      confirmLabel: 'Annuler l’affectation',
+      action: () => {
+        if (this.deletingAffectationIds.has(e.id)) {
+          return;
+        }
+
+        this.deletingAffectationIds.add(e.id);
+        this.affectationService.delete(e.id).subscribe({
+          next: () => {
+            this.affectations = this.affectations.filter(x => x.id !== e.id);
+            this.rawAffectations = this.rawAffectations.filter(x => x.id !== e.id);
+            this.refreshResourceCounts();
+            this.rebuildCollaborateursFromApi();
+            this.loadManagerStats();
+            this.updateKpiCards();
+            this.deletingAffectationIds.delete(e.id);
+          },
+          error: (err) => {
+            this.deletingAffectationIds.delete(e.id);
+            const message = (err?.error?.message as string | undefined) || "Impossible d'annuler cette affectation.";
+            window.alert(message);
+          }
+        });
+      }
+    });
+  }
+
+  openConfirmation(config: Omit<ConfirmationDialog, 'visible'>): void {
+    this.confirmationDialog = {
+      visible: true,
+      ...config
+    };
+  }
+
+  closeConfirmation(): void {
+    this.confirmationDialog = {
+      visible: false,
+      title: '',
+      message: '',
+      confirmLabel: 'Confirmer',
+      action: null
+    };
+  }
+
+  confirmCurrentAction(): void {
+    const action = this.confirmationDialog.action;
+    this.closeConfirmation();
+    action?.();
   }
 
   getProjectBorderColor(status: string): string {
@@ -356,8 +678,16 @@ export class ManagerDashboardComponent implements OnInit, OnDestroy {
   // ── Template helpers (design v2) ──────────────────────────
 
   get tauxAffectation(): string {
-    const max = this.projets.length * this.collaborateurs.length;
-    return max > 0 ? `${Math.round(this.affectations.length / max * 100)}%` : '0%';
+    const total = this.rawCollaborateurs.length;
+    if (total === 0) return '0%';
+    // Collaborateurs ayant au moins une affectation sur un projet non terminé
+    const affectesIds = new Set(
+      this.rawAffectations
+        .filter(a => a.projet?.statut !== 'termine')
+        .map(a => a.collaborateur?.id)
+        .filter(id => id != null)
+    );
+    return `${Math.round((affectesIds.size / total) * 100)}%`;
   }
 
   projBorderColor(p: Projet): string {
@@ -385,5 +715,27 @@ export class ManagerDashboardComponent implements OnInit, OnDestroy {
 
   scoreColor(score: number): string {
     return score >= 20 ? '#f59e0b' : '#ef4444';
+  }
+
+  projectInitials(name: string): string {
+    if (!name) return 'PR';
+    const parts = name.trim().split(/\s+/).filter(Boolean);
+    if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+    return `${parts[0][0] ?? ''}${parts[1][0] ?? ''}`.toUpperCase();
+  }
+
+  statusBadgeClass(statusClass: Projet['statusClass']): string {
+    if (statusClass === 'active') return 'bg-blue-100 text-blue-700';
+    if (statusClass === 'pending') return 'bg-slate-200 text-slate-700';
+    return 'bg-emerald-100 text-emerald-700';
+  }
+
+  resourceStatusClass(statusClass: Collaborateur['statusClass']): string {
+    if (statusClass === 'occupied') return 'bg-amber-100 text-amber-700';
+    return 'bg-emerald-100 text-emerald-700';
+  }
+
+  openAssistantChat(): void {
+    this.chatbotService.openChat();
   }
 }

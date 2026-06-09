@@ -1,0 +1,62 @@
+<app-collaborateur-shell activeSection="affectations">
+  <app-collab-topbar
+    shell-topbar
+    breadcrumb="SmartAssign › Collaborateur › Mes affectations"
+    [notificationCount]="0"
+    userName="Collaborateur Demo"
+    initials="CD">
+  </app-collab-topbar>
+
+  <section class="ma-state" *ngIf="isLoading">
+    Chargement des affectations...
+  </section>
+
+  <section class="ma-state ma-state--error" *ngIf="!isLoading && errorMessage">
+    {{ errorMessage }}
+  </section>
+
+  <section class="ma-header" *ngIf="!isLoading && !errorMessage">
+    <div>
+      <h1 class="ma-title">Mes affectations</h1>
+      <p class="ma-subtitle">Suivi de vos missions actives et passées — {{ today | date:'EEEE d MMMM y':'':'fr' }}</p>
+    </div>
+  </section>
+
+  <section class="ma-grid" *ngIf="!isLoading && !errorMessage && hasAffectations; else emptyState">
+    <article class="ma-card" *ngFor="let item of affectations">
+      <div class="ma-card__top">
+        <h2 class="ma-project">{{ item.projetNom }}</h2>
+        <span [class]="statutClass(item.statutProjet)">{{ statutLabel(item.statutProjet) }}</span>
+      </div>
+
+      <div class="ma-row">
+        <span class="ma-label">Manager :</span>
+        <span class="ma-value">{{ item.manager }}</span>
+      </div>
+
+      <div class="ma-row ma-row--compat">
+        <span class="ma-label">Compatibilité :</span>
+        <span [class]="compatibiliteClass(item.compatibilite)">{{ item.compatibilite }}%</span>
+      </div>
+
+      <div class="ma-row ma-row--progression">
+        <span class="ma-label">Progression :</span>
+        <span class="ma-value">{{ item.progression }}%</span>
+      </div>
+      <div class="ma-progress" aria-hidden="true">
+        <span class="ma-progress__fill" [style.width]="progressionWidth(item.progression)"></span>
+      </div>
+
+      <div class="ma-row">
+        <span class="ma-label">Date d'affectation :</span>
+        <span class="ma-value">{{ item.dateAffectation | date:'dd/MM/yyyy' }}</span>
+      </div>
+    </article>
+  </section>
+
+  <ng-template #emptyState>
+    <section class="ma-empty" *ngIf="!isLoading && !errorMessage">
+      Aucune affectation trouvée
+    </section>
+  </ng-template>
+</app-collaborateur-shell>

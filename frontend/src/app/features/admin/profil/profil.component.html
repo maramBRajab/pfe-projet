@@ -2,29 +2,8 @@
   <app-admin-sidebar></app-admin-sidebar>
 
   <div class="sp-main">
-
-    <header class="sp-topbar">
-      <div class="sp-topbar__left">
-        <nav class="sp-topbar__breadcrumb">
-          <span>SmartAssign</span>
-          <span class="sp-topbar__sep">›</span>
-          <span>Admin</span>
-          <span class="sp-topbar__sep">›</span>
-          <span class="sp-topbar__current">Profil</span>
-        </nav>
-        <h1 class="sp-topbar__title">Mon profil</h1>
-      </div>
-      <div class="sp-topbar__right">
-        <div class="sp-status-pill">
-          <span class="sp-status-dot"></span>
-          Système opérationnel
-        </div>
-        <div class="sp-av-sm" style="cursor:default;overflow:hidden">
-          <img *ngIf="adminPhoto" [src]="adminPhoto" 
-               style="width:100%;height:100%;object-fit:cover;border-radius:50%;" alt="">
-          <span *ngIf="!adminPhoto">AP</span>
-        </div>
-      </div>
+    <header class="page-topbar">
+      <span class="page-topbar__crumb">SmartAssign › Admin › Mon Profil</span>
     </header>
 
     <div class="sp-body">
@@ -32,8 +11,8 @@
       <!-- ── Photo header ─────────────────────────────────── -->
       <div class="pf-photo-header">
         <div class="pf-photo-wrapper">
-          <img *ngIf="photoUrl" [src]="photoUrl" class="pf-photo-img" alt="Photo de profil">
-          <div *ngIf="!photoUrl" class="pf-photo-initials">{{ currentInitials }}</div>
+          <img *ngIf="displayPhotoUrl" [src]="displayPhotoUrl" class="pf-photo-img" alt="Photo de profil">
+          <div *ngIf="!displayPhotoUrl" class="pf-photo-initials">{{ currentInitials }}</div>
           <label class="pf-photo-overlay" title="Changer la photo">
             <i class="ti ti-camera"></i>
             <input type="file" accept="image/*" (change)="onPhotoChange($event)" hidden>

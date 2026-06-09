@@ -3,24 +3,16 @@
 
   <div class="sp-main">
 
-    <!-- ══ TOPBAR ════════════════════════════════════════════ -->
-    <header class="sp-topbar">
-      <div class="sp-topbar__left">
-        <nav class="sp-topbar__breadcrumb">
-          <span>SmartAssign</span>
-          <span class="sp-topbar__sep">›</span>
-          <span>Admin</span>
-          <span class="sp-topbar__sep">›</span>
-          <span class="sp-topbar__current">Collaborateurs</span>
-        </nav>
-        <h1 class="sp-topbar__title">Gestion des collaborateurs</h1>
-      </div>
-      <div class="sp-topbar__right">
-        <div class="sp-status-pill">
+    <app-admin-topbar
+      breadcrumb="SmartAssign › Admin › Utilisateurs"
+      [notificationCount]="unreadCount">
+      <div topbarActions class="sp-topbar-actions">
+        <div class="sp-status-pill sp-status-pill--topbar">
           <span class="sp-status-dot"></span>
           Plateforme saine
         </div>
-        <button class="sp-btn sp-btn--ghost sp-btn--pill" (click)="exporterCSV()">
+
+        <button class="sp-btn sp-btn--ghost sp-btn--header" (click)="exportExcel()">
           <svg viewBox="0 0 16 16" fill="none">
             <path d="M8 2v9" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
             <path d="M4.5 8.5L8 12l3.5-3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
@@ -28,116 +20,91 @@
           </svg>
           Exporter
         </button>
-        <button class="sp-btn sp-btn--primary sp-btn--pill" (click)="exportPdf()">
+
+        <button class="sp-btn sp-btn--primary sp-btn--header" (click)="exportPdf()">
           <svg viewBox="0 0 16 16" fill="none">
             <path d="M3 2h7l3 3v9a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1Z" stroke="currentColor" stroke-width="1.4"/>
             <path d="M10 2v4h4M6 9h4M6 12h2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
           </svg>
           Export PDF
         </button>
-        <div class="sp-av-sm" routerLink="/admin/profil" style="cursor:pointer;overflow:hidden" title="Mon profil">
-          <img *ngIf="adminPhoto" [src]="adminPhoto" 
-               style="width:100%;height:100%;object-fit:cover;border-radius:50%;" alt="">
-          <span *ngIf="!adminPhoto">AP</span>
-        </div>
       </div>
-    </header>
+    </app-admin-topbar>
 
     <!-- ══ BODY ══════════════════════════════════════════════ -->
     <div class="sp-body">
 
+      <section class="sp-page-header">
+        <div class="sp-page-header__copy">
+          <h1 class="sp-page-header__title">Gestion des utilisateurs</h1>
+          <p class="sp-page-header__subtitle">
+            Pilotage quotidien — {{ today }}
+          </p>
+        </div>
+      </section>
+
       <!-- KPI CARDS -->
       <div class="sp-kpi-grid">
-
-        <div class="sp-kcard">
-          <div class="sp-kcard__bar" style="background:#3b82f6"></div>
-          <span class="sp-kcard__badge sp-kcard__badge--neutral">Total</span>
-          <div class="sp-kcard__label">COLLABORATEURS</div>
-          <div class="sp-kcard__val" style="color:#3b82f6">{{ collaborateurs.length }}</div>
-          <div class="sp-kcard__sub">Inscrits sur la plateforme</div>
-        </div>
-
-        <div class="sp-kcard">
-          <div class="sp-kcard__bar" style="background:#10b981"></div>
-          <span class="sp-kcard__badge sp-kcard__badge--green">Actifs</span>
-          <div class="sp-kcard__label">DISPONIBLES</div>
-          <div class="sp-kcard__val" style="color:#10b981">{{ disponiblesCount }}</div>
-          <div class="sp-kcard__sub">Prêts à être affectés</div>
-        </div>
-
-        <div class="sp-kcard">
-          <div class="sp-kcard__bar" style="background:#f59e0b"></div>
-          <span class="sp-kcard__badge sp-kcard__badge--warn">Occupés</span>
-          <div class="sp-kcard__label">EN MISSION</div>
-          <div class="sp-kcard__val" style="color:#f59e0b">{{ occupesCount }}</div>
-          <div class="sp-kcard__sub">Affectés sur un projet</div>
-        </div>
-
-        <div class="sp-kcard">
-          <div class="sp-kcard__bar" style="background:#8b5cf6"></div>
-          <span class="sp-kcard__badge sp-kcard__badge--neutral">Moy.</span>
-          <div class="sp-kcard__label">EXP. MOYENNE</div>
-          <div class="sp-kcard__val" style="color:#8b5cf6">{{ moyenneExperience }} <span style="font-size:14px;font-weight:400">ans</span></div>
-          <div class="sp-kcard__sub">{{ totalCompetences }} compétence(s) totales</div>
-        </div>
-
+        <app-kpi-card label="Utilisateurs" [value]="collaborateurs.length" subtitle="Inscrits sur la plateforme" badge="Total" tone="neutral"></app-kpi-card>
+        <app-kpi-card label="Disponibles" [value]="disponiblesCount" subtitle="Prêts à être affectés" badge="Disponibles" tone="green" valueTone="green"></app-kpi-card>
+        <app-kpi-card label="Comptes non vérifiés" [value]="nonVerifiedCount" subtitle="En attente de confirmation email" badge="Attente" tone="amber" valueTone="amber"></app-kpi-card>
+        <app-kpi-card label="Exp. moyenne" [value]="moyenneExperience + ' ans'" subtitle="Moyenne d'expérience" badge="Moy." tone="purple"></app-kpi-card>
       </div>
 
-      <!-- MAIN CARD: filtres + tableau -->
       <div class="sp-main-card">
 
-        <!-- FILTER ROW -->
-        <div class="sp-filter-row">
-          <div class="sp-search-wrap">
-            <svg class="sp-search-ico" viewBox="0 0 16 16" fill="none">
-              <circle cx="6.5" cy="6.5" r="4.5" stroke="currentColor" stroke-width="1.4"/>
-              <path d="M10 10l3.5 3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
-            </svg>
-            <input type="text" class="sp-input sp-input--search"
-              placeholder="Nom, email ou compétence…"
-              [(ngModel)]="searchTerm"
-              (ngModelChange)="currentPage = 1" />
+        <!-- FILTER STACK -->
+        <div class="sp-filter-stack">
+          <div class="sp-filter-row sp-filter-row--line1">
+            <div class="sp-search-wrap sp-search-wrap--line">
+              <svg class="sp-search-ico" viewBox="0 0 16 16" fill="none">
+                <circle cx="6.5" cy="6.5" r="4.5" stroke="currentColor" stroke-width="1.4"/>
+                <path d="M10 10l3.5 3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+              </svg>
+              <input
+                type="text"
+                class="sp-input sp-input--search"
+                placeholder="Recherche"
+                [(ngModel)]="searchTerm"
+                (ngModelChange)="currentPage = 1" />
+            </div>
+
+            <div class="sp-select-wrap sp-select-wrap--compact">
+              <select class="sp-select" [(ngModel)]="roleFilter" (ngModelChange)="currentPage = 1">
+                <option value="all">Tous rôles</option>
+                <option value="ADMIN">Admin</option>
+                <option value="MANAGER">Manager</option>
+                <option value="COLLAB">Collaborateur</option>
+              </select>
+            </div>
+
+            <div class="sp-select-wrap sp-select-wrap--compact">
+              <select class="sp-select" [(ngModel)]="disponibiliteFilter" (ngModelChange)="currentPage = 1">
+                <option value="all">Tous statuts</option>
+                <option value="actif">Actif</option>
+                <option value="inactif">Inactif</option>
+              </select>
+            </div>
           </div>
 
-          <div class="sp-select-wrap">
-            <select class="sp-select" [(ngModel)]="roleFilter" (ngModelChange)="currentPage = 1">
-              <option value="all">Tous les rôles</option>
-              <option value="ADMIN">Admin</option>
-              <option value="MANAGER">Manager</option>
-              <option value="COLLAB">Collaborateur</option>
-            </select>
+          <div class="sp-filter-row sp-filter-row--line2">
+            <div class="sp-action-bar">
+              <button class="sp-btn sp-btn--ghost sp-btn--sm" (click)="openCsvModal()">
+                <svg viewBox="0 0 16 16" fill="none"><path d="M8 2v8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M4.5 7.5L8 11l3.5-3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 13h12" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+                Import CSV
+              </button>
+
+              <button class="sp-btn sp-btn--ghost sp-btn--sm" (click)="exporterCSV()">
+                <svg viewBox="0 0 16 16" fill="none"><path d="M8 2v9" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M4.5 8.5L8 12l3.5-3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 13h12" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+                Export CSV
+              </button>
+
+              <button class="sp-btn sp-btn--primary sp-btn--sm" (click)="openCreateModal()">
+                <svg viewBox="0 0 16 16" fill="none"><path d="M8 2v12M2 8h12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                Créer
+              </button>
+            </div>
           </div>
-
-          <div class="sp-select-wrap">
-            <select class="sp-select" [(ngModel)]="disponibiliteFilter" (ngModelChange)="currentPage = 1">
-              <option value="all">Tous statuts</option>
-              <option value="actif">Actif</option>
-              <option value="inactif">Inactif</option>
-            </select>
-          </div>
-
-          <button class="sp-btn sp-btn--primary sp-btn--sm" (click)="openCreateModal()">
-            <svg viewBox="0 0 16 16" fill="none"><path d="M8 2v12M2 8h12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-            Créer
-          </button>
-
-          <button type="button" class="sp-btn sp-btn--ghost sp-btn--csv" (click)="openCsvModal()">
-            <svg viewBox="0 0 16 16" fill="none">
-              <path d="M8 12V3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
-              <path d="M4.5 6.5L8 3l3.5 3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
-              <path d="M2 13h12" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
-            </svg>
-            Import CSV
-          </button>
-
-          <button class="sp-btn sp-btn--ghost sp-btn--csv" (click)="exporterCSV()">
-            <svg viewBox="0 0 16 16" fill="none">
-              <path d="M8 2v9" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
-              <path d="M4.5 8.5L8 12l3.5-3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
-              <path d="M2 13h12" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
-            </svg>
-            Export CSV
-          </button>
         </div>
 
         <div class="sp-inner-divider"></div>
@@ -145,9 +112,9 @@
         <!-- ROLE TABS -->
         <div class="sp-tab-row">
           <button class="sp-tab" [class.sp-tab--active]="roleFilter === 'all'"     (click)="roleFilter = 'all';    currentPage = 1">Tous ({{ collaborateurs.length }})</button>
-          <button class="sp-tab" [class.sp-tab--active]="roleFilter === 'ADMIN'"   (click)="roleFilter = 'ADMIN';  currentPage = 1">Admins</button>
-          <button class="sp-tab" [class.sp-tab--active]="roleFilter === 'MANAGER'" (click)="roleFilter = 'MANAGER';currentPage = 1">Managers</button>
-          <button class="sp-tab" [class.sp-tab--active]="roleFilter === 'COLLAB'"  (click)="roleFilter = 'COLLAB'; currentPage = 1">Collaborateurs</button>
+          <button class="sp-tab" [class.sp-tab--active]="roleFilter === 'ADMIN'"   (click)="roleFilter = 'ADMIN';  currentPage = 1">Admins ({{ countByRole('ADMIN') }})</button>
+          <button class="sp-tab" [class.sp-tab--active]="roleFilter === 'MANAGER'" (click)="roleFilter = 'MANAGER';currentPage = 1">Managers ({{ countByRole('MANAGER') }})</button>
+          <button class="sp-tab" [class.sp-tab--active]="roleFilter === 'COLLAB'"  (click)="roleFilter = 'COLLAB'; currentPage = 1">Collaborateurs ({{ countByRole('COLLAB') }})</button>
         </div>
 
         <div class="sp-inner-divider"></div>
@@ -167,7 +134,7 @@
 
           <!-- THEAD -->
           <div class="sp-table-head">
-            <div class="sp-th">Collaborateur</div>
+            <div class="sp-th">Utilisateur</div>
             <div class="sp-th">Email</div>
             <div class="sp-th">Rôle</div>
             <div class="sp-th">Statut</div>
@@ -177,7 +144,7 @@
 
           <!-- EMPTY -->
           <div class="sp-empty" *ngIf="filteredCollaborateurs.length === 0">
-            Aucun collaborateur ne correspond aux filtres.
+            Aucun utilisateur ne correspond aux filtres.
           </div>
 
           <!-- ROWS -->
@@ -196,7 +163,7 @@
             </div>
 
             <!-- Email -->
-            <div class="sp-td sp-td--mono">{{ c.email }}</div>
+            <div class="sp-td sp-td--email">{{ c.email }}</div>
 
             <!-- Rôle -->
             <div class="sp-td">
@@ -207,30 +174,51 @@
 
             <!-- Statut -->
             <div class="sp-td">
-              <span class="sp-badge" [class.sp-badge--green]="c.disponible" [class.sp-badge--neutral]="!c.disponible">
-                {{ c.disponible ? 'Actif' : 'Suspendu' }}
+              <span class="sp-status-badge"
+                    [class.sp-status-badge--active]="isCompteActif(c)"
+                    [class.sp-status-badge--suspended]="isCompteSuspendu(c)"
+                    [class.sp-status-badge--pending]="!isCompteActif(c) && !isCompteSuspendu(c)">
+                {{ accountStatusLabel(c) }}
               </span>
             </div>
 
             <!-- Disponibilité -->
             <div class="sp-td">
-              <button class="sp-dispo-toggle"
-                [class.sp-dispo-toggle--on]="c.disponible"
-                [class.sp-dispo-toggle--off]="!c.disponible"
+              <button class="sp-availability-badge"
+                *ngIf="isCollabRole(c.role)"
+                [class.sp-availability-badge--available]="c.disponible"
+                [class.sp-availability-badge--busy]="!c.disponible"
                 (click)="toggleDisponibilite(c)">
                 {{ c.disponible ? 'Disponible' : 'Occupé' }}
               </button>
+              <span class="sp-availability-badge sp-availability-badge--na" *ngIf="!isCollabRole(c.role)">
+                Non applicable
+              </span>
             </div>
 
             <!-- Actions -->
             <div class="sp-td sp-td--actions">
-              <button class="sp-action-btn" title="Modifier" (click)="openEditModal(c.id!)">
-                <i class="ti ti-pencil"></i>
-              </button>
-              <button class="sp-action-btn" title="Consulter" (click)="openViewModal(c)">
+              <button class="btn-action consulter" title="Consulter" (click)="openViewModal(c)">
                 <i class="ti ti-eye"></i>
               </button>
-              <button class="sp-action-btn sp-action-btn--danger" title="Supprimer" (click)="supprimer(c.id!)">
+              <button class="btn-action modifier" title="Modifier" (click)="openEditModal(c.id!)">
+                <i class="ti ti-pencil"></i>
+              </button>
+              <button
+                *ngIf="isCompteActif(c)"
+                class="btn-action suspendre"
+                title="Suspendre"
+                (click)="openSuspendModal(c.id!, c.prenom + ' ' + c.nom)">
+                <i class="ti ti-lock"></i>
+              </button>
+              <button
+                *ngIf="!isCompteActif(c)"
+                class="btn-action activer"
+                title="Activer"
+                (click)="activerCompte(c.id!)">
+                <i class="ti ti-lock-open"></i>
+              </button>
+              <button class="btn-action supprimer" title="Supprimer" (click)="supprimer(c.id!)">
                 <i class="ti ti-trash"></i>
               </button>
             </div>
@@ -258,8 +246,8 @@
 <!-- ══ MODALS ════════════════════════════════════════════════ -->
 
 <!-- Create -->
-<div class="cm-overlay" *ngIf="isCreateModalOpen" (click)="closeCreateModal()" (keydown.escape)="closeCreateModal()">
-  <div class="cm-box" (click)="$event.stopPropagation()" autocomplete="off">
+<div class="cm-overlay cm-overlay--create" *ngIf="isCreateModalOpen" (click)="closeCreateModal()" (keydown.escape)="closeCreateModal()">
+  <div class="cm-box cm-box--create" (click)="$event.stopPropagation()" autocomplete="off">
 
     <!-- Header -->
     <div class="cm-header">
@@ -272,6 +260,8 @@
       {{ createFormError }}
       <button class="cm-error__close" type="button" (click)="createFormError = ''">×</button>
     </div>
+
+    <div class="cm-body">
 
     <!-- Honeypot fields: trompe l'autocomplétion du navigateur -->
     <input type="text"     name="username_fake"  style="opacity:0;position:absolute;height:0;width:0;" tabindex="-1" aria-hidden="true" />
@@ -300,25 +290,108 @@
         placeholder="Email personnel (ex: m.ali@gmail.com)"
         autocomplete="off"
         [(ngModel)]="createForm.email" />
+      <p *ngIf="createEmailInvalid" style="margin-top:6px;color:#dc2626;font-size:.82rem;">
+        Veuillez saisir une adresse email valide.
+      </p>
     </div>
 
-    <!-- Row 3: Rôle -->
+    <!-- Row 2.5: Téléphone -->
     <div class="cm-field">
-      <label class="cm-label">Rôle</label>
+      <label class="cm-label">Téléphone *</label>
+      <input
+        type="tel"
+        class="cm-input"
+        maxlength="8"
+        placeholder="Ex : +216 20 123 456"
+        autocomplete="off"
+        [(ngModel)]="createForm.telephone" />
+    </div>
+
+    <!-- Row 3: Rôle + Département -->
+    <div class="cm-row cm-row--2">
+      <div class="cm-field">
+        <label class="cm-label">Rôle</label>
+        <div class="cm-select-wrap">
+          <select class="cm-input cm-select" [(ngModel)]="createForm.role" (ngModelChange)="onCreateRoleChange()">
+            <option value="COLLAB">Collaborateur</option>
+            <option value="MANAGER">Manager</option>
+            <option value="ADMIN">Administrateur</option>
+          </select>
+          <i class="ti ti-chevron-down cm-select-arrow"></i>
+        </div>
+      </div>
+      <div class="cm-field">
+        <label class="cm-label">Département</label>
+        <div class="cm-select-wrap">
+          <select class="cm-input cm-select" [(ngModel)]="createForm.departement">
+            <option value="">Sélectionner</option>
+            <option value="Direction générale">Direction générale</option>
+            <option value="Ressources humaines">Ressources humaines</option>
+            <option value="Finance">Finance</option>
+            <option value="DSI">DSI</option>
+            <option value="Opérations">Opérations</option>
+          </select>
+          <i class="ti ti-chevron-down cm-select-arrow"></i>
+        </div>
+      </div>
+    </div>
+
+    <!-- Row 4: Expérience + Disponibilité -->
+    <div class="cm-row cm-row--2" *ngIf="createShowExperience || createShowDisponibilite">
+      <div class="cm-field" *ngIf="createShowExperience">
+        <label class="cm-label">Expérience (années)</label>
+        <input
+          type="number"
+          class="cm-input"
+          min="0"
+          max="60"
+          [(ngModel)]="createForm.experienceAnnees" />
+      </div>
+      <div class="cm-field" *ngIf="createShowDisponibilite">
+        <label class="cm-label">Disponibilité</label>
+        <div class="cm-select-wrap">
+          <select class="cm-input cm-select" [(ngModel)]="createForm.disponible">
+            <option [ngValue]="true">Disponible</option>
+            <option [ngValue]="false">Occupé</option>
+          </select>
+          <i class="ti ti-chevron-down cm-select-arrow"></i>
+        </div>
+      </div>
+    </div>
+
+    <!-- Row 5: Statut -->
+    <div class="cm-field">
+      <label class="cm-label">Statut</label>
       <div class="cm-select-wrap">
-        <select class="cm-input cm-select" [(ngModel)]="createForm.role">
-          <option value="COLLAB">Collaborateur</option>
-          <option value="MANAGER">Manager</option>
-          <option value="ADMIN">Administrateur</option>
+        <select class="cm-input cm-select" [(ngModel)]="createForm.statutCompte">
+          <option value="ACTIF">Actif</option>
+          <option value="SUSPENDU">Suspendu</option>
         </select>
         <i class="ti ti-chevron-down cm-select-arrow"></i>
       </div>
     </div>
 
-    <!-- Row 4: Mot de passe temporaire -->
+    <!-- Row 6: Compétences -->
+    <div class="cm-field" *ngIf="createShowCompetences">
+      <label class="cm-label">Compétences</label>
+      <div class="sp-comp-list sp-comp-list--start">
+        <button
+          type="button"
+          class="sp-chip"
+          *ngFor="let competence of availableCompetences"
+          [class.sp-chip--active]="isCreateCompetenceSelected(competence.id)"
+          (click)="toggleCreateCompetence(competence.id)">
+          {{ competence.nom }}
+        </button>
+      </div>
+    </div>
+
+    <!-- Row 7: Mot de passe temporaire -->
     <div class="cm-field">
       <label class="cm-label cm-label--blue">Mot de passe temporaire</label>
       <input type="text" class="cm-input cm-input--auto" placeholder="Généré automatiquement" readonly />
+    </div>
+
     </div>
 
     <!-- Footer -->
@@ -347,48 +420,149 @@
 <!-- View -->
 <div class="sp-modal-overlay" *ngIf="viewedCollaborateur" (click)="closeViewModal()">
   <div class="sp-modal sp-modal--view" (click)="$event.stopPropagation()">
-    <div class="sp-modal__hd sp-view-hd">
-      <div class="sp-avatar sp-avatar--lg" [ngClass]="avatarClass(viewedCollaborateur.role)">
+    <button class="sp-modal__close sp-modal__close--abs" (click)="closeViewModal()">×</button>
+
+    <div class="sp-view-hd-center">
+      <div class="sp-avatar sp-avatar--xl avatar-red">
         {{ initiales(viewedCollaborateur.nom, viewedCollaborateur.prenom) }}
       </div>
-      <div class="sp-view-hd__main">
-        <h2 class="sp-modal__name">{{ viewedCollaborateur.prenom }} {{ viewedCollaborateur.nom }}</h2>
-        <p class="sp-view-hd__email">{{ viewedCollaborateur.email }}</p>
-        <div class="sp-view-hd__badges">
-          <span class="sp-badge sp-badge--blue">{{ roleLabel(viewedCollaborateur.role) }}</span>
-          <span class="sp-badge sp-badge--green">Actif</span>
-        </div>
+      <h2 class="sp-modal__name">{{ viewedCollaborateur.prenom }} {{ viewedCollaborateur.nom }}</h2>
+      <p class="sp-view-hd__email">{{ viewedCollaborateur.email }}</p>
+      <div class="sp-view-hd__badges">
+        <span class="sp-badge" [ngClass]="roleBadgeClass(viewedCollaborateur.role)">{{ roleLabel(viewedCollaborateur.role) }}</span>
+        <span class="sp-badge" [class.sp-badge--green]="isEmailVerified(viewedCollaborateur)" [class.sp-badge--amber]="!isEmailVerified(viewedCollaborateur)">
+          {{ isEmailVerified(viewedCollaborateur) ? 'Email vérifié ✅' : 'Email non vérifié ⚠️' }}
+        </span>
+        <span class="sp-status-badge"
+              [class.sp-status-badge--active]="isCompteActif(viewedCollaborateur)"
+              [class.sp-status-badge--suspended]="isCompteSuspendu(viewedCollaborateur)"
+              [class.sp-status-badge--pending]="!isCompteActif(viewedCollaborateur) && !isCompteSuspendu(viewedCollaborateur)">
+          {{ accountStatusLabel(viewedCollaborateur) }}
+        </span>
       </div>
-      <button class="sp-modal__close" (click)="closeViewModal()">×</button>
     </div>
 
     <div class="sp-modal__body">
-      <div class="sp-detail-row">
-        <span>Téléphone</span>
-        <span>{{ $any(viewedCollaborateur).telephone || '—' }}</span>
+      <div class="sp-view-comps">
+        <p class="sp-view-comps__title">INFORMATIONS PERSONNELLES</p>
       </div>
-      <div class="sp-detail-row" *ngIf="viewedCollaborateur.role !== 'ADMIN'">
-        <span>Disponibilité</span>
-        <span class="sp-badge" [class.sp-badge--green]="viewedCollaborateur.disponible" [class.sp-badge--amber]="!viewedCollaborateur.disponible">
-          {{ viewedCollaborateur.disponible ? 'Disponible' : 'Occupé' }}
-        </span>
-      </div>
-      <div class="sp-detail-row" *ngIf="viewedCollaborateur.role !== 'ADMIN'">
-        <span>Expérience</span>
-        <span>{{ viewedCollaborateur.experienceAnnees }} ans</span>
+      <div class="sp-detail-grid">
+        <div class="sp-detail-cell">
+          <span class="sp-detail-cell__label">Nom complet</span>
+          <span class="sp-detail-cell__val">{{ viewedCollaborateur.prenom }} {{ viewedCollaborateur.nom }}</span>
+        </div>
+        <div class="sp-detail-cell">
+          <span class="sp-detail-cell__label">Email personnel</span>
+          <span class="sp-detail-cell__val">{{ viewedCollaborateur.email }}</span>
+        </div>
+        <div class="sp-detail-cell">
+          <span class="sp-detail-cell__label">Téléphone</span>
+          <span class="sp-detail-cell__val">{{ $any(viewedCollaborateur).telephone || '—' }}</span>
+        </div>
       </div>
 
-      <div class="sp-view-comps"
-           *ngIf="viewedCollaborateur.role !== 'ADMIN' && viewedCollaborateur.role !== 'MANAGER' && competenceLabels(viewedCollaborateur).length">
+      <div class="sp-view-comps">
+        <p class="sp-view-comps__title">INFORMATIONS PROFESSIONNELLES</p>
+      </div>
+      <div class="sp-detail-grid">
+        <div class="sp-detail-cell">
+          <span class="sp-detail-cell__label">Rôle</span>
+          <span class="sp-detail-cell__val">{{ roleLabel(viewedCollaborateur.role) }}</span>
+        </div>
+        <div class="sp-detail-cell">
+          <span class="sp-detail-cell__label">Département</span>
+          <span class="sp-detail-cell__val">{{ departmentLabel(viewedCollaborateur) }}</span>
+        </div>
+        <div class="sp-detail-cell" *ngIf="isCollabRole(viewedCollaborateur.role)">
+          <span class="sp-detail-cell__label">Disponibilité</span>
+          <span class="sp-badge" [class.sp-badge--green]="viewedCollaborateur.disponible" [class.sp-badge--amber]="!viewedCollaborateur.disponible">
+            {{ viewedCollaborateur.disponible ? 'Disponible' : 'En mission' }}
+          </span>
+        </div>
+        <div class="sp-detail-cell" *ngIf="!isAdminRole(viewedCollaborateur.role)">
+          <span class="sp-detail-cell__label">Expérience</span>
+          <span class="sp-detail-cell__val">{{ viewedCollaborateur.experienceAnnees }} ans</span>
+        </div>
+        <div class="sp-detail-cell">
+          <span class="sp-detail-cell__label">Statut</span>
+          <span class="sp-detail-cell__val">{{ accountStatusLabel(viewedCollaborateur) }}</span>
+        </div>
+        <div class="sp-detail-cell">
+          <span class="sp-detail-cell__label">Date de vérification email</span>
+          <span class="sp-detail-cell__val">{{ verificationDateLabel(viewedCollaborateur) }}</span>
+        </div>
+      </div>
+
+      <div class="sp-view-comps" *ngIf="isCollabRole(viewedCollaborateur.role)">
         <p class="sp-view-comps__title">COMPÉTENCES</p>
-        <div class="sp-comp-list sp-comp-list--start">
+        <div class="sp-comp-list sp-comp-list--start" *ngIf="competenceLabels(viewedCollaborateur).length; else noCompetenceView">
           <span class="sp-chip" *ngFor="let lbl of competenceLabels(viewedCollaborateur)">{{ lbl }}</span>
+        </div>
+        <ng-template #noCompetenceView>
+          <p class="sp-detail-cell__val">Aucune compétence enregistrée.</p>
+        </ng-template>
+      </div>
+
+      <div class="sp-view-comps">
+        <p class="sp-view-comps__title">PERMISSIONS LIÉES AU RÔLE</p>
+        <div class="sp-comp-list sp-comp-list--start">
+          <span class="sp-chip" *ngFor="let permission of rolePermissions(viewedCollaborateur.role)">{{ permission }}</span>
         </div>
       </div>
     </div>
 
     <div class="sp-modal__ft">
       <button class="sp-btn sp-btn--ghost" (click)="closeViewModal()">Fermer</button>
+
+      <!-- Renvoyer email de vérification — visible si non vérifié -->
+      <button class="sp-btn sp-btn--ghost"
+              *ngIf="!isEmailVerified(viewedCollaborateur)"
+              (click)="renvoyerVerificationEmail()"
+              [disabled]="isResendingVerification"
+              [class.sp-btn--success]="resendVerifSuccess"
+              [class.sp-btn--danger]="!!resendVerifError"
+              [title]="resendVerifError || ''">
+        <i class="ti" [ngClass]="isResendingVerification ? 'ti-loader-3' : 'ti-mail-forward'"
+           [style.animation]="isResendingVerification ? 'spin 1s linear infinite' : 'none'"></i>
+        {{ isResendingVerification ? 'Envoi…' : resendVerifSuccess ? 'Email envoyé ✓' : resendVerifError ? 'Erreur' : 'Renvoyer la vérification' }}
+      </button>
+
+      <!-- Modifier l'adresse email -->
+      <button class="sp-btn sp-btn--ghost"
+              *ngIf="!isEditingEmail"
+              (click)="startEmailEdit()">
+        <i class="ti ti-at"></i>
+        Modifier l'email
+      </button>
+
+      <button class="sp-btn sp-btn--ghost"
+              (click)="renvoyerIdentifiants()"
+              [disabled]="isResendingCredentials"
+              [ngClass]="{'sp-btn--success': resendSuccess, 'sp-btn--danger': resendError}">
+        <i class="ti" [ngClass]="isResendingCredentials ? 'ti-loader-3' : 'ti-mail'"
+           [style.animation]="isResendingCredentials ? 'spin 1s linear infinite' : 'none'"></i>
+        {{ isResendingCredentials ? 'Envoi en cours...' : resendSuccess ? 'Identifiants envoyés ✓' : resendError ? 'Erreur' : 'Renvoyer les identifiants' }}
+      </button>
+
+      <button class="sp-btn sp-btn--danger" (click)="editFromViewModal()">
+        <i class="ti ti-pencil"></i> Modifier
+      </button>
+    </div>
+
+    <!-- Inline email edit panel -->
+    <div class="sp-email-edit-panel" *ngIf="isEditingEmail" (click)="$event.stopPropagation()">
+      <div class="sp-email-edit-panel__inner">
+        <label class="sp-email-edit-panel__lbl">Nouvelle adresse email</label>
+        <input class="sp-email-edit-panel__input" type="email" [(ngModel)]="editEmailValue"
+               placeholder="ex : m.ali@gmail.com" (keydown.enter)="saveEmailEdit()" />
+        <p class="sp-email-edit-panel__err" *ngIf="editEmailError">{{ editEmailError }}</p>
+        <div class="sp-email-edit-panel__actions">
+          <button class="sp-btn sp-btn--ghost sp-btn--sm" (click)="cancelEmailEdit()" [disabled]="isSavingEmail">Annuler</button>
+          <button class="sp-btn sp-btn--primary sp-btn--sm" (click)="saveEmailEdit()" [disabled]="isSavingEmail">
+            {{ isSavingEmail ? 'Enregistrement…' : 'Enregistrer' }}
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -430,14 +604,37 @@
   </div>
 </div>
 
+<!-- Suspend confirm -->
+<div class="sp-modal-overlay" *ngIf="suspendTargetId !== null" (click)="closeSuspendModal()">
+  <div class="sp-modal sp-modal--sm sp-modal--confirm" (click)="$event.stopPropagation()">
+    <div class="sp-confirm-icon sp-confirm-icon--warning">
+      <i class="ti ti-lock"></i>
+    </div>
+    <h3 class="sp-modal__danger-title">Suspendre le compte ?</h3>
+    <p class="sp-modal__danger-msg">
+      Suspendre <strong>{{ suspendTargetName }}</strong> ? Cet utilisateur ne pourra plus se connecter.
+      Vous pourrez le réactiver à tout moment.
+    </p>
+    <div class="sp-modal__ft sp-modal__ft--center">
+      <button class="sp-btn sp-btn--ghost" (click)="closeSuspendModal()" [disabled]="isSuspending">Annuler</button>
+      <button class="sp-btn sp-btn--warning" (click)="confirmerSuspension()" [disabled]="isSuspending">
+        {{ isSuspending ? 'Suspension…' : 'Suspendre' }}
+      </button>
+    </div>
+  </div>
+</div>
+
 <!-- Delete confirm -->
 <div class="sp-modal-overlay" *ngIf="deleteTargetId !== null" (click)="closeDeleteModal()">
-  <div class="sp-modal sp-modal--sm" (click)="$event.stopPropagation()">
-    <h3 class="sp-modal__danger-title">Supprimer le collaborateur ?</h3>
+  <div class="sp-modal sp-modal--sm sp-modal--confirm" (click)="$event.stopPropagation()">
+    <div class="sp-confirm-icon">
+      <i class="ti ti-trash"></i>
+    </div>
+    <h3 class="sp-modal__danger-title">Supprimer l'utilisateur ?</h3>
     <p class="sp-modal__danger-msg">
       <strong>{{ deleteTargetName }}</strong> sera définitivement supprimé. Cette action est irréversible.
     </p>
-    <div class="sp-modal__ft">
+    <div class="sp-modal__ft sp-modal__ft--center">
       <button class="sp-btn sp-btn--ghost" (click)="closeDeleteModal()" [disabled]="isDeleting">Annuler</button>
       <button class="sp-btn sp-btn--danger" (click)="confirmerSuppression()" [disabled]="isDeleting">
         {{ isDeleting ? 'Suppression…' : 'Supprimer' }}
@@ -446,39 +643,71 @@
   </div>
 </div>
 
-<!-- Created Account Success Modal -->
-<!-- Created Account Confirmation -->
+<!-- Created Account Result Modal — Cas 1 : tout envoyé / Cas 2 : email non délivré -->
 <div class="cm-overlay" *ngIf="createdAccount" (click)="closeCreatedAccountModal()">
-  <div class="cm-box cm-success-info" (click)="$event.stopPropagation()">
-    <!-- Header -->
-    <div class="cm-header">
-      <svg class="cm-header__ico" viewBox="0 0 24 24" fill="none">
-        <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
-        <polyline points="8,12 11,15 16,8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
-      <span class="cm-header__title">Compte créé avec succès</span>
-    </div>
+  <div class="cm-box cm-result-box" (click)="$event.stopPropagation()">
 
-    <!-- Body -->
-    <div class="cm-success-body">
-      <p class="cm-success-name">{{ createdAccount.name }}</p>
-
-      <!-- Email -->
-      <div class="cm-field">
-        <label class="cm-label cm-label--blue">Adresse email</label>
-        <div class="cm-email-display">
-          <span>{{ createdAccount.email }}</span>
+    <!-- ══ CAS 1 : création en attente + email de vérification envoyé ══ -->
+    <ng-container *ngIf="createdAccount.verificationEmailEnvoye; else casEchec">
+      <div class="cm-result cm-result--success">
+        <div class="cm-result__icon">
+          <svg viewBox="0 0 48 48" fill="none">
+            <circle cx="24" cy="24" r="22" stroke="currentColor" stroke-width="2.5"/>
+            <polyline points="14,24 21,31 34,17" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
         </div>
-      </div>
-
-      <!-- Confirmation Message -->
-      <div class="cm-field">
-        <p class="cm-field__hint cm-field__hint--info">
-          Un email contenant les identifiants de connexion a été envoyé à <strong>{{ createdAccount.email }}</strong>. 
-          L'utilisateur trouvera le mot de passe temporaire dans ce message et sera invité à le changer lors de sa première connexion.
+        <h3 class="cm-result__title">Utilisateur créé en attente de vérification de l'adresse email</h3>
+        <p class="cm-result__name">{{ createdAccount.name }}</p>
+        <div class="cm-result__info-grid">
+          <div class="cm-result__row">
+            <span class="cm-result__lbl">Email</span>
+            <span class="cm-result__val">{{ createdAccount.email }}</span>
+          </div>
+          <div class="cm-result__row" *ngIf="createdAccount.telephone">
+            <span class="cm-result__lbl">Téléphone</span>
+            <span class="cm-result__val">{{ createdAccount.telephone }}</span>
+          </div>
+          <div class="cm-result__row">
+            <span class="cm-result__lbl">Statut</span>
+            <span class="cm-result__badge cm-result__badge--pending">⏳ En attente de vérification</span>
+          </div>
+        </div>
+        <p class="cm-result__desc">
+          Le compte reste inactif tant que l'adresse email n'a pas été confirmée.<br>
+          Un email de vérification a été envoyé à l'adresse indiquée.
         </p>
       </div>
-    </div>
+    </ng-container>
+
+    <!-- ══ CAS 2 : compte créé mais email non délivré ══ -->
+    <ng-template #casEchec>
+      <div class="cm-result cm-result--warning">
+        <div class="cm-result__icon">
+          <svg viewBox="0 0 48 48" fill="none">
+            <path d="M24 6L43 40H5L24 6Z" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"/>
+            <line x1="24" y1="20" x2="24" y2="30" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+            <circle cx="24" cy="35" r="1.5" fill="currentColor"/>
+          </svg>
+        </div>
+        <h3 class="cm-result__title">Utilisateur créé en attente de vérification</h3>
+        <p class="cm-result__name">{{ createdAccount.name }}</p>
+        <div class="cm-result__info-grid">
+          <div class="cm-result__row">
+            <span class="cm-result__lbl">Email</span>
+            <span class="cm-result__val">{{ createdAccount.email }}</span>
+          </div>
+          <div class="cm-result__row">
+            <span class="cm-result__lbl">Statut</span>
+            <span class="cm-result__badge cm-result__badge--unverified">⚠️ Non vérifié</span>
+          </div>
+        </div>
+        <div class="cm-result__alert">
+          <strong>Le compte est créé mais non activé car l'email de vérification n'a pas été confirmé.</strong>
+          <span *ngIf="createdAccount.verificationEmailErreur || createdAccount.emailErreur" class="cm-result__cause">Cause : {{ createdAccount.verificationEmailErreur || createdAccount.emailErreur }}</span>
+          <span>Le compte reste inactif. Corrigez l'adresse email ou utilisez <em>Renvoyer la vérification</em> depuis la fiche utilisateur.</span>
+        </div>
+      </div>
+    </ng-template>
 
     <!-- Footer -->
     <div class="cm-footer">

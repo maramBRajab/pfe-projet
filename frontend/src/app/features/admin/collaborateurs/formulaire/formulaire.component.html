@@ -43,52 +43,11 @@
 
         <!-- KPI CARDS -->
         <div class="sp-kpi-grid">
-
-          <div class="sp-kcard">
-            <div class="sp-kcard__bar" style="background:#3b82f6"></div>
-            <span class="sp-kcard__badge sp-kcard__badge--neutral">Profil</span>
-            <div class="sp-kcard__label">Utilisateur</div>
-            <div class="sp-kcard__val sp-kcard__val--sm">{{ fullNamePreview }}</div>
-            <div class="sp-kcard__sub">{{ generatedEmailPreview }}</div>
-          </div>
-
-          <div class="sp-kcard">
-            <div class="sp-kcard__bar" style="background:#22c55e"></div>
-            <span class="sp-kcard__badge sp-kcard__badge--green">{{ roleLabel }}</span>
-            <div class="sp-kcard__label">Rôle</div>
-            <div class="sp-kcard__val">{{ collaborateur.role }}</div>
-            <div class="sp-kcard__sub">Droits appliqués à la création</div>
-          </div>
-
-          <div class="sp-kcard">
-            <div class="sp-kcard__bar" style="background:#f59e0b"></div>
-            <span class="sp-kcard__badge sp-kcard__badge--warn">{{ experienceLabel }}</span>
-            <div class="sp-kcard__label">Expérience</div>
-            <div class="sp-kcard__val">{{ collaborateur.experienceAnnees || 0 }}</div>
-            <div class="sp-kcard__sub">Année(s)</div>
-          </div>
-
-          <div class="sp-kcard">
-            <div class="sp-kcard__bar" style="background:#8b5cf6"></div>
-            <span class="sp-kcard__badge sp-kcard__badge--neutral">{{ selectedCompetenceIds.length }}</span>
-            <div class="sp-kcard__label">Compétences</div>
-            <div class="sp-kcard__val">{{ selectedCompetenceIds.length }}</div>
-            <div class="sp-kcard__sub">sur {{ availableCompetences.length }} disponibles</div>
-          </div>
-
-          <div class="sp-kcard">
-            <div class="sp-kcard__bar" [style.background]="collaborateur.disponible ? '#22c55e' : '#f59e0b'"></div>
-            <span class="sp-kcard__badge"
-              [class.sp-kcard__badge--green]="collaborateur.disponible"
-              [class.sp-kcard__badge--warn]="!collaborateur.disponible">{{ disponibiliteLabel }}</span>
-            <div class="sp-kcard__label">Disponibilité</div>
-            <div class="sp-kcard__val"
-              [style.color]="collaborateur.disponible ? 'var(--green)' : 'var(--amber)'">
-              {{ collaborateur.disponible ? 'Oui' : 'Non' }}
-            </div>
-            <div class="sp-kcard__sub">Statut initial du compte</div>
-          </div>
-
+          <app-kpi-card label="Utilisateur" [value]="fullNamePreview" [subtitle]="generatedEmailPreview" badge="Profil" tone="blue"></app-kpi-card>
+          <app-kpi-card label="Rôle" [value]="collaborateur.role" subtitle="Droits appliqués à la création" [badge]="roleLabel" tone="green"></app-kpi-card>
+          <app-kpi-card label="Expérience" [value]="collaborateur.experienceAnnees || 0" subtitle="Année(s)" [badge]="experienceLabel" tone="amber" valueTone="amber"></app-kpi-card>
+          <app-kpi-card label="Compétences" [value]="selectedCompetenceIds.length" [subtitle]="'sur ' + availableCompetences.length + ' disponibles'" [badge]="selectedCompetenceIds.length" tone="purple"></app-kpi-card>
+          <app-kpi-card label="Disponibilité" [value]="collaborateur.disponible ? 'Oui' : 'Non'" subtitle="Statut initial du compte" [badge]="disponibiliteLabel" [tone]="collaborateur.disponible ? 'green' : 'amber'" [valueTone]="collaborateur.disponible ? 'green' : 'amber'"></app-kpi-card>
         </div>
 
         <ng-container *ngTemplateOutlet="workspace"></ng-container>
@@ -169,13 +128,22 @@
         </div>
 
         <div class="em-fg em-fg--full">
-          <label class="em-lbl" for="em-email">Email (généré automatiquement)</label>
-          <input class="em-input em-input--readonly" id="em-email" type="email" [value]="generatedEmailPreview" readonly>
+          <label class="em-lbl" for="em-email">Email personnel <span class="em-req">*</span></label>
+          <input
+            class="em-input"
+            id="em-email"
+            type="email"
+            [(ngModel)]="collaborateur.email"
+            placeholder="Email personnel (ex: m.ali@gmail.com)"
+            autocomplete="email">
+          <p class="em-hint" style="color:#dc2626" *ngIf="emailInvalid">
+            Veuillez saisir une adresse email valide.
+          </p>
         </div>
 
         <div class="em-fg em-fg--full">
           <label class="em-lbl" for="em-role">Rôle <span class="em-req">*</span></label>
-          <select class="em-input em-select" id="em-role" [(ngModel)]="collaborateur.role">
+          <select class="em-input em-select" id="em-role" [(ngModel)]="collaborateur.role" (ngModelChange)="onRoleChanged()">
             <option value="ADMIN">Admin</option>
             <option value="MANAGER">Manager</option>
             <option value="COLLAB">Collaborateur</option>
@@ -183,21 +151,54 @@
         </div>
 
         <div class="em-fg em-fg--full">
-          <label class="em-lbl" for="em-tel">Téléphone</label>
-          <input class="em-input" id="em-tel" type="tel" [(ngModel)]="telephone" placeholder="Ex : +216 20 123 456" autocomplete="tel">
+          <label class="em-lbl" for="em-tel">Téléphone <span class="em-req">*</span></label>
+          <input class="em-input" id="em-tel" type="tel" maxlength="8" [(ngModel)]="telephone" placeholder="Ex : 20123456" autocomplete="tel">
         </div>
 
-        <div class="em-fg em-fg--full" *ngIf="collaborateur.role === 'COLLAB'">
+        <div class="em-fg em-fg--full">
+          <label class="em-lbl" for="em-departement">Département</label>
+          <input class="em-input" id="em-departement" type="text" [(ngModel)]="departement" placeholder="Ex : Direction des operations" autocomplete="organization">
+        </div>
+
+        <div class="em-fg em-fg--full">
+          <label class="em-lbl" for="em-statut">Statut</label>
+          <select class="em-input em-select" id="em-statut" [(ngModel)]="statutCompte">
+            <option value="ACTIF">Actif</option>
+            <option value="SUSPENDU">Suspendu</option>
+          </select>
+        </div>
+
+        <div class="em-fg em-fg--full" *ngIf="showExperience">
           <label class="em-lbl" for="em-exp">Expérience <span class="em-req">*</span></label>
           <input class="em-input" id="em-exp" type="number" min="0" max="60" step="1"
                  [(ngModel)]="collaborateur.experienceAnnees" placeholder="Ex : 3">
           <p class="em-hint">Nombre d'années d'expérience professionnelle.</p>
         </div>
 
-        <div class="em-fg em-fg--full" *ngIf="collaborateur.role === 'COLLAB'">
-          <label class="em-lbl" for="em-comp">Compétences</label>
-          <input class="em-input" id="em-comp" type="text" [(ngModel)]="competencesTexte" placeholder="Ex : Java, Angular, SQL">
-          <p class="em-hint">Valeurs séparées par des virgules.</p>
+        <div class="em-fg em-fg--full" *ngIf="showDisponibilite">
+          <label class="em-lbl" for="em-dispo">Disponibilité</label>
+          <select class="em-input em-select" id="em-dispo" [(ngModel)]="collaborateur.disponible">
+            <option [ngValue]="true">Disponible</option>
+            <option [ngValue]="false">Occupé</option>
+          </select>
+        </div>
+
+        <div class="em-fg em-fg--full" *ngIf="showCompetences">
+          <label class="em-lbl">Compétences</label>
+          <div class="sp-comp-list sp-comp-list--start" *ngIf="availableCompetences.length; else noCompetencesEmbedded">
+            <button
+              type="button"
+              class="sp-chip"
+              *ngFor="let competence of availableCompetences"
+              [class.sp-chip--active]="isCompetenceSelected(competence.id)"
+              (click)="toggleCompetence(competence.id)">
+              {{ competence.nom }}
+            </button>
+          </div>
+          <ng-template #noCompetencesEmbedded>
+            <p class="em-hint">Aucune compétence disponible.</p>
+          </ng-template>
+          <p class="em-hint">{{ selectedCompetenceIds.length }} compétence(s) sélectionnée(s).</p>
         </div>
 
       </div><!-- /em-body -->
@@ -325,13 +326,13 @@
             <span class="pchip" [class.pchip-violet]="collaborateur.role === 'ADMIN'" [class.pchip-blue]="collaborateur.role === 'MANAGER'" [class.pchip-slate]="collaborateur.role === 'COLLAB'">
               {{ roleLabel }}
             </span>
-            <span class="pchip" [class.pchip-green]="collaborateur.disponible" [class.pchip-amber]="!collaborateur.disponible">
+            <span class="pchip" *ngIf="showDisponibilite" [class.pchip-green]="collaborateur.disponible" [class.pchip-amber]="!collaborateur.disponible">
               {{ collaborateur.disponible ? 'Disponible' : 'Occupé' }}
             </span>
           </div>
         </div>
         <div class="preview-stats">
-          <div class="prev-stat">
+          <div class="prev-stat" *ngIf="showCompetences">
             <span>Compétences</span>
             <strong>{{ selectedCompetenceIds.length }}</strong>
           </div>
@@ -364,15 +365,20 @@
                 </div>
               </div>
               <div class="form-group fg-filled">
-                <label for="email">Adresse email générée automatiquement</label>
+                <label for="email">Email personnel <span class="required">*</span></label>
                 <div class="input-icon-wrap">
                   <svg class="input-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
                     <polyline points="22,6 12,13 2,6"/>
                   </svg>
-                  <input id="email" type="email" [value]="generatedEmailPreview" placeholder="prenom.nom@smartassign.tn" autocomplete="email" readonly>
+                  <input
+                    id="email"
+                    type="email"
+                    [(ngModel)]="collaborateur.email"
+                    placeholder="Email personnel (ex: m.ali@gmail.com)"
+                    autocomplete="email">
                 </div>
-                <small>L'email final est généré automatiquement à partir du prénom et du nom, avec un suffixe ajouté si nécessaire.</small>
+                <small>Email saisi manuellement par l utilisateur.</small>
               </div>
             </div>
           </div>
@@ -387,7 +393,7 @@
             </div>
             <div class="form-card-body">
               <div class="form-row">
-                <div class="form-group">
+                <div class="form-group" *ngIf="showExperience">
                   <label for="experience">Années d'expérience <span class="required">*</span></label>
                   <div class="input-icon-wrap">
                     <svg class="input-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -409,14 +415,14 @@
                 </div>
                 <div class="form-group">
                   <label for="role">Rôle <span class="required">*</span></label>
-                  <select id="role" [(ngModel)]="collaborateur.role">
+                  <select id="role" [(ngModel)]="collaborateur.role" (ngModelChange)="onRoleChanged()">
                     <option value="ADMIN">Admin</option>
                     <option value="MANAGER">Manager</option>
                     <option value="COLLAB">Collaborateur</option>
                   </select>
                 </div>
               </div>
-              <div class="form-row">
+              <div class="form-row" *ngIf="showDisponibilite">
                 <div class="form-group">
                   <label for="disponibilite">Disponibilité</label>
                   <div class="dispo-toggle">
@@ -442,7 +448,7 @@
             </div>
           </div>
 
-          <div class="form-card">
+          <div class="form-card" *ngIf="showCompetences">
             <div class="form-card-header">
               <div class="section-icon">🧠</div>
               <div>

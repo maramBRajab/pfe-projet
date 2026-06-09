@@ -12,5 +12,6 @@ public class AffectationResponse {
     private ProjetResponse       projet;
     private CollaborateurResponse collaborateur;
     private double               score;
+    private String               potentiel;
     private LocalDateTime        dateAffectation;
 }

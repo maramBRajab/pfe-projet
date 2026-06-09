@@ -1,5 +1,6 @@
 param(
-    [int] $Port
+    [int] $Port,
+    [switch] $Foreground
 )
 
 $ErrorActionPreference = 'Stop'
@@ -125,6 +126,60 @@ function Get-ListeningProcess {
     return Get-CimInstance Win32_Process -Filter "ProcessId = $($connection.OwningProcess)" -ErrorAction SilentlyContinue
 }
 
+function Wait-ForPort {
+    param(
+        [int] $TargetPort,
+        [int] $TimeoutSeconds = 45
+    )
+
+    $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
+    while ((Get-Date) -lt $deadline) {
+        $listening = Get-NetTCPConnection -LocalPort $TargetPort -State Listen -ErrorAction SilentlyContinue
+        if ($listening) {
+            return $true
+        }
+        Start-Sleep -Milliseconds 500
+    }
+
+    return $false
+}
+
+function Resolve-JavaExecutable {
+    if ($env:JAVA_HOME) {
+        $javaFromHome = Join-Path $env:JAVA_HOME 'bin\java.exe'
+        if (Test-Path $javaFromHome) {
+            return $javaFromHome
+        }
+    }
+
+    $javaCommand = Get-Command java -ErrorAction SilentlyContinue
+    if ($javaCommand -and $javaCommand.Source) {
+        return $javaCommand.Source
+    }
+
+    throw 'Java executable introuvable. Verifiez JAVA_HOME ou le PATH.'
+}
+
+function Resolve-BootJar {
+    param([string] $BackendDir)
+
+    $targetDir = Join-Path $BackendDir 'target'
+    if (-not (Test-Path $targetDir)) {
+        throw "Repertoire target introuvable: $targetDir"
+    }
+
+    $jar = Get-ChildItem $targetDir -Filter '*.jar' -File |
+        Where-Object { $_.Name -notlike '*.original' -and $_.Name -notlike '*-plain.jar' } |
+        Sort-Object LastWriteTime -Descending |
+        Select-Object -First 1
+
+    if (-not $jar) {
+        throw 'Aucun jar Spring Boot trouve dans target. Lancez un package Maven d abord.'
+    }
+
+    return $jar.FullName
+}
+
 $resolvedPort = Resolve-BackendPort -RequestedPort $Port
 $env:SERVER_PORT = [string] $resolvedPort
 
@@ -150,8 +205,44 @@ if ($existingProcess) {
 Write-Host "[backend] Starting Spring Boot on port $resolvedPort..."
 Push-Location $scriptDir
 try {
-    & $mavenWrapper '-f' $pomFile 'spring-boot:run' "-Dspring-boot.run.jvmArguments=-Dserver.port=$resolvedPort"
-    exit $LASTEXITCODE
+    Write-Host '[backend] Packaging application (skip tests)...'
+    & $mavenWrapper '-f' $pomFile '-DskipTests' 'package'
+    if ($LASTEXITCODE -ne 0) {
+        throw "Echec du packaging Maven (exit code $LASTEXITCODE)."
+    }
+
+    $javaExe = Resolve-JavaExecutable
+    $bootJar = Resolve-BootJar -BackendDir $scriptDir
+    $javaArgs = @("-Dserver.port=$resolvedPort", '-jar', $bootJar)
+
+    if ($Foreground) {
+        & $javaExe @javaArgs
+        exit $LASTEXITCODE
+    }
+
+    $runDir = Join-Path $scriptDir '.run'
+    if (-not (Test-Path $runDir)) {
+        New-Item -ItemType Directory -Path $runDir | Out-Null
+    }
+
+    $stdoutLog = Join-Path $runDir 'backend-stdout.log'
+    $stderrLog = Join-Path $runDir 'backend-stderr.log'
+    $args = $javaArgs
+
+    $process = Start-Process -FilePath $javaExe -ArgumentList $args -WorkingDirectory $scriptDir -WindowStyle Hidden -RedirectStandardOutput $stdoutLog -RedirectStandardError $stderrLog -PassThru
+
+    if (Wait-ForPort -TargetPort $resolvedPort -TimeoutSeconds 45) {
+        Write-Host "[backend] Started on port $resolvedPort (launcher PID $($process.Id))."
+        Write-Host "[backend] Logs: $stdoutLog"
+        exit 0
+    }
+
+    Write-Host "[backend] Startup timeout on port $resolvedPort."
+    if (Test-Path $stderrLog) {
+        Write-Host '[backend] Last stderr lines:'
+        Get-Content $stderrLog -Tail 40
+    }
+    exit 1
 } finally {
     Pop-Location
 }

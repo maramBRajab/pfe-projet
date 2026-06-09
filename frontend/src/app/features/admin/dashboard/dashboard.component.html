@@ -3,52 +3,46 @@
 
   <div class="sp-main">
 
-    <!-- ══ TOPBAR ══════════════════════════════════════════ -->
-    <header class="sp-topbar">
-      <div class="sp-topbar__left">
-        <nav class="sp-topbar__breadcrumb">
-          <span>SmartAssign</span>
-          <span class="sp-topbar__sep">›</span>
-          <span class="sp-topbar__current">Supervision</span>
-        </nav>
-        <h1 class="sp-topbar__title">Supervision globale</h1>
-      </div>
-
-      <div class="sp-topbar__right">
-        <div class="sp-status-pill"
-          [class.sp-status-pill--watch]="platformHealth.tone === 'watch'"
-          [class.sp-status-pill--risk]="platformHealth.tone === 'risk'">
-          <span class="sp-status-dot"></span>
-          {{ platformHealth.label }}
-        </div>
-
-        <button class="sp-btn sp-btn--ghost sp-btn--pill" (click)="exportExcel()">
-          <svg viewBox="0 0 16 16" fill="none">
-            <path d="M8 2v9" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
-            <path d="M4.5 8.5L8 12l3.5-3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
-            <path d="M2 13h12" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
-          </svg>
-          Exporter
-        </button>
-
-        <button class="sp-btn sp-btn--primary sp-btn--pill" (click)="exportPdf()">
-          <svg viewBox="0 0 16 16" fill="none">
-            <path d="M3 2h7l3 3v9a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1Z" stroke="currentColor" stroke-width="1.4"/>
-            <path d="M10 2v4h4M6 9h4M6 12h2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
-          </svg>
-          Export PDF
-        </button>
-
-        <div class="sp-av-sm" routerLink="/admin/profil" style="cursor:pointer;overflow:hidden" title="Mon profil">
-          <img *ngIf="adminPhoto" [src]="adminPhoto" 
-               style="width:100%;height:100%;object-fit:cover;border-radius:50%;" alt="">
-          <span *ngIf="!adminPhoto">AP</span>
-        </div>
-      </div>
-    </header>
+    <app-admin-topbar
+      breadcrumb="SmartAssign › Admin › Supervision"
+      [notificationCount]="unreadCount">
+    </app-admin-topbar>
 
     <!-- ══ BODY ════════════════════════════════════════════ -->
     <div class="sp-body">
+
+      <section class="sp-page-header">
+        <div class="sp-page-header__copy">
+          <h1 class="sp-page-header__title">Supervision globale</h1>
+          <p class="sp-page-header__subtitle">
+            Pilotage quotidien — {{ currentDate | date:'EEEE d MMMM y':'':'fr' }}
+          </p>
+        </div>
+
+        <div class="sp-page-header__actions">
+          <div class="sp-status-pill sp-status-pill--topbar">
+            <span class="sp-status-dot"></span>
+            Plateforme saine
+          </div>
+
+          <button class="sp-btn sp-btn--ghost sp-btn--header" (click)="exportExcel()">
+            <svg viewBox="0 0 16 16" fill="none">
+              <path d="M8 2v9" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+              <path d="M4.5 8.5L8 12l3.5-3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M2 13h12" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+            </svg>
+            Exporter
+          </button>
+
+          <button class="sp-btn sp-btn--danger sp-btn--header" (click)="exportPdf()">
+            <svg viewBox="0 0 16 16" fill="none">
+              <path d="M3 2h7l3 3v9a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1Z" stroke="currentColor" stroke-width="1.4"/>
+              <path d="M10 2v4h4M6 9h4M6 12h2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+            </svg>
+            Export PDF
+          </button>
+        </div>
+      </section>
 
       <!-- LOADER -->
       <div class="sp-loader" *ngIf="loading">
@@ -61,63 +55,14 @@
 
         <!-- ── KPI CARDS ────────────────────────────────────── -->
         <div class="sp-kpi-grid">
-
-          <div class="sp-kcard"
-               [routerLink]="adminNav.projetsActifs.path"
-               [queryParams]="adminNav.projetsActifs.queryParams"
-               style="cursor:pointer">
-            <div class="sp-kcard__bar sp-kcard__bar--blue"></div>
-            <span class="sp-kcard__badge sp-kcard__badge--green">+50%</span>
-            <div class="sp-kcard__label">PROJETS ACTIFS</div>
-            <div class="sp-kcard__val sp-kcard__val--blue">{{ stats.projetsActifs }}</div>
-            <div class="sp-kcard__sub">{{ stats.nouveauxProjets }} nouveau(x) ce mois</div>
-          </div>
-
-          <div class="sp-kcard"
-               [routerLink]="adminNav.collaborateurs.path"
-               style="cursor:pointer">
-            <div class="sp-kcard__bar sp-kcard__bar--green"></div>
-            <span class="sp-kcard__badge sp-kcard__badge--neutral">stable</span>
-            <div class="sp-kcard__label">UTILISATEURS</div>
-            <div class="sp-kcard__val sp-kcard__val--green">{{ stats.totalCollaborateurs }}</div>
-            <div class="sp-kcard__sub">{{ stats.nouveauxCollabs }} nouveaux profils</div>
-          </div>
-
-          <div class="sp-kcard"
-               routerLink="/admin/collaborateurs"
-               style="cursor:pointer">
-            <div class="sp-kcard__bar sp-kcard__bar--amber"></div>
-            <span class="sp-kcard__badge sp-kcard__badge--warn">Vigilance</span>
-            <div class="sp-kcard__label">TAUX D'AFFECTATION</div>
-            <div class="sp-kcard__val sp-kcard__val--amber">{{ stats.tauxAffectation }}%</div>
-            <div class="sp-kcard__sub">Cible recommandée : 72%</div>
-          </div>
-
-          <div class="sp-kcard"
-               [routerLink]="adminNav.projetsEnRetard.path"
-               [queryParams]="adminNav.projetsEnRetard.queryParams"
-               style="cursor:pointer">
-            <div class="sp-kcard__bar sp-kcard__bar--red"></div>
-            <span class="sp-kcard__badge sp-kcard__badge--neutral">{{ stats.projetsEnRetard }}</span>
-            <div class="sp-kcard__label">PROJETS EN RETARD</div>
-            <div class="sp-kcard__val">{{ stats.projetsEnRetard }}</div>
-            <div class="sp-kcard__sub">Suivi immédiat requis</div>
-          </div>
-
-          <div class="sp-kcard"
-               [routerLink]="adminNav.collaborateurs.path"
-               style="cursor:pointer">
-            <div class="sp-kcard__bar sp-kcard__bar--purple"></div>
-            <span class="sp-kcard__badge sp-kcard__badge--neutral">{{ stats.totalCollaborateurs }} total</span>
-            <div class="sp-kcard__label">COMPTES UTILISATEURS</div>
-            <div class="sp-kcard__val sp-kcard__val--purple">{{ stats.totalCollaborateurs }}</div>
-            <div class="sp-kcard__sub">2 admins · 5 managers · 4 collabs</div>
-          </div>
-
+          <app-kpi-card [link]="adminNav.projetsActifs.path" [queryParams]="adminNav.projetsActifs.queryParams ?? null" label="Projets actifs" [value]="stats.projetsActifs" [subtitle]="stats.totalProjets + ' projets au total'" badge="+50%" tone="blue"></app-kpi-card>
+          <app-kpi-card [link]="adminNav.collaborateurs.path" label="Utilisateurs" [value]="stats.totalCollaborateurs" [subtitle]="stats.totalCollaborateurs + ' actifs'" badge="stable" tone="green" valueTone="green"></app-kpi-card>
+          <app-kpi-card label="Taux d'affectation" [value]="stats.tauxAffectation + '%'" subtitle="Cible recommandée : 72%" [badge]="getAffectationLabel()" [tone]="getAffectationTone() === 'risk' ? 'red' : getAffectationTone() === 'watch' ? 'amber' : 'green'" [valueTone]="getAffectationTone() === 'risk' ? 'red' : getAffectationTone() === 'watch' ? 'amber' : 'green'"></app-kpi-card>
+          <app-kpi-card [link]="adminNav.projetsEnRetard.path" [queryParams]="adminNav.projetsEnRetard.queryParams ?? null" label="Projets en retard" [value]="stats.projetsEnRetard" subtitle="Suivi immédiat requis" [badge]="stats.projetsEnRetard" tone="amber"></app-kpi-card>
+          <app-kpi-card [link]="adminNav.collaborateurs.path" label="Comptes utilisateurs" [value]="stats.totalCollaborateurs" [subtitle]="repartition.admins + ' admins · ' + repartition.managers + ' managers · ' + repartition.collaborateurs + ' collabs'" [badge]="stats.totalCollaborateurs + ' total'" tone="neutral"></app-kpi-card>
         </div>
 
-        <!-- ── ROW 1 : RÉPARTITION + VIGILANCE ──────────────── -->
-        <div class="sp-two-col">
+        <div class="sp-three-col">
 
           <!-- Utilisateurs par rôle -->
           <article class="sp-panel">
@@ -184,6 +129,51 @@
             </div>
           </article>
 
+          <!-- Création de comptes -->
+          <article class="sp-panel">
+            <div class="sp-panel__hd">
+              <div>
+                <span class="sp-kicker">ACTIVITÉ</span>
+                <h3>Création de comptes</h3>
+              </div>
+            </div>
+
+            <div class="sp-bar-chart">
+              <ng-container *ngIf="evolutionData.length; else fbBars">
+                <div class="sp-bar-col" *ngFor="let m of evolutionData; let i = index; let count = count">
+                  <div class="sp-bar"
+                       [class.sp-bar--accent]="i === count - 1"
+                       [class.sp-bar--blue]="i === count - 2"
+                       [style.height.%]="((m.actifs || 0) / (maxBarValue || 1)) * 100"></div>
+                  <span class="sp-bar-label">{{ m.mois }}</span>
+                </div>
+              </ng-container>
+              <ng-template #fbBars>
+                <div class="sp-bar-col"><div class="sp-bar" style="height:30%"></div><span class="sp-bar-label">Déc</span></div>
+                <div class="sp-bar-col"><div class="sp-bar" style="height:55%"></div><span class="sp-bar-label">Jan</span></div>
+                <div class="sp-bar-col"><div class="sp-bar" style="height:40%"></div><span class="sp-bar-label">Fév</span></div>
+                <div class="sp-bar-col"><div class="sp-bar" style="height:75%"></div><span class="sp-bar-label">Mar</span></div>
+                <div class="sp-bar-col"><div class="sp-bar sp-bar--blue" style="height:60%"></div><span class="sp-bar-label">Avr</span></div>
+                <div class="sp-bar-col"><div class="sp-bar sp-bar--accent" style="height:90%"></div><span class="sp-bar-label">Mai</span></div>
+              </ng-template>
+            </div>
+
+            <div class="sp-bar-stats">
+              <div class="sp-bar-stat">
+                <span class="sp-bar-stat__label">Total</span>
+                <span class="sp-bar-stat__val">{{ stats.totalCollaborateurs }}</span>
+              </div>
+              <div class="sp-bar-stat">
+                <span class="sp-bar-stat__label">Ce mois</span>
+                <span class="sp-bar-stat__val sp-bar-stat__val--green">+{{ stats.nouveauxCollabs }}</span>
+              </div>
+              <div class="sp-bar-stat">
+                <span class="sp-bar-stat__label">Suspendus</span>
+                <span class="sp-bar-stat__val">0</span>
+              </div>
+            </div>
+          </article>
+
           <!-- Points de vigilance -->
           <article class="sp-panel">
             <div class="sp-panel__hd">
@@ -191,75 +181,35 @@
                 <span class="sp-kicker">ALERTES SYSTÈME</span>
                 <h3>Points de vigilance</h3>
               </div>
-              <a class="sp-link-btn" routerLink="/admin/notifications">Toutes →</a>
-            </div>
-
-            <div class="sp-alert-list" *ngIf="alertes.length; else fallbackAlerts">
-              <div class="sp-alert"
-                *ngFor="let a of alertes"
-                [class.sp-alert--danger]="a.type === 'danger' || a.type === 'urgent'"
-                [class.sp-alert--warn]="a.type === 'warning'"
-                [class.sp-alert--info]="a.type === 'info'"
-                [class.sp-alert--ok]="a.type === 'ok'">
-                <div class="sp-alert__ico">
-                  <svg viewBox="0 0 16 16" fill="none">
-                    <path d="M8 2L14.5 13H1.5L8 2Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
-                    <path d="M8 6v3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
-                    <circle cx="8" cy="11" r=".6" fill="currentColor"/>
-                  </svg>
-                </div>
-                <div class="sp-alert__body">
-                  <strong>{{ a.message }}</strong>
-                  <span>{{ a.time }}</span>
-                </div>
-                <span class="sp-alert__badge">{{ a.type | uppercase }}</span>
+              <div class="sp-panel__actions">
+                <a class="sp-link-btn" routerLink="/admin/audit">Toutes →</a>
               </div>
             </div>
 
-            <ng-template #fallbackAlerts>
-              <div class="sp-alert-list">
-                <div class="sp-alert sp-alert--warn">
-                  <div class="sp-alert__ico">
-                    <svg viewBox="0 0 16 16" fill="none">
-                      <path d="M8 2L14.5 13H1.5L8 2Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
-                      <path d="M8 6v3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
-                      <circle cx="8" cy="11" r=".6" fill="currentColor"/>
-                    </svg>
-                  </div>
-                  <div class="sp-alert__body">
-                    <strong>8 collaborateurs sans affectation</strong>
-                    <span>Aujourd'hui — à signaler au Manager</span>
-                  </div>
-                  <span class="sp-alert__badge">WARNING</span>
-                </div>
-                <div class="sp-alert sp-alert--info">
-                  <div class="sp-alert__ico">
-                    <svg viewBox="0 0 16 16" fill="none">
-                      <circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.5"/>
-                      <path d="M8 7v5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-                      <circle cx="8" cy="5" r=".6" fill="currentColor"/>
-                    </svg>
-                  </div>
-                  <div class="sp-alert__body">
-                    <strong>2 ressources actuellement indisponibles</strong>
-                    <span>Aujourd'hui</span>
-                  </div>
-                  <span class="sp-alert__badge">INFO</span>
-                </div>
-                <div class="sp-alert sp-alert--ok">
-                  <div class="sp-alert__ico">
-                    <svg viewBox="0 0 16 16" fill="none">
-                      <polyline points="4 8 7 11 12 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                    </svg>
-                  </div>
-                  <div class="sp-alert__body">
-                    <strong>0 projet en retard</strong>
-                    <span>Aucun suivi urgent requis</span>
-                  </div>
-                  <span class="sp-alert__badge">OK</span>
-                </div>
+            <div class="sp-alert-preview">
+              <div class="sp-alert-preview__item sp-alert-preview__item--high">
+                <span class="sp-alert-preview__title">Projet Migration Cloud AWS sans manager responsable</span>
+                <a class="sp-alert-preview__link" routerLink="/admin/projets">Voir le projet</a>
               </div>
-            </ng-template>
+
+              <div class="sp-alert-preview__item sp-alert-preview__item--high">
+                <span class="sp-alert-preview__title">Projet Système de paie sans manager responsable</span>
+                <a class="sp-alert-preview__link" routerLink="/admin/projets">Voir le projet</a>
+              </div>
+
+              <div class="sp-alert-preview__item sp-alert-preview__item--medium">
+                <span class="sp-alert-preview__title">Projet Portail Collaborateurs en retard</span>
+                <a class="sp-alert-preview__link" routerLink="/admin/projets">Voir le projet</a>
+              </div>
+
+              <button
+                type="button"
+                class="sp-alert-preview__more"
+                (click)="openAlertsDrawer()"
+              >
+                Afficher le détail
+              </button>
+            </div>
           </article>
 
         </div>
@@ -271,57 +221,40 @@
               <span class="sp-kicker">ACTIVITÉ</span>
               <h3>Timeline d'administration</h3>
             </div>
-            <a class="sp-link-btn" routerLink="/admin/notifications">Journal complet →</a>
+            <a class="sp-link-btn" routerLink="/admin/audit">Journal complet →</a>
           </div>
 
           <div class="sp-timeline" *ngIf="activiteRecente.length; else fallbackTimeline">
             <div class="sp-tl-item" *ngFor="let act of activiteRecente">
-              <div class="sp-tl-av"
-                [class.sp-tl-av--blue]="act.categorie === 'projet'"
-                [class.sp-tl-av--purple]="act.categorie === 'admin'"
-                [class.sp-tl-av--green]="act.categorie === 'collab'"
-                [class.sp-tl-av--amber]="act.categorie === 'affectation'"
-              >{{ act.initiales }}</div>
-              <div class="sp-tl-body">
-                <strong>{{ act.action }}</strong>
-                <span>{{ act.temps }} ·
-                  <span class="sp-tl-tag"
-                    [class.sp-tl-tag--blue]="act.categorie === 'projet'"
-                    [class.sp-tl-tag--green]="act.categorie === 'collab' || act.categorie === 'affectation'"
-                  >{{ act.categorie === 'collab' || act.categorie === 'affectation' ? 'Collab' : 'Projet' }}</span>
+              <div class="tl-dot" [ngClass]="'tl-' + getTypeClass(resolveTimelineType(act))">
+                <i class="ti" [ngClass]="getTypeIcon(resolveTimelineType(act))"></i>
+              </div>
+
+              <div class="tl-body">
+                <div class="tl-title">
+                  <strong>{{ act.action }}</strong>
+                  <span>—</span>
+                  <span class="tl-user">{{ getActivityUser(act) }}</span>
+                  <span class="tl-role">{{ act.role || 'INCONNU' }}</span>
+                </div>
+                <div class="tl-meta">{{ (act.createdAt | date:'yyyy-MM-dd HH:mm') || act.temps }} · {{ getActivityIp(act) }}</div>
+              </div>
+
+              <div class="tl-right">
+                <span class="tl-badge" [ngClass]="'tl-badge-' + getTypeClass(resolveTimelineType(act))">
+                  {{ getTypeLabel(resolveTimelineType(act)) }}
                 </span>
+                <span class="tl-time">{{ act.temps }}</span>
               </div>
             </div>
           </div>
 
           <ng-template #fallbackTimeline>
             <div class="sp-timeline">
-              <div class="sp-tl-item">
-                <div class="sp-tl-av sp-tl-av--blue">A</div>
+              <div class="sp-tl-item sp-tl-item--empty">
                 <div class="sp-tl-body">
-                  <strong>Projet "abccn" planifié</strong>
-                  <span>à l'instant · <span class="sp-tl-tag sp-tl-tag--blue">Projet</span></span>
-                </div>
-              </div>
-              <div class="sp-tl-item">
-                <div class="sp-tl-av sp-tl-av--purple">F</div>
-                <div class="sp-tl-body">
-                  <strong>Projet "frgtyjukinhbvg" planifié</strong>
-                  <span>il y a 12h · <span class="sp-tl-tag sp-tl-tag--blue">Projet</span></span>
-                </div>
-              </div>
-              <div class="sp-tl-item">
-                <div class="sp-tl-av sp-tl-av--green">MB</div>
-                <div class="sp-tl-body">
-                  <strong>Affectation mise à jour : mouadh bibeni → bbbp</strong>
-                  <span>il y a 19h · <span class="sp-tl-tag sp-tl-tag--green">Collab</span></span>
-                </div>
-              </div>
-              <div class="sp-tl-item">
-                <div class="sp-tl-av sp-tl-av--amber">NB</div>
-                <div class="sp-tl-body">
-                  <strong>Affectation mise à jour : nour ben romdhane → frgtyjukinhbvg</strong>
-                  <span>il y a 20h · <span class="sp-tl-tag sp-tl-tag--green">Collab</span></span>
+                  <strong>Aucun événement récent</strong>
+                  <span>La timeline se remplit automatiquement à partir du journal d'audit.</span>
                 </div>
               </div>
             </div>
@@ -333,6 +266,123 @@
     </div>
   </div>
 </section>
+
+<!-- Overlay -->
+<div
+  class="alerts-overlay"
+  [class.open]="alertsDrawerOpen"
+  (click)="closeAlertsDrawer()"
+></div>
+
+<!-- Drawer panneau latéral -->
+<div class="alerts-drawer" [class.open]="alertsDrawerOpen">
+
+  <!-- Header du drawer -->
+  <div class="drawer-header">
+    <div class="drawer-title">
+      <i class="ti ti-alert-triangle" style="color:#D97706;font-size:18px"></i>
+      <span>Points de vigilance</span>
+      <span class="alerts-count-badge">{{ alertes.length }}</span>
+    </div>
+    <button class="drawer-close" type="button" (click)="closeAlertsDrawer()">
+      <i class="ti ti-x"></i>
+    </button>
+  </div>
+
+  <!-- Résumé rapide -->
+  <div class="drawer-summary">
+    <div class="summary-item critical">
+      <span class="summary-num">{{ getCriticalCount() }}</span>
+      <span class="summary-label">Critiques</span>
+    </div>
+    <div class="summary-item warning">
+      <span class="summary-num">{{ getWarningCount() }}</span>
+      <span class="summary-label">Avertissements</span>
+    </div>
+    <div class="summary-item info">
+      <span class="summary-num">{{ getInfoCount() }}</span>
+      <span class="summary-label">Informations</span>
+    </div>
+  </div>
+
+  <!-- Liste des alertes -->
+  <div class="drawer-alerts-list">
+    <!-- Groupe CRITIQUE -->
+    <div class="alerts-group" *ngIf="getCriticalCount() > 0">
+      <div class="group-label critical">
+        <i class="ti ti-alert-circle"></i>
+        Critiques ({{ getCriticalCount() }})
+      </div>
+      <button type="button" class="alert-card alert-critical" *ngFor="let alert of getCriticalAlerts()" (click)="naviguerVersProjet(resolveAlertProjetId(alert))">
+        <div class="alert-card-icon">
+          <i class="ti ti-alert-circle"></i>
+        </div>
+        <div class="alert-card-body">
+          <div class="alert-card-title">{{ alert.title || alert.message }}</div>
+          <div class="alert-card-desc">{{ alert.description || alert.message }}</div>
+          <div class="alert-card-date">{{ getAlertDate(alert) }}</div>
+        </div>
+        <span class="alert-card-badge critical">CRITIQUE</span>
+        <span class="alert-card-link">Voir le projet →</span>
+      </button>
+    </div>
+
+    <!-- Groupe WARNING -->
+    <div class="alerts-group" *ngIf="getWarningCount() > 0">
+      <div class="group-label warning">
+        <i class="ti ti-alert-triangle"></i>
+        Avertissements ({{ getWarningCount() }})
+      </div>
+      <button type="button" class="alert-card alert-warning" *ngFor="let alert of getWarningAlerts()" (click)="naviguerVersProjet(resolveAlertProjetId(alert))">
+        <div class="alert-card-icon">
+          <i class="ti ti-alert-triangle"></i>
+        </div>
+        <div class="alert-card-body">
+          <div class="alert-card-title">{{ alert.title || alert.message }}</div>
+          <div class="alert-card-desc">{{ alert.description || alert.message }}</div>
+          <div class="alert-card-date">{{ getAlertDate(alert) }}</div>
+        </div>
+        <span class="alert-card-badge warning">WARNING</span>
+        <span class="alert-card-link">Voir le projet →</span>
+      </button>
+    </div>
+
+    <!-- Groupe INFO -->
+    <div class="alerts-group" *ngIf="getInfoCount() > 0">
+      <div class="group-label info">
+        <i class="ti ti-info-circle"></i>
+        Informations ({{ getInfoCount() }})
+      </div>
+      <button type="button" class="alert-card alert-info" *ngFor="let alert of getInfoAlerts()" (click)="naviguerVersProjet(resolveAlertProjetId(alert))">
+        <div class="alert-card-icon">
+          <i class="ti ti-info-circle"></i>
+        </div>
+        <div class="alert-card-body">
+          <div class="alert-card-title">{{ alert.title || alert.message }}</div>
+          <div class="alert-card-desc">{{ alert.description || alert.message }}</div>
+          <div class="alert-card-date">{{ getAlertDate(alert) }}</div>
+        </div>
+        <span class="alert-card-badge info">INFO</span>
+        <span class="alert-card-link">Voir le projet →</span>
+      </button>
+    </div>
+
+    <!-- Aucune alerte -->
+    <div class="no-alerts" *ngIf="alertes.length === 0">
+      <i class="ti ti-circle-check"></i>
+      <span>Aucune alerte active</span>
+    </div>
+  </div>
+
+  <!-- Footer du drawer -->
+  <div class="drawer-footer">
+    <button class="btn-voir-notifs" type="button" (click)="goToNotifications()">
+      <i class="ti ti-bell"></i>
+      Voir toutes les notifications
+    </button>
+  </div>
+</div>
+
 <!-- ── PDF success toast ──────────────────────────────── -->
 <div *ngIf="pdfSuccess" class="sp-pdf-toast">
   <i class="ti ti-circle-check"></i> PDF généré avec succès&nbsp;!

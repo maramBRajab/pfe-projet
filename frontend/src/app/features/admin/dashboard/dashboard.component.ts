@@ -2,7 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, ElementRef, HostListener, OnDestroy, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
-import { catchError, forkJoin, of } from 'rxjs';
+import { Subscription, catchError, forkJoin, of } from 'rxjs';
 import {
   ADMIN_NAV,
   adminCollaborateurTarget,
@@ -11,8 +11,15 @@ import {
   AdminNavigationTarget,
 } from '../admin-navigation';
 import { AdminSidebarComponent } from '../shared/admin-sidebar.component';
+import { AdminTopbarComponent } from '../shared/admin-topbar.component';
 import { AdminNotificationsPanelService } from '../shared/admin-notifications-panel.service';
 import { AuthService } from '../../../services/auth';
+import { NotificationBadgeService } from '../../../services/admin/notification-badge.service';
+import {
+  resolveActivityTypeClass,
+  resolveActivityTypeIcon,
+  resolveActivityTypeLabel,
+} from '../../../shared/utils/activity-type.utils';
 
 import {
   Activite,
@@ -110,10 +117,11 @@ interface TimelineGroup {
   items: Activite[];
 }
 
+import { KpiCardComponent } from '../../../shared/kpi-card/kpi-card.component';
 @Component({
   selector: 'app-admin-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, AdminSidebarComponent],
+  imports: [CommonModule, FormsModule, RouterModule, KpiCardComponent, AdminSidebarComponent, AdminTopbarComponent],
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.scss']
 })
@@ -134,6 +142,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   autoRefreshEnabled = false;
   darkMode = false;
   adminPhoto: string | null = null;
+  unreadCount = 0;
 
   stats: DashboardStats = this.buildFallbackStats();
 
@@ -168,10 +177,12 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   private readonly CIRCUMFERENCE = 2 * Math.PI * 70;
   private readonly autoRefreshMs = 60_000;
   private autoRefreshHandle?: number;
+  private badgeSubscription?: Subscription;
 
   userMenuOpen = false;
   /** Controls the slide-out recommendations panel */
   showRecommendationsPanel = false;
+  alertsDrawerOpen = false;
 
   // Filter state for Portefeuille sous tension
   activeFilter: string = 'tous';
@@ -195,6 +206,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   constructor(
     private readonly dashboardService: AdminDashboardService,
     private readonly notificationsPanel: AdminNotificationsPanelService,
+    private readonly notificationBadgeService: NotificationBadgeService,
     private readonly authService: AuthService,
     private readonly router: Router,
     private readonly elRef: ElementRef
@@ -235,11 +247,18 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    this.adminPhoto = localStorage.getItem('smartassign_admin_photo');
+    this.adminPhoto = this.authService.currentUser?.photoUrl ?? null;
+    this.unreadCount = this.notificationBadgeService.current();
+    this.badgeSubscription = this.notificationBadgeService.count$.subscribe((count) => {
+      this.unreadCount = count;
+      this.notificationsPanel.notificationCount.set(count);
+    });
     this.loadStats();
   }
 
   ngOnDestroy(): void {
+    this.badgeSubscription?.unsubscribe();
+    this.setBodyScrollLock(false);
     this.stopAutoRefresh();
   }
 
@@ -252,8 +271,8 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
       stats: this.dashboardService.getStats().pipe(catchError(() => of(this.buildFallbackStats()))),
       evolution: this.dashboardService.getEvolutionProjets().pipe(catchError(() => of(this.buildFallbackEvolution()))),
       repartition: this.dashboardService.getRepartitionRoles().pipe(catchError(() => of(this.buildFallbackRepartition()))),
-      alertes: this.dashboardService.getAlertes().pipe(catchError(() => of(this.buildFallbackAlerts()))),
-      activite: this.dashboardService.getActiviteRecente().pipe(catchError(() => of(this.buildFallbackActivities()))),
+      alertes: this.dashboardService.getAlertes().pipe(catchError(() => of([]))),
+      activite: this.dashboardService.getActiviteRecente().pipe(catchError(() => of([]))),
       insights: this.dashboardService.getInsights().pipe(catchError(() => of(this.buildFallbackInsights())))
     }).subscribe(({ stats, evolution, repartition, alertes, activite, insights }) => {
       this.stats = stats;
@@ -264,20 +283,195 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
       );
       this.repartition = repartition;
       this.alertes = alertes;
-      this.notificationsPanel.notificationCount.set(alertes.length);
       this.activiteRecente = activite;
       this.platformHealth = insights.platformHealth as PlatformHealth;
       this.criticalProjects = insights.criticalProjects as unknown as CriticalProjectItem[];
       this.upcomingDeadlines = insights.upcomingDeadlines as unknown as DeadlineItem[];
       this.collaboratorLoad = insights.collaboratorLoad as unknown as CollaboratorLoadItem[];
       this.suggestions = insights.suggestions as unknown as SuggestionItem[];
-      this.timelineGroups = this.buildTimelineGroups();
       this.kpiCards = this.buildKpiCards();
 
       this.lastUpdated = new Date();
       this.currentDate = new Date();
       this.loading = false;
     });
+  }
+
+  get recentAlertes(): Alerte[] {
+    return this.alertes.slice(0, 8);
+  }
+
+  openAlertsDrawer(): void {
+    this.alertsDrawerOpen = true;
+    this.setBodyScrollLock(true);
+    this.loadAlertsForDrawer();
+  }
+
+  closeAlertsDrawer(): void {
+    this.alertsDrawerOpen = false;
+    this.setBodyScrollLock(false);
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscapeKey(): void {
+    if (this.alertsDrawerOpen) {
+      this.closeAlertsDrawer();
+    }
+  }
+
+  getCriticalAlerts(): Alerte[] {
+    return this.alertes.filter((alert) => this.alertLevel(alert) === 'CRITICAL');
+  }
+
+  getWarningAlerts(): Alerte[] {
+    return this.alertes.filter((alert) => this.alertLevel(alert) === 'WARNING');
+  }
+
+  getInfoAlerts(): Alerte[] {
+    return this.alertes.filter((alert) => this.alertLevel(alert) === 'INFO');
+  }
+
+  getCriticalCount(): number {
+    return this.getCriticalAlerts().length;
+  }
+
+  getWarningCount(): number {
+    return this.getWarningAlerts().length;
+  }
+
+  getInfoCount(): number {
+    return this.getInfoAlerts().length;
+  }
+
+  getTopAlerts(max: number): Alerte[] {
+    return [...this.alertes]
+      .sort((first, second) => {
+        const levelDiff = this.alertPriority(second) - this.alertPriority(first);
+        if (levelDiff !== 0) {
+          return levelDiff;
+        }
+
+        return this.alertTimestamp(second) - this.alertTimestamp(first);
+      })
+      .slice(0, Math.max(0, max));
+  }
+
+  getRemainingAlertsCount(max: number): number {
+    return Math.max(0, this.alertes.length - Math.max(0, max));
+  }
+
+  getAlertPreviewTone(alert: Alerte): 'critical' | 'warning' | 'info' {
+    const level = this.alertLevel(alert);
+    if (level === 'CRITICAL') {
+      return 'critical';
+    }
+    if (level === 'WARNING') {
+      return 'warning';
+    }
+    return 'info';
+  }
+
+  getAlertPreviewIcon(alert: Alerte): string {
+    const tone = this.getAlertPreviewTone(alert);
+    if (tone === 'critical') {
+      return 'ti ti-alert-circle';
+    }
+    if (tone === 'warning') {
+      return 'ti ti-alert-triangle';
+    }
+    return 'ti ti-info-circle';
+  }
+
+  getAlertPreviewTitle(alert: Alerte): string {
+    return alert.title?.trim() || alert.message?.trim() || 'Alerte système';
+  }
+
+  getAlertDate(alert: Alerte): string {
+    if (alert.generatedAt) {
+      return new Date(alert.generatedAt).toLocaleString('fr-FR');
+    }
+
+    return alert.time || '';
+  }
+
+  goToNotifications(): void {
+    this.closeAlertsDrawer();
+    void this.router.navigate(['/admin/notifications']);
+  }
+
+  naviguerVersProjet(projetId?: number): void {
+    this.closeAlertsDrawer();
+    void this.router.navigate(['/admin/projets'], {
+      queryParams: projetId ? { id: projetId } : undefined,
+    });
+  }
+
+  resolveAlertProjetId(alert: Alerte): number | undefined {
+    if (typeof alert.projetId === 'number' && Number.isFinite(alert.projetId)) {
+      return alert.projetId;
+    }
+
+    const link = (alert.link ?? '').trim();
+    if (!link) {
+      return undefined;
+    }
+
+    const queryMatch = link.match(/[?&]id=(\d+)/i);
+    if (queryMatch?.[1]) {
+      return Number(queryMatch[1]);
+    }
+
+    const pathMatch = link.match(/\/(\d+)(?:\D*$|$)/);
+    if (pathMatch?.[1]) {
+      return Number(pathMatch[1]);
+    }
+
+    return undefined;
+  }
+
+  alertLevel(al: Alerte): 'INFO' | 'WARNING' | 'CRITICAL' {
+    const level = (al.level || '').toUpperCase();
+    if (level === 'CRITICAL') {
+      return 'CRITICAL';
+    }
+    if (level === 'WARNING') {
+      return 'WARNING';
+    }
+    return 'INFO';
+  }
+
+  private alertPriority(alert: Alerte): number {
+    const level = this.alertLevel(alert);
+    if (level === 'CRITICAL') {
+      return 3;
+    }
+    if (level === 'WARNING') {
+      return 2;
+    }
+    return 1;
+  }
+
+  private alertTimestamp(alert: Alerte): number {
+    if (alert.generatedAt) {
+      const parsed = Date.parse(alert.generatedAt);
+      if (!Number.isNaN(parsed)) {
+        return parsed;
+      }
+    }
+
+    return 0;
+  }
+
+  private loadAlertsForDrawer(): void {
+    this.dashboardService.getDashboardAlerts().pipe(
+      catchError(() => of(this.alertes))
+    ).subscribe((alerts) => {
+      this.alertes = alerts;
+    });
+  }
+
+  private setBodyScrollLock(open: boolean): void {
+    document.body.style.overflow = open ? 'hidden' : '';
   }
 
   onSearchChange(): void {
@@ -332,17 +526,6 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   }
 
   exportPdf(): void {
-    this.loading = true;
-    this.lastUpdated = new Date();
-    this.stats = this.buildFallbackStats();
-    this.platformHealth = this.buildFallbackInsights().platformHealth;
-    this.criticalProjects = [];
-    this.alertes = [];
-    this.activiteRecente = [];
-    this.kpiCards = [];
-
-    this.loadStats();
-
     const printWindow = window.open('', '_blank', 'width=1100,height=760');
 
     if (!printWindow) {
@@ -461,14 +644,99 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     return this.stats.ressourcesDisponibles;
   }
 
-  private computeDecisionSupport(): void {
-    this.collaboratorLoad = this.buildCollaboratorLoad();
-    this.criticalProjects = this.buildCriticalProjects();
-    this.upcomingDeadlines = this.buildUpcomingDeadlines();
-    this.platformHealth = this.buildPlatformHealth();
-    this.suggestions = this.buildSuggestions();
-    this.timelineGroups = this.buildTimelineGroups();
-    this.kpiCards = this.buildKpiCards();
+  // computeDecisionSupport supprimé : criticalProjects, collaboratorLoad, upcomingDeadlines
+  // et platformHealth sont maintenant exclusivement alimentés par getInsights() backend.
+
+  getTypeClass(type: string | undefined): string {
+    return resolveActivityTypeClass(type);
+  }
+
+  getTypeIcon(type: string | undefined): string {
+    return resolveActivityTypeIcon(type);
+  }
+
+  getTypeLabel(type: string | undefined): string {
+    return resolveActivityTypeLabel(type);
+  }
+
+  resolveTimelineType(act: Activite): string {
+    const explicitType = (act.type ?? '').trim();
+    if (explicitType) {
+      return explicitType;
+    }
+
+    const action = (act.action ?? '').toUpperCase();
+    const level = (act.level ?? '').toUpperCase();
+    const category = (act.categorie ?? '').toUpperCase();
+
+    if (level.includes('CRIT')) {
+      return 'ERREUR';
+    }
+    if (action.includes('LOGIN') || action.includes('CONNEXION') || action.includes('LOGOUT')) {
+      return 'CONNEXION';
+    }
+    if (action.includes('CREATE') || action.includes('CREATION')) {
+      return 'CREATION';
+    }
+    if (action.includes('DELETE') || action.includes('SUPPRESSION') || action.includes('UNASSIGN')) {
+      return 'SUPPRESSION';
+    }
+    if (action.includes('UPDATE') || action.includes('MODIFICATION') || action.includes('ASSIGN')) {
+      return 'MODIFICATION';
+    }
+    if (action.includes('PARAM') || category.includes('SYSTEME')) {
+      return 'PARAMETRES';
+    }
+
+    if (action.includes('RENVOI') || action.includes('VERIFICATION')) {
+      return 'RENVOI_EMAIL_VERIFICATION';
+    }
+
+    return 'CONNEXION';
+  }
+
+  getActivityUser(act: Activite): string {
+    return act.userEmail || 'système';
+  }
+
+  getActivityIp(act: Activite): string {
+    const ip = (act.ip ?? '').trim().toLowerCase();
+    if (!ip) {
+      return '-';
+    }
+
+    if (ip === '127.0.0.1' || ip === '::1' || ip === '0:0:0:0:0:0:0:1' || ip.startsWith('::ffff:127.')) {
+      return 'Adresse locale';
+    }
+
+    return act.ip || '-';
+  }
+
+  getAffectationTone(): 'good' | 'watch' | 'risk' {
+    const rate = this.stats.tauxAffectation;
+    if (rate >= 70) {
+      return 'good';
+    }
+
+    if (rate >= 40) {
+      return 'watch';
+    }
+
+    return 'risk';
+  }
+
+  getAffectationLabel(): string {
+    const tone = this.getAffectationTone();
+
+    if (tone === 'good') {
+      return 'Niveau satisfaisant';
+    }
+
+    if (tone === 'watch') {
+      return 'Niveau à surveiller';
+    }
+
+    return 'Niveau critique';
   }
 
   private buildKpiCards(): DashboardKpiCard[] {
@@ -707,25 +975,6 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     return suggestions.slice(0, 4);
   }
 
-  private buildTimelineGroups(): TimelineGroup[] {
-    const groups: TimelineGroup[] = [
-      { label: 'Aujourd’hui', items: [] },
-      { label: 'Hier', items: [] },
-      { label: 'Cette semaine', items: [] }
-    ];
-
-    this.activiteRecente.forEach((item, index) => {
-      const target = this.resolveTimelineGroup(item.temps, index);
-      const group = groups.find((entry) => entry.label === target);
-
-      if (group) {
-        group.items.push(item);
-      }
-    });
-
-    return groups.filter((group) => group.items.length > 0);
-  }
-
   private estimatePreviousAllocation(): number {
     const previousActiveProjects = this.getPreviousEvolutionValue('actifs', this.stats.projetsActifs);
     const currentActiveProjects = Math.max(this.stats.projetsActifs, 1);
@@ -821,20 +1070,6 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     }
 
     return 'Maintenir une revue hebdomadaire des dépendances et de la capacité.';
-  }
-
-  private resolveTimelineGroup(timeLabel: string, index: number): string {
-    const normalized = timeLabel.toLowerCase();
-
-    if (normalized.includes('min') || normalized.includes('h') || normalized.includes('aujourd')) {
-      return 'Aujourd’hui';
-    }
-
-    if (normalized.includes('hier')) {
-      return 'Hier';
-    }
-
-    return index < 3 ? 'Aujourd’hui' : 'Cette semaine';
   }
 
   private buildHealthSummary(score: number): string {
@@ -1039,6 +1274,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   private buildFallbackStats(): DashboardStats {
     return {
       projetsActifs: 3,
+      totalProjets: 4,
       totalCollaborateurs: 11,
       tauxAffectation: 27,
       managersActifs: 5,
@@ -1066,20 +1302,11 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   }
 
   private buildFallbackAlerts(): Alerte[] {
-    return [
-      { type: 'warning', icon: '', message: '8 collaborateurs sans affectation',            time: 'Aucun projet assigné depuis plus de 7 jours' },
-      { type: 'info',    icon: '', message: '2 ressources actuellement indisponibles',       time: 'Disponibilité incertaine cette semaine' },
-      { type: 'ok',      icon: '', message: '0 projet en retard',                             time: 'Tous les jalons sont dans les délais' },
-    ];
+    return [];
   }
 
   private buildFallbackActivities(): Activite[] {
-    return [
-      { initiales: 'A',  action: "Projet 'abccn' planifié",                                            temps: "\u00e0 l'instant", categorie: 'plan'  },
-      { initiales: 'F',  action: "Projet 'frgtyjukinhbvg' planifié",                                   temps: 'il y a 12h',    categorie: 'projet' },
-      { initiales: 'MB', action: 'Affectation mise \u00e0 jour\u00a0: mouadh bibeni \u2192 bbbp',                    temps: 'il y a 19h',    categorie: 'collab' },
-      { initiales: 'NB', action: 'Affectation mise \u00e0 jour\u00a0: nour ben romdhane \u2192 frgtyjukinhbvg',     temps: 'il y a 20h',    categorie: 'admin'  },
-    ];
+    return [];
   }
 
   private buildFallbackInsights(): DashboardInsights {

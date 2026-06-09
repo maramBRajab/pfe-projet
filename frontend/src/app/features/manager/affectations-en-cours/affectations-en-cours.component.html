@@ -35,7 +35,7 @@
         </div>
         <div class="row-btns">
           <a [routerLink]="['/manager/detail-projet', affectation.projet.id]" class="btn btn--ghost">Détail projet</a>
-          <button type="button" class="btn btn--danger" (click)="supprimerAffectation(affectation.id)" [disabled]="deletingIds.has(affectation.id)">Annuler</button>
+          <button type="button" class="btn btn--danger" (click)="demanderAnnulation(affectation)" [disabled]="deletingIds.has(affectation.id)">Annuler</button>
         </div>
       </article>
 
@@ -43,4 +43,20 @@
     </div>
     </div>
   </section>
+
+  <div class="confirm-overlay" *ngIf="affectationToCancel" (click)="fermerAnnulation()">
+    <section class="confirm-dialog" role="dialog" aria-modal="true" aria-label="Annuler l'affectation" (click)="$event.stopPropagation()">
+      <div class="confirm-icon" aria-hidden="true">!</div>
+      <h2>Annuler l'affectation</h2>
+      <p>
+        Confirmer l'annulation de l'affectation de
+        <strong>{{ affectationToCancel.collaborateur.prenom }} {{ affectationToCancel.collaborateur.nom }}</strong>
+        sur <strong>{{ affectationToCancel.projet.nom }}</strong> ?
+      </p>
+      <div class="confirm-actions">
+        <button type="button" class="btn btn--ghost" (click)="fermerAnnulation()">Fermer</button>
+        <button type="button" class="btn btn--danger" (click)="confirmerAnnulation()">Confirmer</button>
+      </div>
+    </section>
+  </div>
 </app-manager-shell>

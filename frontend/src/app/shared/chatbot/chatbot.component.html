@@ -5,18 +5,14 @@
   <span class="unread-badge" *ngIf="!isOpen && unreadCount > 0">{{ unreadCount }}</span>
 </button>
 
-<!-- Fenêtre -->
-<div class="chat-window" [class.open]="isOpen" role="dialog" aria-label="Assistant IA SmartAssign">
-
-  <!-- Header -->
+<!-- Fenêtre latérale -->
+<aside class="chat-window" [class.open]="isOpen" role="dialog" aria-label="Assistant IA SmartAssign">
   <div class="chat-header">
     <div class="chat-header-left">
       <div class="chat-avatar">🤖</div>
       <div>
         <div class="chat-title">Assistant IA SmartAssign</div>
-        <div class="chat-subtitle">
-          <span class="dot-online"></span> Analyse IA · En ligne
-        </div>
+        <div class="chat-subtitle"><span class="dot-online"></span> En ligne</div>
       </div>
     </div>
     <div class="chat-header-actions">
@@ -25,60 +21,37 @@
     </div>
   </div>
 
-  <!-- Messages -->
   <div class="chat-messages" #messagesContainer>
     <div *ngFor="let msg of messages" class="msg-row" [class.user]="msg.role === 'user'">
-
-      <!-- Bulle utilisateur -->
       <ng-container *ngIf="msg.role === 'user'">
-        <div class="msg-bubble user-bubble">
-          {{ msg.content }}
-        </div>
+        <div class="msg-bubble user-bubble">{{ msg.content }}</div>
         <div class="msg-avatar user-av">MS</div>
       </ng-container>
 
-      <!-- Bulle bot -->
-      <ng-container *ngIf="msg.role === 'bot'">
-        <div class="msg-avatar bot-av">{{ getTypeIcon(msg.type) }}</div>
+      <ng-container *ngIf="msg.role === 'assistant'">
+        <div class="msg-avatar bot-av">🤖</div>
         <div class="msg-bubble bot-bubble" [class.loading]="msg.isLoading">
-
-          <!-- Indicateur de frappe -->
           <ng-container *ngIf="msg.isLoading">
             <span class="dot"></span>
             <span class="dot"></span>
             <span class="dot"></span>
           </ng-container>
 
-          <!-- Contenu -->
           <ng-container *ngIf="!msg.isLoading">
             <div [innerHTML]="renderHtml(msg.content)"></div>
-
-            <!-- Résultats compacts -->
-            <div class="results-mini" *ngIf="msg.resultats && msg.resultats.length">
-              <div class="result-row" *ngFor="let r of msg.resultats; let i = index">
-                <div class="result-rank">{{ r.rang || (i + 1) }}</div>
-                <div class="result-name">{{ r.collaborateurNom }}</div>
-                <div class="result-score">{{ r.score }}%</div>
-                <div class="result-pot">{{ r.potentielLabel }}</div>
-              </div>
-            </div>
-
             <div class="msg-time">{{ msg.timestamp | date:'HH:mm' }}</div>
           </ng-container>
         </div>
       </ng-container>
-
     </div>
   </div>
 
-  <!-- Suggestions -->
   <div class="suggestions" *ngIf="suggestions.length && !isTyping">
     <button type="button" class="suggestion-chip" *ngFor="let s of suggestions" (click)="sendMessage(s)">
       {{ s }}
     </button>
   </div>
 
-  <!-- Zone de saisie -->
   <div class="chat-input-area">
     <input
       type="text"
@@ -86,10 +59,10 @@
       [(ngModel)]="inputMessage"
       [disabled]="isTyping"
       (keydown)="onKeyDown($event)"
-      placeholder="Posez votre question… (ex: Qui pour TunisCommerce B2B ?)"
+      placeholder="Votre question..."
       autocomplete="off">
     <button type="button" class="send-btn" (click)="sendMessage()" [disabled]="isTyping || !inputMessage.trim()" aria-label="Envoyer">
       ➤
     </button>
   </div>
-</div>
+</aside>

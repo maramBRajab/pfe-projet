@@ -11,5 +11,9 @@ public class AuthResponse {
     private String nom;
     private String email;
     private String role;
+    private String photoUrl;
+    private String telephone;
+    private String poste;
+    private String departement;
     private String token; // pour JWT plus tard
 }

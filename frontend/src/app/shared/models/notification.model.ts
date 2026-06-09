@@ -4,4 +4,7 @@ export interface Notification {
   message: string;
   niveau: string;
   dateCreation: string;
+  id?: number;
+  notificationKey?: string;
+  lu?: boolean;
 }

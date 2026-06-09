@@ -1,157 +1,86 @@
 ﻿<app-collaborateur-shell activeSection="projets">
+  <app-collab-topbar
+    shell-topbar
+    breadcrumb="SmartAssign › Collaborateur › Mes Projets"
+    [notificationCount]="0"
+    userName="Collaborateur Demo"
+    initials="CD">
+  </app-collab-topbar>
 
-  <!-- ══ TOPBAR ════════════════════════════════════════════ -->
-  <header shell-topbar class="mp-topbar">
-    <div class="mp-topbar__left">
-      <nav class="mp-topbar__bc">
-        <span>SmartAssign</span>
-        <span class="mp-topbar__sep">›</span>
-        <span>Collaborateur</span>
-        <span class="mp-topbar__sep">›</span>
-        <span class="mp-topbar__cur">Mes projets</span>
-      </nav>
-      <h1 class="mp-topbar__title">Mes projets</h1>
-    </div>
-    <div class="mp-topbar__right">
-      <div class="mp-status-pill">
-        <span class="mp-status-dot"></span>
-        <span>{{ statusLabel }}</span>
-      </div>
-      <button type="button" class="mp-btn mp-btn--primary" (click)="primaryProjectAction()">
-        <i class="ti ti-calendar"></i> Ouvrir le planning
-      </button>
-      <div class="mp-av">{{ userInitials }}</div>
-    </div>
-  </header>
-
-  <!-- ══ CONTENT ═══════════════════════════════════════════ -->
-
-  <p class="mp-date-lbl">Pilotage personnel &mdash; {{ today | date:'EEEE d MMMM yyyy':'':'fr' | titlecase }}</p>
-
-  <!-- Error -->
   <div class="mp-error" *ngIf="errorMessage">{{ errorMessage }}</div>
+  <div class="mp-feedback mp-feedback--success" *ngIf="actionMessage">{{ actionMessage }}</div>
+  <div class="mp-feedback mp-feedback--error" *ngIf="actionError">{{ actionError }}</div>
 
-  <!-- Loader -->
   <div class="mp-loader" *ngIf="isLoading">
     <div class="mp-spinner"></div>
     <span>Chargement des projets…</span>
   </div>
 
   <ng-container *ngIf="!isLoading && !errorMessage">
-
-    <!-- ── KPI GRID ──────────────────────────────────────── -->
-    <div class="mp-kpi-grid">
-
-      <div class="mp-kcard">
-        <div class="mp-kcard__bar mp-kcard__bar--blue"></div>
-        <div class="mp-kcard__hd"><span class="mp-kbadge mp-kbadge--green">Actif</span></div>
-        <div class="mp-kcard__lbl">PROJETS ACTIFS</div>
-        <div class="mp-kcard__val" style="color:#3b82f6">{{ metrics[0]?.value ?? 0 }}</div>
-        <div class="mp-kcard__sub">Missions en cours ou révision</div>
-      </div>
-
-      <div class="mp-kcard">
-        <div class="mp-kcard__bar mp-kcard__bar--amber"></div>
-        <div class="mp-kcard__hd"><span class="mp-kbadge mp-kbadge--amber">Suivi</span></div>
-        <div class="mp-kcard__lbl">CHARGE ACTUELLE</div>
-        <div class="mp-kcard__val" style="color:#f59e0b">{{ metrics[1]?.value ?? '0%' }}</div>
-        <div class="mp-kcard__sub">Moyenne de progression</div>
-      </div>
-
-      <div class="mp-kcard">
-        <div class="mp-kcard__bar mp-kcard__bar--green"></div>
-        <div class="mp-kcard__hd"><span class="mp-kbadge mp-kbadge--green">Alignement</span></div>
-        <div class="mp-kcard__lbl">COMPATIBILITÉ MOY.</div>
-        <div class="mp-kcard__val" style="color:#10b981">{{ metrics[2]?.value ?? '0%' }}</div>
-        <div class="mp-kcard__sub">Alignement avec les projets</div>
-      </div>
-
-      <div class="mp-kcard">
-        <div class="mp-kcard__bar mp-kcard__bar--purple"></div>
-        <div class="mp-kcard__hd"><span class="mp-kbadge mp-kbadge--gray">Archive</span></div>
-        <div class="mp-kcard__lbl">PROJETS TERMINÉS</div>
-        <div class="mp-kcard__val" style="color:#8b5cf6">{{ metrics[3]?.value ?? 0 }}</div>
-        <div class="mp-kcard__sub">Missions clôturées</div>
-      </div>
-
+  <div class="mp-kpi-grid">
+      <app-kpi-card
+        *ngFor="let metric of metrics"
+        [label]="metric.label"
+        [value]="metric.value"
+        [subtitle]="metric.hint"
+        [badge]="metricChipLabel(metric)"
+        [tone]="kpiCardTone(metric)"
+        [valueTone]="kpiValueTone(metric)">
+      </app-kpi-card>
     </div>
 
-    <!-- ── FILTER TABS ─────────────────────────────────── -->
-    <div class="mp-filters-wrap">
-      <div class="mp-filters">
-        <button
-          type="button"
-          class="mp-ftab"
-          *ngFor="let f of filters"
-          [class.mp-ftab--active]="activeFilter === f.key"
-          (click)="setFilter(f.key)"
-        >
-          <span class="mp-ftab__label">{{ f.label }}</span>
-          <span class="mp-ftab__count">{{ f.count }}</span>
-        </button>
-      </div>
+    <div class="mp-filters">
+      <button
+        type="button"
+        class="mp-ftab"
+        *ngFor="let f of filters"
+        [class.mp-ftab--active]="activeFilter === f.key"
+        (click)="setFilter(f.key)"
+      >
+        <span class="mp-ftab__label">{{ f.label }}</span>
+        <span class="mp-ftab__count">{{ f.count }}</span>
+      </button>
     </div>
 
-    <!-- ── SECTION LABEL ──────────────────────────────── -->
-    <div class="mp-section-lbl">PORTEFEUILLE — PROJETS ACTIFS ET MISSIONS</div>
+    <div class="mp-section-lbl">TACHES PAR STATUT</div>
 
-    <!-- ── PROJECT CARDS GRID ────────────────────────── -->
-    <div class="mp-grid" *ngIf="filteredProjects.length; else emptyState">
+    <div class="mp-grid" *ngIf="filteredTaches.length; else emptyState">
       <div
         class="mp-pcard"
-        *ngFor="let p of filteredProjects; trackBy: trackByProject"
-        [style.border-top-color]="cardBorderColor(p.statusKey)"
+        *ngFor="let t of filteredTaches"
       >
-        <!-- Row 1: category + status badge -->
         <div class="mp-pcard__hd">
-          <span class="mp-pcard__cat">{{ p.domaine }}</span>
-          <span
-            class="mp-pcard__status"
-            [class.mp-pcard__status--revision]="p.statusKey === 'revision'"
-            [class.mp-pcard__status--termine]="p.statusKey === 'termine'"
-            [class.mp-pcard__status--muted]="p.statusKey === 'en-attente' || p.statusKey === 'en-cours'"
-          >{{ p.statusLabel }}</span>
+          <span class="mp-pcard__cat">Tache</span>
+          <div class="mp-pcard__badges">
+            <span [class]="tacheStatusClass(t.statut)">{{ tacheStatusLabel(t.statut) }}</span>
+            <span class="mp-pcard__status mp-pcard__status--retard" *ngIf="isTaskLate(t)">En retard</span>
+          </div>
         </div>
 
-        <!-- Row 2: name + desc -->
-        <h3 class="mp-pcard__name">{{ p.nom }}</h3>
-        <p class="mp-pcard__desc">{{ p.description }}</p>
+        <h3 class="mp-pcard__name">{{ t.titre }}</h3>
+        <p class="mp-pcard__desc">Priorite {{ formatPriorityLabel(t.priorite) }}</p>
 
-        <!-- Row 3: meta -->
         <div class="mp-pcard__meta">
-          <span>{{ p.missionDates }}</span>
+          <span>Echeance {{ t.dateEcheance | date:'dd/MM/yyyy' }}</span>
           <span class="mp-sep">·</span>
-          <span>{{ p.membersCount }} membres</span>
-          <span class="mp-sep">·</span>
-          <span class="mp-compat">Compatibilité {{ p.compatibilite }}%</span>
+          <span>{{ t.projetNom || 'Projet non precise' }}</span>
         </div>
 
-        <!-- Row 4: progress -->
-        <div class="mp-pcard__prog">
-          <div class="mp-pcard__prog-hd">
-            <span>Progression mission</span>
-            <strong [style.color]="progressColor(p.progress)">{{ p.progress }}%</strong>
-          </div>
-          <div class="mp-pbar">
-            <div class="mp-pbar__fill" [style.width.%]="p.progress" [style.background]="progressColor(p.progress)"></div>
-          </div>
-        </div>
-
-        <!-- Row 5: role -->
-        <div class="mp-pcard__role">
-          <span>Rôle : </span><strong>{{ p.role }}</strong>
-        </div>
-
-        <!-- Row 6: actions -->
-        <div class="mp-pcard__actions">
-          <button type="button" class="mp-btn mp-btn--ghost mp-btn--sm" (click)="sendPrompt(p)">Voir les détails</button>
+        <div class="mp-task-actions" *ngIf="t.id">
           <button
             type="button"
-            class="mp-btn mp-btn--sm"
-            [class.mp-btn--primary]="p.statusKey === 'en-cours' || p.statusKey === 'revision'"
-            [class.mp-btn--ghost]="p.statusKey === 'en-attente' || p.statusKey === 'termine'"
-            (click)="openPlanning(p)"
-          ><i class="ti ti-calendar"></i> Planning</button>
+            class="mp-task-btn mp-task-btn--ghost"
+            (click)="updateTaskStatus(t, 'EN_COURS')"
+            [disabled]="!canStartTask(t) || isUpdatingTask(t)">
+            En cours
+          </button>
+          <button
+            type="button"
+            class="mp-task-btn mp-task-btn--primary"
+            (click)="updateTaskStatus(t, 'TERMINE')"
+            [disabled]="!canCompleteTask(t) || isUpdatingTask(t)">
+            Termine
+          </button>
         </div>
       </div>
     </div>
@@ -159,10 +88,31 @@
     <ng-template #emptyState>
       <div class="mp-empty">
         <i class="ti ti-folder-off"></i>
-        <span>Aucun projet ne correspond à ce filtre.</span>
+        <span>Aucune tache ne correspond à cet onglet.</span>
       </div>
     </ng-template>
 
-  </ng-container>
+    <div class="mp-section-lbl">PROCHAINS JALONS</div>
 
+    <div class="mp-grid" *ngIf="jalons.length; else emptyJalons">
+      <div class="mp-pcard" *ngFor="let j of jalons">
+        <div class="mp-pcard__hd">
+          <span class="mp-pcard__cat">Jalon</span>
+          <span class="mp-pcard__status mp-pcard__status--encours">{{ j.statut || 'Planifie' }}</span>
+        </div>
+        <h3 class="mp-pcard__name">{{ j.titre }}</h3>
+        <p class="mp-pcard__desc">{{ j.description }}</p>
+        <div class="mp-pcard__meta">
+          <span>{{ j.date | date:'dd/MM/yyyy HH:mm' }}</span>
+        </div>
+      </div>
+    </div>
+
+    <ng-template #emptyJalons>
+      <div class="mp-empty">
+        <i class="ti ti-calendar-off"></i>
+        <span>Aucun jalon disponible.</span>
+      </div>
+    </ng-template>
+  </ng-container>
 </app-collaborateur-shell>
